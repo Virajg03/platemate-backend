@@ -1,9 +1,15 @@
 package com.platemate.model;
 
 import jakarta.persistence.*;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.platemate.enums.Role;	
+
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -24,12 +30,25 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
-    private String role; // e.g., ROLE_USER, ROLE_ADMIN
+    @Enumerated(EnumType.STRING)   // Stores as "ROLE_USER", "ROLE_ADMIN"
+    @Column(nullable = false)
+    private Role role;
+    
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
+    @Column(nullable = false)
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+    @Column(nullable = false)
+    private boolean isActive = true;
+    
     // Constructors
     public User() {}
 
-    public User(String username, String password, String email, String role) {
+    public User(String username, String password, String email, Role role) {
         this.username = username;
         this.password = password;
         this.email = email;
@@ -71,19 +90,19 @@ public class User implements UserDetails {
         this.email = email;
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
-
-    // UserDetails methods
+    
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(() -> role); // Or use: new SimpleGrantedAuthority(role)
+        return List.of((GrantedAuthority) () -> role.name());
     }
+
 
     @Override
     public boolean isAccountNonExpired() {
@@ -104,4 +123,30 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public void setCreatedAt(LocalDateTime createdAt) {
+		this.createdAt = createdAt;
+	}
+
+	public LocalDateTime getUpdatedAt() {
+		return updatedAt;
+	}
+
+	public void setUpdatedAt(LocalDateTime updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
+	public boolean isActive() {
+		return isActive;
+	}
+
+	public void setActive(boolean isActive) {
+		this.isActive = isActive;
+	}
+    
+    
 }

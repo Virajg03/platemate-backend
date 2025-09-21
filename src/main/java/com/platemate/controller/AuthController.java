@@ -1,6 +1,7 @@
 package com.platemate.controller;
 
 import com.platemate.config.security.JwtUtil;
+import com.platemate.enums.Role;
 import com.platemate.model.User;
 import com.platemate.service.UserService;
 
@@ -72,7 +73,13 @@ public class AuthController {
             String username = signupRequest.get("username");
             String email = signupRequest.get("email");
             String password = signupRequest.get("password");
-            String role = signupRequest.getOrDefault("role", "ROLE_USER");
+            String roleStr = signupRequest.getOrDefault("role", "ROLE_USER");
+            Role role;
+            try {
+                role = Role.valueOf(roleStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                role = Role.ROLE_CUSTOMER; // fallback if invalid role passed
+            }
 
             // Check if user already exists
             Optional<User> existingUser = userService.getUserById(Long.valueOf(1)); // This is just a check
@@ -102,4 +109,4 @@ public class AuthController {
             return ResponseEntity.status(400).body(response);
         }
     }
-} 
+}
