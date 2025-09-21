@@ -63,10 +63,9 @@ public class DrivingLicense {
     public DrivingLicense() {
     }
 
-    public DrivingLicense(Long dlId, DeliveryPartner deliveryPartner, String dlNumber, String dlImageFrontUrl,
+    public DrivingLicense(DeliveryPartner deliveryPartner, String dlNumber, String dlImageFrontUrl,
             String dlImageBackUrl, LocalDate issueDate, LocalDate expiryDate, String issuingAuthority,
             Boolean isVerified, LocalDateTime createdAt, LocalDateTime updatedAt, Boolean isDeleted) {
-        this.dlId = dlId;
         this.deliveryPartner = deliveryPartner;
         this.dlNumber = dlNumber;
         this.dlImageFrontUrl = dlImageFrontUrl;

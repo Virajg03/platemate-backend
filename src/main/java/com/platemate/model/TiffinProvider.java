@@ -47,6 +47,12 @@ public class TiffinProvider {
     @Transient
     private List<RatingReview> ratings;
 
+    @Transient
+    private Image profileImage;
+
+    @Transient
+    private List<Image> placeImages;
+
     // TODO: Add findByRatingTypeAndTargetId in ratingReview repo.
     // Commented For temporary purposes.
     // public void loadRatings(RatingReviewRepository repo) {
@@ -54,6 +60,30 @@ public class TiffinProvider {
     //         RatingType.ITEM_RATING, this.itemId
     //     );
     // }
+
+    public List<RatingReview> getRatings() {
+        return ratings;
+    }
+
+    public void setRatings(List<RatingReview> ratings) {
+        this.ratings = ratings;
+    }
+
+    public Image getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(Image profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    public List<Image> getPlaceImages() {
+        return placeImages;
+    }
+
+    public void setPlaceImages(List<Image> placeImages) {
+        this.placeImages = placeImages;
+    }
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -77,10 +107,9 @@ public class TiffinProvider {
 
     public TiffinProvider() {}
 
-    public TiffinProvider(Long tiffinProviderId, User user, DeliveryZone zone, String businessName, String description,
+    public TiffinProvider(User user, DeliveryZone zone, String businessName, String description,
             Double commissionRate, Boolean providesDelivery, Double deliveryRadius, Boolean isVerified,
             LocalDateTime createdAt, LocalDateTime updatedAt, Boolean isDeleted) {
-        this.tiffinProviderId = tiffinProviderId;
         this.user = user;
         this.zone = zone;
         this.businessName = businessName;

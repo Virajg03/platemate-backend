@@ -66,10 +66,9 @@ public class BankAccountDetails {
     public BankAccountDetails() {
     }
 
-    public BankAccountDetails(Long bankAccountId, User user, String accountNumber, String ifscCode, String branchCode,
+    public BankAccountDetails(User user, String accountNumber, String ifscCode, String branchCode,
             String accountHolderName, String bankName, String branchName, Boolean isVerified, LocalDateTime createdAt,
             LocalDateTime updatedAt, Boolean isDeleted) {
-        this.bankAccountId = bankAccountId;
         this.user = user;
         this.accountNumber = accountNumber;
         this.ifscCode = ifscCode;

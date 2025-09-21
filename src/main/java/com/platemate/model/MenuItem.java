@@ -75,6 +75,9 @@ public class MenuItem {
     @Transient
     private List<RatingReview> ratings;
 
+    @Transient
+    private List<Image> images;
+
     // TODO: Add findByRatingTypeAndTargetId in ratingReview repo.
     // Commented For temporary purposes.
     // public void loadRatings(RatingReviewRepository repo) {
@@ -96,10 +99,9 @@ public class MenuItem {
         updatedAt = LocalDateTime.now();
     }
 
-    public MenuItem(Long itemId, TiffinProvider provider, Category category, String itemName, String description,
+    public MenuItem(TiffinProvider provider, Category category, String itemName, String description,
             Double price, String ingredients, MealType mealType, Boolean isAvailable, String imageUrl,
             LocalDateTime createdAt, LocalDateTime updatedAt, Boolean isDeleted) {
-        this.itemId = itemId;
         this.provider = provider;
         this.category = category;
         this.itemName = itemName;

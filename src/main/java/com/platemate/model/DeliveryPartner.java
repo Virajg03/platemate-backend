@@ -59,10 +59,9 @@ public class DeliveryPartner {
 
     
 
-    public DeliveryPartner(Long deliveryPartnerId, User user, String fullName, VehicleType vehicleType,
+    public DeliveryPartner(User user, String fullName, VehicleType vehicleType,
             BigDecimal commissionRate, String serviceArea, Boolean isAvailable, LocalDateTime createdAt,
             LocalDateTime updatedAt, Boolean isDeleted) {
-        this.deliveryPartnerId = deliveryPartnerId;
         this.user = user;
         this.fullName = fullName;
         this.vehicleType = vehicleType;
