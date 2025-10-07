@@ -17,7 +17,6 @@ public class Image {
     private String fileType;
 
     @Lob
-    @Column(columnDefinition = "LONGTEXT")
     private String base64Data;
 
     @Enumerated(EnumType.STRING)
