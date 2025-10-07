@@ -53,10 +53,9 @@ public class ProviderOperatingHours {
 
     public ProviderOperatingHours() {}
 
-    public ProviderOperatingHours(Long id, TiffinProvider provider, Integer dayOfWeek, LocalTime openTime,
+    public ProviderOperatingHours(TiffinProvider provider, Integer dayOfWeek, LocalTime openTime,
             LocalTime closeTime, Boolean isClosed, LocalDateTime createdAt, LocalDateTime updatedAt,
             Boolean isDeleted) {
-        this.id = id;
         this.provider = provider;
         this.dayOfWeek = dayOfWeek;
         this.openTime = openTime;

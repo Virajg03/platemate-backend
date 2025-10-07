@@ -79,10 +79,9 @@ public class Payout {
 
     public Payout() {}
 
-    public Payout(Long payoutId, Long recipientId, RecipientType recipientType, String orderIds, Double amount,
+    public Payout(Long recipientId, RecipientType recipientType, String orderIds, Double amount,
             Double commissionDeducted, Double netAmount, PayoutStatus status, String transactionId,
             LocalDateTime payoutTime, LocalDateTime createdAt, LocalDateTime updatedAt, Boolean isDeleted) {
-        this.payoutId = payoutId;
         this.recipientId = recipientId;
         this.recipientType = recipientType;
         this.orderIds = orderIds;

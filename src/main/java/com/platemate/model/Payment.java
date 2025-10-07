@@ -82,10 +82,9 @@ public class Payment {
     public Payment() {
     }
 
-    public Payment(Long paymentId, Order order, PaymentType paymentType, Double amount, PaymentStatus paymentStatus,
+    public Payment(Order order, PaymentType paymentType, Double amount, PaymentStatus paymentStatus,
             PaymentMethod paymentMethod, String transactionId, LocalDateTime paymentTime, LocalDateTime createdAt,
             LocalDateTime updatedAt, Boolean isDeleted) {
-        this.paymentId = paymentId;
         this.order = order;
         this.paymentType = paymentType;
         this.amount = amount;

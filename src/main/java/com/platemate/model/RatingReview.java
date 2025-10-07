@@ -69,9 +69,8 @@ public class RatingReview {
     public RatingReview() {
     }
 
-    public RatingReview(Long reviewId, Customer customer, RatingType ratingType, Integer rating, String reviewText,
+    public RatingReview(Customer customer, RatingType ratingType, Integer rating, String reviewText,
             LocalDateTime createdAt, LocalDateTime updatedAt, Boolean isDeleted, Long targetId) {
-        this.reviewId = reviewId;
         this.customer = customer;
         this.ratingType = ratingType;
         this.rating = rating;

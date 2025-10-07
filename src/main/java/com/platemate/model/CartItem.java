@@ -65,10 +65,9 @@ public class CartItem {
         }
     }
 
-    public CartItem(Long cartItemId, Customer customer, MenuItem menuItem, Integer quantity, Double itemPrice,
+    public CartItem(Customer customer, MenuItem menuItem, Integer quantity, Double itemPrice,
             Double itemTotal, String specialInstructions, LocalDateTime createdAt, LocalDateTime updatedAt,
             Boolean isDeleted) {
-        this.cartItemId = cartItemId;
         this.customer = customer;
         this.menuItem = menuItem;
         this.quantity = quantity;
