@@ -1,15 +1,22 @@
 package com.platemate.model;
 
-import jakarta.persistence.*;
+import java.util.Collection;
+import java.util.List;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.platemate.enums.Role;	
+import com.platemate.enums.Role;
 
-import java.util.Collection;
-import java.util.List;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -25,10 +32,17 @@ public class User extends BaseEntity implements UserDetails {
 
     @Column(nullable = false, unique = true)
     private String email;
-
+    
+    @Column(nullable = true)
+    private String phoneNumber; 
+    
     @Enumerated(EnumType.STRING)   // Stores as "ROLE_CUSTOMER", "ROLE_ADMIN"
     @Column(nullable = false)
     private Role role;
+    
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id", referencedColumnName = "id")
+    private Address address;
     
     // Constructors
     public User() {}
@@ -98,4 +112,22 @@ public class User extends BaseEntity implements UserDetails {
     public boolean isEnabled() {
         return isActive();  // Now uses dynamic isActive field from BaseEntity
     }
+
+	public String getPhoneNumber() {
+		return phoneNumber;
+	}
+
+	public void setPhoneNumber(String phoneNumber) {
+		this.phoneNumber = phoneNumber;
+	}
+
+	public Address getAddress() {
+		return address;
+	}
+
+	public void setAddress(Address address) {
+		this.address = address;
+	}
+    
+    
 }
