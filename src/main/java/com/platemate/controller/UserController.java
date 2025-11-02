@@ -46,12 +46,8 @@ public class UserController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN') or @userService.isOwnerOrAdmin(authentication.name, #id)")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user, Authentication authentication) {
-        try {
-            System.out.println("Authenticated user: " + authentication.getName() + " updating user: " + id);
-            return ResponseEntity.ok(userService.updateUser(id, user));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        System.out.println("Authenticated user: " + authentication.getName() + " updating user: " + id);
+        return ResponseEntity.ok(userService.updateUser(id, user));
     }
 
     @DeleteMapping("/{id}")

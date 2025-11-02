@@ -73,11 +73,7 @@ public class TiffinProviderController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROVIDER')")
     public ResponseEntity<TiffinProvider> updateProvider(@PathVariable Long id, @RequestBody TiffinProvider provider) {
-        try {
-            return ResponseEntity.ok(service.updateProvider(id, provider));
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(service.updateProvider(id, provider));
     }
 
     @DeleteMapping("/{id}")

@@ -8,10 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.platemate.dto.TiffinProviderRequest;
-import com.platemate.enums.ImageType;
 import com.platemate.enums.RatingType;
+import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.DeliveryZone;
-import com.platemate.model.Image;
 import com.platemate.model.TiffinProvider;
 import com.platemate.model.User;
 import com.platemate.repository.DeliveryZoneRepository;
@@ -57,10 +56,10 @@ public class TiffinProviderService {
 
         // ✅ Fetch related entities safely
         User user = userRepository.findById(request.getUser())
-                .orElseThrow(() -> new RuntimeException("User not found with id " + request.getUser()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + request.getUser()));
 
         DeliveryZone zone = deliveryZoneRepository.findById(request.getZone())
-                .orElseThrow(() -> new RuntimeException("Zone not found with id " + request.getZone()));
+                .orElseThrow(() -> new ResourceNotFoundException("Zone not found with id " + request.getZone()));
 
         // ✅ Set data
         provider.setUser(user);
@@ -88,7 +87,7 @@ public class TiffinProviderService {
                     existing.setZone(provider.getZone()); // allow updating zone
                     return repository.save(existing);
                 })
-                .orElseThrow(() -> new RuntimeException("TiffinProvider not found with id " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("TiffinProvider not found with id " + id));
     }
 
     public void deleteProvider(Long id) {
@@ -121,14 +120,14 @@ public class TiffinProviderService {
      */
     public TiffinProvider assignZone(Long providerId, Long zoneId) {
         TiffinProvider provider = repository.findById(providerId)
-                .orElseThrow(() -> new RuntimeException("TiffinProvider not found with id " + providerId));
+                .orElseThrow(() -> new ResourceNotFoundException("TiffinProvider not found with id " + providerId));
 
         return deliveryZoneRepository.findById(zoneId)
                 .map(zone -> {
                     provider.setZone(zone);
                     return repository.save(provider);
                 })
-                .orElseThrow(() -> new RuntimeException("DeliveryZone not found with id " + zoneId));
+                .orElseThrow(() -> new ResourceNotFoundException("DeliveryZone not found with id " + zoneId));
     }
 
     /**
