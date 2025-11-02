@@ -6,11 +6,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "images")
-public class Image {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Image extends BaseEntity {
 
     private String fileName;
 
@@ -37,14 +33,6 @@ public class Image {
         this.base64Data = base64Data;
         this.imageType = imageType;
         this.ownerId = ownerId;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getFileName() {

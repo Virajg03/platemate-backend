@@ -1,16 +1,11 @@
 package com.platemate.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "cart_items")
-public class CartItem {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "cart_item_id")
-    private Long cartItemId;
+@AttributeOverride(name = "id", column = @Column(name = "cart_item_id"))
+public class CartItem extends BaseEntity {
 
     // ---------------- Relationships ----------------
 
@@ -36,12 +31,6 @@ public class CartItem {
     @Column(name = "special_instructions", columnDefinition = "TEXT")
     private String specialInstructions;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
@@ -49,8 +38,6 @@ public class CartItem {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
         if (quantity == null) quantity = 1;
         if (itemTotal == null && itemPrice != null) {
             itemTotal = itemPrice * quantity;
@@ -59,35 +46,23 @@ public class CartItem {
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
         if (itemPrice != null && quantity != null) {
             itemTotal = itemPrice * quantity;
         }
     }
 
+    public CartItem() {
+    }
+
     public CartItem(Customer customer, MenuItem menuItem, Integer quantity, Double itemPrice,
-            Double itemTotal, String specialInstructions, LocalDateTime createdAt, LocalDateTime updatedAt,
-            Boolean isDeleted) {
+            Double itemTotal, String specialInstructions, Boolean isDeleted) {
         this.customer = customer;
         this.menuItem = menuItem;
         this.quantity = quantity;
         this.itemPrice = itemPrice;
         this.itemTotal = itemTotal;
         this.specialInstructions = specialInstructions;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
         this.isDeleted = isDeleted;
-    }
-
-    public CartItem() {
-    }
-
-    public Long getCartItemId() {
-        return cartItemId;
-    }
-
-    public void setCartItemId(Long cartItemId) {
-        this.cartItemId = cartItemId;
     }
 
     public Customer getCustomer() {
@@ -136,22 +111,6 @@ public class CartItem {
 
     public void setSpecialInstructions(String specialInstructions) {
         this.specialInstructions = specialInstructions;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 
     public Boolean getIsDeleted() {

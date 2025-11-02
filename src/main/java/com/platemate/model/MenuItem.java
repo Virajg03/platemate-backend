@@ -1,33 +1,15 @@
 package com.platemate.model;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import com.platemate.enums.MealType;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "menu_items")
-public class MenuItem {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "item_id")
-    private Long itemId;
+@AttributeOverride(name = "id", column = @Column(name = "item_id"))
+public class MenuItem extends BaseEntity {
 
     // ---------------- Relationships ----------------
 
@@ -63,12 +45,6 @@ public class MenuItem {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
@@ -78,30 +54,12 @@ public class MenuItem {
     @Transient
     private List<Image> images;
 
-    // TODO: Add findByRatingTypeAndTargetId in ratingReview repo.
-    // Commented For temporary purposes.
-    // public void loadRatings(RatingReviewRepository repo) {
-    //     this.ratings = repo.findByRatingTypeAndTargetId(
-    //         RatingType.ITEM_RATING, this.itemId
-    //     );
-    // }
-
-    // ---------------- Lifecycle Hooks ----------------
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public MenuItem() {
     }
 
     public MenuItem(TiffinProvider provider, Category category, String itemName, String description,
             Double price, String ingredients, MealType mealType, Boolean isAvailable, String imageUrl,
-            LocalDateTime createdAt, LocalDateTime updatedAt, Boolean isDeleted) {
+            Boolean isDeleted) {
         this.provider = provider;
         this.category = category;
         this.itemName = itemName;
@@ -111,20 +69,7 @@ public class MenuItem {
         this.mealType = mealType;
         this.isAvailable = isAvailable;
         this.imageUrl = imageUrl;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
         this.isDeleted = isDeleted;
-    }
-
-    public MenuItem() {
-    }
-
-    public Long getItemId() {
-        return itemId;
-    }
-
-    public void setItemId(Long itemId) {
-        this.itemId = itemId;
     }
 
     public TiffinProvider getProvider() {
@@ -199,22 +144,6 @@ public class MenuItem {
         this.imageUrl = imageUrl;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public Boolean getIsDeleted() {
         return isDeleted;
     }
@@ -222,7 +151,4 @@ public class MenuItem {
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
-
-    
-    
 }

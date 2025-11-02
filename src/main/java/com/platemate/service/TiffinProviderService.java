@@ -98,17 +98,17 @@ public class TiffinProviderService {
     // ---------------- Load profile image, place images, ratings, zone ----------------
     @Transactional(readOnly = true)
     private void loadExtras(TiffinProvider provider) {
-        Long imageId = imageRepository.findIdByImageTypeAndOwnerId(ImageType.PROVIDER_PROFILE, provider.getTiffinProviderId());
+        Long imageId = imageRepository.findIdByImageTypeAndOwnerId(ImageType.PROVIDER_PROFILE, provider.getId());
         if (imageId != null) {
             Image profileImage = imageRepository.findById(imageId).get();
             provider.setProfileImage(profileImage);
         }
         provider.setRatings(
-            ratingRepository.findByRatingTypeAndTargetId(RatingType.COOK_RATING, provider.getTiffinProviderId())
+            ratingRepository.findByRatingTypeAndTargetId(RatingType.COOK_RATING, provider.getId())
         );
         // Optionally fetch zone details (already lazy loaded)
         if (provider.getZone() != null) {
-            provider.setZone(deliveryZoneRepository.findById(provider.getZone().getZoneId())
+            provider.setZone(deliveryZoneRepository.findById(provider.getZone().getId())
                     .orElse(null));
         }
     }

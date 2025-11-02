@@ -3,23 +3,11 @@ package com.platemate.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.platemate.enums.AddressType;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
-@Table
+@Table(name = "addresses")
 public class Address extends BaseEntity {
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
 
     @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY, optional = false)
@@ -40,9 +28,12 @@ public class Address extends BaseEntity {
     @Column(name = "pincode", nullable = false, length = 10)
     private String pincode;
 
-    @Column(name = "address_type", nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "address_type", nullable = false)
     private AddressType addressType;
 
+
+    public Address() {}
 
     public Address(User user, String street1, String street2, String city, String state, String pincode, AddressType addressType) {
         this.user = user;
@@ -52,14 +43,6 @@ public class Address extends BaseEntity {
         this.state = state;
         this.pincode = pincode;
         this.addressType = addressType;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public User getUser() {

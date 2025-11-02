@@ -5,25 +5,12 @@ import java.time.LocalDateTime;
 import com.platemate.enums.PayoutStatus;
 import com.platemate.enums.RecipientType;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "payouts")
-public class Payout {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "payout_id")
-    private Long payoutId;
+@AttributeOverride(name = "id", column = @Column(name = "payout_id"))
+public class Payout extends BaseEntity {
 
     @Column(name = "recipient_id", nullable = false)
     private Long recipientId;
@@ -44,7 +31,6 @@ public class Payout {
     @Column(name = "net_amount", nullable = false)
     private Double netAmount;
 
-
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private PayoutStatus status;
@@ -55,33 +41,19 @@ public class Payout {
     @Column(name = "payout_time")
     private LocalDateTime payoutTime;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        createdAt = now;
-        updatedAt = now;
         if (isDeleted == null) isDeleted = false;
     }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    } 
 
     public Payout() {}
 
     public Payout(Long recipientId, RecipientType recipientType, String orderIds, Double amount,
             Double commissionDeducted, Double netAmount, PayoutStatus status, String transactionId,
-            LocalDateTime payoutTime, LocalDateTime createdAt, LocalDateTime updatedAt, Boolean isDeleted) {
+            LocalDateTime payoutTime, Boolean isDeleted) {
         this.recipientId = recipientId;
         this.recipientType = recipientType;
         this.orderIds = orderIds;
@@ -91,17 +63,7 @@ public class Payout {
         this.status = status;
         this.transactionId = transactionId;
         this.payoutTime = payoutTime;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
         this.isDeleted = isDeleted;
-    }
-
-    public Long getPayoutId() {
-        return payoutId;
-    }
-
-    public void setPayoutId(Long payoutId) {
-        this.payoutId = payoutId;
     }
 
     public Long getRecipientId() {
@@ -176,22 +138,6 @@ public class Payout {
         this.payoutTime = payoutTime;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public Boolean getIsDeleted() {
         return isDeleted;
     }
@@ -199,7 +145,4 @@ public class Payout {
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
-
-
 }
-

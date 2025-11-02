@@ -1,5 +1,5 @@
 package com.platemate.enums;
 
 public enum AddressType {
-    HOME, OFFICE, OTHER
+    HOME, OFFICE, BUSINESS, OTHER
 }

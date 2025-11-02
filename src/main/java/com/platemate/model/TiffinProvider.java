@@ -1,19 +1,14 @@
 package com.platemate.model;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "tiffin_providers")
-public class TiffinProvider {
+@AttributeOverride(name = "id", column = @Column(name = "tiffin_provider_id"))
+public class TiffinProvider extends BaseEntity {
     
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "tiffin_provider_id")
-    private Long tiffinProviderId;
-
      // ---------------- Relationships ----------------
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -44,6 +39,9 @@ public class TiffinProvider {
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified = false;
 
+    @Column(name = "is_deleted", nullable = false)
+    private Boolean isDeleted = false;
+
     @Transient
     private List<RatingReview> ratings;
 
@@ -53,63 +51,11 @@ public class TiffinProvider {
     @Transient
     private List<Image> placeImages;
 
-    // TODO: Add findByRatingTypeAndTargetId in ratingReview repo.
-    // Commented For temporary purposes.
-    // public void loadRatings(RatingReviewRepository repo) {
-    //     this.ratings = repo.findByRatingTypeAndTargetId(
-    //         RatingType.ITEM_RATING, this.itemId
-    //     );
-    // }
-
-    public List<RatingReview> getRatings() {
-        return ratings;
-    }
-
-    public void setRatings(List<RatingReview> ratings) {
-        this.ratings = ratings;
-    }
-
-    public Image getProfileImage() {
-        return profileImage;
-    }
-
-    public void setProfileImage(Image profileImage) {
-        this.profileImage = profileImage;
-    }
-
-    public List<Image> getPlaceImages() {
-        return placeImages;
-    }
-
-    public void setPlaceImages(List<Image> placeImages) {
-        this.placeImages = placeImages;
-    }
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    @Column(name = "is_deleted", nullable = false)
-    private Boolean isDeleted = false;
-
     public TiffinProvider() {}
 
     public TiffinProvider(User user, DeliveryZone zone, String businessName, String description,
             Double commissionRate, Boolean providesDelivery, Double deliveryRadius, Boolean isVerified,
-            LocalDateTime createdAt, LocalDateTime updatedAt, Boolean isDeleted) {
+            Boolean isDeleted) {
         this.user = user;
         this.zone = zone;
         this.businessName = businessName;
@@ -118,19 +64,10 @@ public class TiffinProvider {
         this.providesDelivery = providesDelivery;
         this.deliveryRadius = deliveryRadius;
         this.isVerified = isVerified;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
         this.isDeleted = isDeleted;
     }
 
-    public Long getTiffinProviderId() {
-        return tiffinProviderId;
-    }
-
-    public void setTiffinProviderId(Long tiffinProviderId) {
-        this.tiffinProviderId = tiffinProviderId;
-    }
-
+    // Getters and Setters
     public User getUser() {
         return user;
     }
@@ -195,27 +132,35 @@ public class TiffinProvider {
         this.isVerified = isVerified;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public Boolean getIsDeleted() {
         return isDeleted;
     }
 
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
+    }
+
+    public List<RatingReview> getRatings() {
+        return ratings;
+    }
+
+    public void setRatings(List<RatingReview> ratings) {
+        this.ratings = ratings;
+    }
+
+    public Image getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(Image profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    public List<Image> getPlaceImages() {
+        return placeImages;
+    }
+
+    public void setPlaceImages(List<Image> placeImages) {
+        this.placeImages = placeImages;
     }
 }

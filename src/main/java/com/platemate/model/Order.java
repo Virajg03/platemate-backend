@@ -7,12 +7,8 @@ import com.platemate.enums.OrderStatus;
 
 @Entity
 @Table(name = "orders")
-public class Order {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "order_id")
-    private Long orderId;
+@AttributeOverride(name = "id", column = @Column(name = "order_id"))
+public class Order extends BaseEntity {
 
     // ---------------- Relationships ----------------
 
@@ -60,12 +56,6 @@ public class Order {
     @Column(name = "delivery_time")
     private LocalDateTime deliveryTime;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
@@ -73,10 +63,7 @@ public class Order {
 
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        createdAt = now;
-        updatedAt = now;
-        orderTime = now;
+        orderTime = LocalDateTime.now();
         if (orderStatus == null) {
             orderStatus = OrderStatus.PENDING;
         }
@@ -85,8 +72,110 @@ public class Order {
         if (isDeleted == null) isDeleted = false;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public Order() {}
+
+    // Getters and Setters
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
+
+    public TiffinProvider getProvider() {
+        return provider;
+    }
+
+    public void setProvider(TiffinProvider provider) {
+        this.provider = provider;
+    }
+
+    public DeliveryPartner getDeliveryPartner() {
+        return deliveryPartner;
+    }
+
+    public void setDeliveryPartner(DeliveryPartner deliveryPartner) {
+        this.deliveryPartner = deliveryPartner;
+    }
+
+    public OrderStatus getOrderStatus() {
+        return orderStatus;
+    }
+
+    public void setOrderStatus(OrderStatus orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+
+    public String getCartItemIds() {
+        return cartItemIds;
+    }
+
+    public void setCartItemIds(String cartItemIds) {
+        this.cartItemIds = cartItemIds;
+    }
+
+    public Double getDeliveryFee() {
+        return deliveryFee;
+    }
+
+    public void setDeliveryFee(Double deliveryFee) {
+        this.deliveryFee = deliveryFee;
+    }
+
+    public Double getPlatformCommission() {
+        return platformCommission;
+    }
+
+    public void setPlatformCommission(Double platformCommission) {
+        this.platformCommission = platformCommission;
+    }
+
+    public Double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(Double totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public String getDeliveryAddress() {
+        return deliveryAddress;
+    }
+
+    public void setDeliveryAddress(String deliveryAddress) {
+        this.deliveryAddress = deliveryAddress;
+    }
+
+    public LocalDateTime getOrderTime() {
+        return orderTime;
+    }
+
+    public void setOrderTime(LocalDateTime orderTime) {
+        this.orderTime = orderTime;
+    }
+
+    public LocalDateTime getEstimatedDeliveryTime() {
+        return estimatedDeliveryTime;
+    }
+
+    public void setEstimatedDeliveryTime(LocalDateTime estimatedDeliveryTime) {
+        this.estimatedDeliveryTime = estimatedDeliveryTime;
+    }
+
+    public LocalDateTime getDeliveryTime() {
+        return deliveryTime;
+    }
+
+    public void setDeliveryTime(LocalDateTime deliveryTime) {
+        this.deliveryTime = deliveryTime;
+    }
+
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
     }
 }

@@ -39,7 +39,7 @@ public class DeliveryZoneService {
                     existing.setZoneName(zone.getZoneName());
                     existing.setCity(zone.getCity());
                     existing.setPincodeRanges(zone.getPincodeRanges());
-                    existing.setIsActive(zone.getIsActive());
+                    existing.setActive(zone.isActive());
                     return deliveryZoneRepository.save(existing);
                 })
                 .orElseThrow(() -> new RuntimeException("DeliveryZone not found with id " + id));

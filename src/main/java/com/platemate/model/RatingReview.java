@@ -1,31 +1,13 @@
 package com.platemate.model;
 
-import java.time.LocalDateTime;
-
 import com.platemate.enums.RatingType;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "ratings_reviews")
-public class RatingReview {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "review_id")
-    private Long reviewId;
+@AttributeOverride(name = "id", column = @Column(name = "review_id"))
+public class RatingReview extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
@@ -44,57 +26,25 @@ public class RatingReview {
     @Column(name = "review_text", columnDefinition = "TEXT")
     private String reviewText;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        createdAt = now;
-        updatedAt = now;
         if (isDeleted == null) isDeleted = false;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 
     public RatingReview() {
     }
 
     public RatingReview(Customer customer, RatingType ratingType, Integer rating, String reviewText,
-            LocalDateTime createdAt, LocalDateTime updatedAt, Boolean isDeleted, Long targetId) {
+            Boolean isDeleted, Long targetId) {
         this.customer = customer;
         this.ratingType = ratingType;
         this.rating = rating;
         this.reviewText = reviewText;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
         this.isDeleted = isDeleted;
         this.targetId = targetId;
-    }
-
-    public Long getTargetId() {
-        return targetId;
-    }
-
-    public void setTargetId(Long targetId) {
-        this.targetId = targetId;
-    }
-
-    public Long getReviewId() {
-        return reviewId;
-    }
-
-    public void setReviewId(Long reviewId) {
-        this.reviewId = reviewId;
     }
 
     public Customer getCustomer() {
@@ -113,6 +63,14 @@ public class RatingReview {
         this.ratingType = ratingType;
     }
 
+    public Long getTargetId() {
+        return targetId;
+    }
+
+    public void setTargetId(Long targetId) {
+        this.targetId = targetId;
+    }
+
     public Integer getRating() {
         return rating;
     }
@@ -129,22 +87,6 @@ public class RatingReview {
         this.reviewText = reviewText;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public Boolean getIsDeleted() {
         return isDeleted;
     }
@@ -152,7 +94,4 @@ public class RatingReview {
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
-
-    
 }
-

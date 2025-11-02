@@ -1,16 +1,11 @@
 package com.platemate.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bank_account_details")
-public class BankAccountDetails {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "bank_account_id")
-    private Long bankAccountId;
+@AttributeOverride(name = "id", column = @Column(name = "bank_account_id"))
+public class BankAccountDetails extends BaseEntity {
 
     // ---------------- Relationships ----------------
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -39,36 +34,21 @@ public class BankAccountDetails {
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified = false;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
     // ---------------- Lifecycle Hooks ----------------
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        createdAt = now;
-        updatedAt = now;
         if (isVerified == null) isVerified = false;
         if (isDeleted == null) isDeleted = false;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 
     public BankAccountDetails() {
     }
 
     public BankAccountDetails(User user, String accountNumber, String ifscCode, String branchCode,
-            String accountHolderName, String bankName, String branchName, Boolean isVerified, LocalDateTime createdAt,
-            LocalDateTime updatedAt, Boolean isDeleted) {
+            String accountHolderName, String bankName, String branchName, Boolean isVerified, Boolean isDeleted) {
         this.user = user;
         this.accountNumber = accountNumber;
         this.ifscCode = ifscCode;
@@ -77,17 +57,7 @@ public class BankAccountDetails {
         this.bankName = bankName;
         this.branchName = branchName;
         this.isVerified = isVerified;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
         this.isDeleted = isDeleted;
-    }
-
-    public Long getBankAccountId() {
-        return bankAccountId;
-    }
-
-    public void setBankAccountId(Long bankAccountId) {
-        this.bankAccountId = bankAccountId;
     }
 
     public User getUser() {
@@ -154,22 +124,6 @@ public class BankAccountDetails {
         this.isVerified = isVerified;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public Boolean getIsDeleted() {
         return isDeleted;
     }
@@ -177,8 +131,4 @@ public class BankAccountDetails {
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
-    
-
-
 }
-    

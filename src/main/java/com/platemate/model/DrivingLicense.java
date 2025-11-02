@@ -2,16 +2,11 @@ package com.platemate.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "driving_licenses")
-public class DrivingLicense {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "dl_id")
-    private Long dlId;
+@AttributeOverride(name = "id", column = @Column(name = "dl_id"))
+public class DrivingLicense extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "delivery_partner_id", nullable = false)
@@ -38,34 +33,15 @@ public class DrivingLicense {
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified = false;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
-
-    // ---------------- Lifecycle Hooks ----------------
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 
     public DrivingLicense() {
     }
 
     public DrivingLicense(DeliveryPartner deliveryPartner, String dlNumber, String dlImageFrontUrl,
             String dlImageBackUrl, LocalDate issueDate, LocalDate expiryDate, String issuingAuthority,
-            Boolean isVerified, LocalDateTime createdAt, LocalDateTime updatedAt, Boolean isDeleted) {
+            Boolean isVerified, Boolean isDeleted) {
         this.deliveryPartner = deliveryPartner;
         this.dlNumber = dlNumber;
         this.dlImageFrontUrl = dlImageFrontUrl;
@@ -74,20 +50,10 @@ public class DrivingLicense {
         this.expiryDate = expiryDate;
         this.issuingAuthority = issuingAuthority;
         this.isVerified = isVerified;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
         this.isDeleted = isDeleted;
     }
 
     // ---------------- Getters & Setters ----------------
-
-    public Long getDlId() {
-        return dlId;
-    }
-
-    public void setDlId(Long dlId) {
-        this.dlId = dlId;
-    }
 
     public DeliveryPartner getDeliveryPartner() {
         return deliveryPartner;
@@ -153,22 +119,6 @@ public class DrivingLicense {
         this.isVerified = isVerified;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public Boolean getIsDeleted() {
         return isDeleted;
     }
@@ -176,6 +126,4 @@ public class DrivingLicense {
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
-    
 }
-

@@ -6,34 +6,17 @@ import com.platemate.enums.PaymentMethod;
 import com.platemate.enums.PaymentStatus;
 import com.platemate.enums.PaymentType;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "payments")
-public class Payment {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "payment_id")
-    private Long paymentId;
+@AttributeOverride(name = "id", column = @Column(name = "payment_id"))
+public class Payment extends BaseEntity {
 
     // ---------------- Relationship ----------------
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order; // FK → orders.order_id
-    
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_type", nullable = false)
@@ -56,35 +39,20 @@ public class Payment {
     @Column(name = "payment_time")
     private LocalDateTime paymentTime;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
     // ---------------- Lifecycle Hooks ----------------
     @PrePersist
     protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        createdAt = now;
-        updatedAt = now;
         if (isDeleted == null) isDeleted = false;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 
     public Payment() {
     }
 
     public Payment(Order order, PaymentType paymentType, Double amount, PaymentStatus paymentStatus,
-            PaymentMethod paymentMethod, String transactionId, LocalDateTime paymentTime, LocalDateTime createdAt,
-            LocalDateTime updatedAt, Boolean isDeleted) {
+            PaymentMethod paymentMethod, String transactionId, LocalDateTime paymentTime, Boolean isDeleted) {
         this.order = order;
         this.paymentType = paymentType;
         this.amount = amount;
@@ -92,17 +60,7 @@ public class Payment {
         this.paymentMethod = paymentMethod;
         this.transactionId = transactionId;
         this.paymentTime = paymentTime;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
         this.isDeleted = isDeleted;
-    }
-
-    public Long getPaymentId() {
-        return paymentId;
-    }
-
-    public void setPaymentId(Long paymentId) {
-        this.paymentId = paymentId;
     }
 
     public Order getOrder() {
@@ -161,22 +119,6 @@ public class Payment {
         this.paymentTime = paymentTime;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
     public Boolean getIsDeleted() {
         return isDeleted;
     }
@@ -184,6 +126,4 @@ public class Payment {
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
-
-    
 }

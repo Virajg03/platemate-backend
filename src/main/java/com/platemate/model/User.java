@@ -2,15 +2,12 @@ package com.platemate.model;
 
 import jakarta.persistence.*;
 
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.platemate.enums.Role;	
 
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -18,11 +15,7 @@ import java.util.List;
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "users")
-public class User implements UserDetails {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class User extends BaseEntity implements UserDetails {
 
     @Column(nullable = false, unique = true)
     private String username;
@@ -33,23 +26,9 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Enumerated(EnumType.STRING)   // Stores as "ROLE_USER", "ROLE_ADMIN"
+    @Enumerated(EnumType.STRING)   // Stores as "ROLE_CUSTOMER", "ROLE_ADMIN"
     @Column(nullable = false)
     private Role role;
-    
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(nullable = false)
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
-
-    @Column(nullable = false)
-    private boolean isActive = true;
-
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    private Address address;
     
     // Constructors
     public User() {}
@@ -59,15 +38,6 @@ public class User implements UserDetails {
         this.password = password;
         this.email = email;
         this.role = role;
-    }
-
-    // Getters and setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     @Override
@@ -109,7 +79,6 @@ public class User implements UserDetails {
         return List.of((GrantedAuthority) () -> role.name());
     }
 
-
     @Override
     public boolean isAccountNonExpired() {
         return true;
@@ -127,32 +96,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return isActive();  // Now uses dynamic isActive field from BaseEntity
     }
-
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
-
-	public LocalDateTime getUpdatedAt() {
-		return updatedAt;
-	}
-
-	public void setUpdatedAt(LocalDateTime updatedAt) {
-		this.updatedAt = updatedAt;
-	}
-
-	public boolean isActive() {
-		return isActive;
-	}
-
-	public void setActive(boolean isActive) {
-		this.isActive = isActive;
-	}
-    
-    
 }
