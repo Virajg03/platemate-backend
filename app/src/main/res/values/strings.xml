@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Platemate</string>
+    <string name="title_splash"><font color="#dc6f31">Your Ultimate</font> Destination</string>
+    <string name="title_splash_next_line">for Food</string>
+    <string name="splash_activity_image">Splash Activity Image</string>
+    <string name="splash_activity_description">Your all time <font color="#dc6f31">Home Made</font></string>
+    <string name="splash_activity_description_2">Food Delivery Partner</string>
+    <string name="splash_activity_signin_text">Already Have an Account ? Sign In</string>
+    <string name="login_acitivity_signup_text">Don\'t have an Account ? Sign Up Now</string>
+
+    <string name="select_role">Select Profile Type</string>
+</resources>
