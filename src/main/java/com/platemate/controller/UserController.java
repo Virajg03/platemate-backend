@@ -19,7 +19,7 @@ public class UserController {
     private UserService userService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_NEW')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROVIDER')")
     public ResponseEntity<List<User>> getAllUsers(Authentication authentication) {
         System.out.println("Authenticated user: " + authentication.getName());
         List<User> users = userService.getAllUsers();
@@ -27,7 +27,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ROLE_ADMIN') or @userService.isOwnerOrAdmin(authentication.name, #id)")
+    @PreAuthorize("hasRole('ROLE_ADMIN')  or @userService.isOwnerOrAdmin(authentication.name, #id)")
     public ResponseEntity<User> getUserById(@PathVariable Long id, Authentication authentication) {
         System.out.println("Authenticated user: " + authentication.getName() + " requesting user: " + id);
         return userService.getUserById(id)

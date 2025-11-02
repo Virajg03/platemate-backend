@@ -1,7 +1,8 @@
 package com.platemate.enums;
 
 public enum ImageType {
-    PROFILE,
+    CUSTOMER_PROFILE,
+    PROVIDER_PROFILE,
     PRODUCT,
     PLACE
 }

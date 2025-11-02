@@ -5,14 +5,20 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.platemate.dto.TiffinProviderRequest;
 import com.platemate.enums.ImageType;
 import com.platemate.enums.RatingType;
+import com.platemate.model.DeliveryZone;
+import com.platemate.model.Image;
 import com.platemate.model.TiffinProvider;
+import com.platemate.model.User;
 import com.platemate.repository.DeliveryZoneRepository;
 import com.platemate.repository.ImageRepository;
 import com.platemate.repository.RatingReviewRepository;
 import com.platemate.repository.TiffinProviderRepository;
+import com.platemate.repository.UserRepository;
 
 @Service
 public class TiffinProviderService {
@@ -27,10 +33,14 @@ public class TiffinProviderService {
     private RatingReviewRepository ratingRepository;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private DeliveryZoneRepository deliveryZoneRepository;
 
     // ---------------- Basic CRUD ----------------
     public List<TiffinProvider> getAllProviders() {
+        System.err.println("=============in getAllProvider==========");
         List<TiffinProvider> providers = repository.findAll();
         providers.forEach(this::loadExtras);
         return providers;
@@ -42,7 +52,27 @@ public class TiffinProviderService {
         return provider;
     }
 
-    public TiffinProvider createProvider(TiffinProvider provider) {
+    public TiffinProvider createProvider(TiffinProviderRequest request) {
+        TiffinProvider provider = new TiffinProvider();
+
+        // ✅ Fetch related entities safely
+        User user = userRepository.findById(request.getUser())
+                .orElseThrow(() -> new RuntimeException("User not found with id " + request.getUser()));
+
+        DeliveryZone zone = deliveryZoneRepository.findById(request.getZone())
+                .orElseThrow(() -> new RuntimeException("Zone not found with id " + request.getZone()));
+
+        // ✅ Set data
+        provider.setUser(user);
+        provider.setZone(zone);
+        provider.setBusinessName(request.getBusinessName());
+        provider.setDescription(request.getDescription());
+        provider.setCommissionRate(request.getCommissionRate());
+        provider.setProvidesDelivery(request.getProvidesDelivery());
+        provider.setDeliveryRadius(request.getDeliveryRadius());
+        provider.setIsVerified(request.getIsVerified());
+
+        // ✅ Save
         return repository.save(provider);
     }
 
@@ -66,19 +96,15 @@ public class TiffinProviderService {
     }
 
     // ---------------- Load profile image, place images, ratings, zone ----------------
+    @Transactional(readOnly = true)
     private void loadExtras(TiffinProvider provider) {
-        // Images
-        provider.setProfileImage(
-                imageRepository.findByImageTypeAndOwnerId(ImageType.PROFILE, provider.getTiffinProviderId())
-                        .stream().findFirst().orElse(null)
-        );
-        provider.setPlaceImages(
-                imageRepository.findByImageTypeAndOwnerId(ImageType.PLACE, provider.getTiffinProviderId())
-        );
+        System.out.println("===========In Load Extras===Business==name===" + provider.getBusinessName());
+        System.out.println("===========In Load Extras===Description=====" + provider.getDescription());
+        System.out.println("===========In Load Extras===getTiffinProviderId====" + provider.getTiffinProviderId());
 
         // Ratings
         provider.setRatings(
-                ratingRepository.findByRatingTypeAndTargetId(RatingType.COOK_RATING, provider.getTiffinProviderId())
+            ratingRepository.findByRatingTypeAndTargetId(RatingType.COOK_RATING, provider.getTiffinProviderId())
         );
 
         // Optionally fetch zone details (already lazy loaded)

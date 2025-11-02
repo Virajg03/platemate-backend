@@ -17,6 +17,8 @@ public class Image {
     private String fileType;
 
     @Lob
+    @Basic(fetch = FetchType.EAGER)
+    @Column(columnDefinition = "TEXT")
     private String base64Data;
 
     @Enumerated(EnumType.STRING)

@@ -1,6 +1,7 @@
 package com.platemate.service;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +24,13 @@ public class ImageService {
     public Image saveImage(MultipartFile file, ImageType imageType, Long ownerId) throws IOException {
         String base64 = ImageUtils.toBase64(file);
 
+        if (imageType == ImageType.CUSTOMER_PROFILE || imageType == ImageType.PROVIDER_PROFILE) {
+            Long existingImage = imageRepository.findIdByImageTypeAndOwnerId(imageType, ownerId);
+            if (existingImage != null) {
+                imageRepository.deleteById(existingImage);
+            }
+        }
+
         Image image = new Image(
             file.getOriginalFilename(),
             file.getContentType(),
@@ -33,6 +41,23 @@ public class ImageService {
 
         return imageRepository.save(image);
     }
+
+    public ImageResponse getProviderProfileImage(Long providerId) {
+        Long imageId = imageRepository.findIdByImageTypeAndOwnerId(ImageType.PROVIDER_PROFILE, providerId);
+        Image image = imageRepository.findById(imageId).orElseThrow(() -> new RuntimeException("Image not found"));
+        return new ImageResponse(image.getFileType(), ImageUtils.fromBase64(image.getBase64Data()));
+    }
+
+    public ImageResponse getCustomerProfileImage(Long customerId) {
+        Long imageId = imageRepository.findIdByImageTypeAndOwnerId(ImageType.CUSTOMER_PROFILE, customerId);
+        Image image = imageRepository.findById(imageId).orElseThrow(() -> new RuntimeException("Image not found"));
+        return new ImageResponse(image.getFileType(), ImageUtils.fromBase64(image.getBase64Data()));
+    }
+
+    // public ImageResponse getCustomerProfileImage(Long providerId) {
+    //     Image image = imageRepository.findIdByImageTypeAndOwnerId(ImageType.PROVIDER_PROFILE, providerId).getFirst();
+    //     return new ImageResponse(image.getFileType(), ImageUtils.fromBase64(image.getBase64Data()));
+    // }
 
     public ImageResponse getImage(Long imageId) {
         Image image = imageRepository.findById(imageId)
