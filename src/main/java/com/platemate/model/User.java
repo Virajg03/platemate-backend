@@ -47,6 +47,9 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private boolean isActive = true;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    private Address address;
     
     // Constructors
     public User() {}

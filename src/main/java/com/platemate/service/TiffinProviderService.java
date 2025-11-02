@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.platemate.dto.TiffinProviderRequest;
+import com.platemate.enums.ImageType;
 import com.platemate.enums.RatingType;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.DeliveryZone;
+import com.platemate.model.Image;
 import com.platemate.model.TiffinProvider;
 import com.platemate.model.User;
 import com.platemate.repository.DeliveryZoneRepository;

@@ -18,6 +18,9 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private AddressService addressService;
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
