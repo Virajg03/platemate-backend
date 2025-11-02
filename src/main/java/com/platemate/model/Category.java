@@ -13,9 +13,6 @@ public class Category extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "image_url", length = 500)
-    private String imageUrl;
-
     public Category() {}
 
     public String getCategoryName() { return categoryName; }
@@ -23,7 +20,4 @@ public class Category extends BaseEntity {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }
