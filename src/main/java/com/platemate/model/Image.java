@@ -19,7 +19,7 @@ public class Image extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ImageType imageType;  // PROFILE / PRODUCT / PLACE
+    private ImageType imageType;  // PROFILE / PRODUCT / PLACE / DL
 
     // this helps us link image to any entity
     private Long ownerId;

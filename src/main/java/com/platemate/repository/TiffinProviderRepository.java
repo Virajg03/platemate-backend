@@ -8,5 +8,9 @@ import org.springframework.stereotype.Repository;
 public interface TiffinProviderRepository extends JpaRepository<TiffinProvider, Long> {
     // Custom query if needed, e.g., find by userId
     TiffinProvider findByUser_Id(Long userId);
+
+    java.util.List<TiffinProvider> findAllByIsVerified(Boolean isVerified);
+
+    java.util.Optional<TiffinProvider> findByIdAndUser_Id(Long id, Long userId);
 }
 

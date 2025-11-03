@@ -70,7 +70,8 @@ public class TiffinProviderService {
         provider.setCommissionRate(request.getCommissionRate());
         provider.setProvidesDelivery(request.getProvidesDelivery());
         provider.setDeliveryRadius(request.getDeliveryRadius());
-        provider.setIsVerified(request.getIsVerified());
+        // New providers must be reviewed by admin
+        provider.setIsVerified(false);
 
         // ✅ Save
         return repository.save(provider);
@@ -93,6 +94,27 @@ public class TiffinProviderService {
 
     public void deleteProvider(Long id) {
         repository.deleteById(id);
+    }
+
+    // ---------------- Approval Workflow ----------------
+    public java.util.List<TiffinProvider> getPendingProviders() {
+        return repository.findAllByIsVerified(false);
+    }
+
+    public TiffinProvider approveProvider(Long providerId) {
+        TiffinProvider provider = repository.findById(providerId)
+                .orElseThrow(() -> new ResourceNotFoundException("TiffinProvider not found with id " + providerId));
+        provider.setIsVerified(true);
+        return repository.save(provider);
+    }
+
+    public TiffinProvider rejectProvider(Long providerId) {
+        // For now, mark as deleted; can be extended to store rejection reasons
+        TiffinProvider provider = repository.findById(providerId)
+                .orElseThrow(() -> new ResourceNotFoundException("TiffinProvider not found with id " + providerId));
+        provider.setIsVerified(false);
+        provider.setIsDeleted(true);
+        return repository.save(provider);
     }
 
     // ---------------- Load profile image, place images, ratings, zone ----------------

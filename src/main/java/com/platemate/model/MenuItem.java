@@ -42,9 +42,6 @@ public class MenuItem extends BaseEntity {
     @Column(name = "is_available", nullable = false)
     private Boolean isAvailable = true;
 
-    @Column(name = "image_url", length = 500)
-    private String imageUrl;
-
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
@@ -68,7 +65,6 @@ public class MenuItem extends BaseEntity {
         this.ingredients = ingredients;
         this.mealType = mealType;
         this.isAvailable = isAvailable;
-        this.imageUrl = imageUrl;
         this.isDeleted = isDeleted;
     }
 
@@ -134,14 +130,6 @@ public class MenuItem extends BaseEntity {
 
     public void setIsAvailable(Boolean isAvailable) {
         this.isAvailable = isAvailable;
-    }
-
-    public String getImageUrl() {
-        return imageUrl;
-    }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
     }
 
     public Boolean getIsDeleted() {

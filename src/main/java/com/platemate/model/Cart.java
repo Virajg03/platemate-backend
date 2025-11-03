@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "cart_items")
 @AttributeOverride(name = "id", column = @Column(name = "cart_item_id"))
-public class CartItem extends BaseEntity {
+public class Cart extends BaseEntity {
 
     // ---------------- Relationships ----------------
 
@@ -51,10 +51,10 @@ public class CartItem extends BaseEntity {
         }
     }
 
-    public CartItem() {
+    public Cart() {
     }
 
-    public CartItem(Customer customer, MenuItem menuItem, Integer quantity, Double itemPrice,
+    public Cart(Customer customer, MenuItem menuItem, Integer quantity, Double itemPrice,
             Double itemTotal, String specialInstructions, Boolean isDeleted) {
         this.customer = customer;
         this.menuItem = menuItem;

@@ -2,7 +2,7 @@ package com.platemate.dto;
 
 import com.platemate.enums.AddressType;
 
-public class Address {
+public class AddressRequest {
     private String street1;
     private String street2;
     private String city;

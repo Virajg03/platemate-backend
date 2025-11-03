@@ -21,6 +21,17 @@ public class Customer extends BaseEntity {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    @Transient
+    private Image profileImage;
+
+    public Image getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(Image profileImage) {
+        this.profileImage = profileImage;
+    }
+
     public Customer() {}
 
     public User getUser() { return user; }
