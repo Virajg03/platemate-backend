@@ -3,6 +3,7 @@ package com.platemate.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -15,16 +16,23 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.platemate.dto.MenuItemDtos;
+import com.platemate.enums.ImageType;
 import com.platemate.exception.ForbiddenException;
 import com.platemate.exception.ResourceNotFoundException;
+import com.platemate.model.Category;
 import com.platemate.model.MenuItem;
 import com.platemate.model.TiffinProvider;
 import com.platemate.model.User;
+import com.platemate.repository.CategoryRepository;
 import com.platemate.repository.MenuItemRepository;
 import com.platemate.repository.TiffinProviderRepository;
 import com.platemate.repository.UserRepository;
+import com.platemate.service.ImageService;
 
 @RestController
 @RequestMapping("/api/providers/menu-items")
@@ -33,12 +41,14 @@ public class MenuItemController {
 
     @Autowired
     private MenuItemRepository menuItemRepository;
-
     @Autowired
     private TiffinProviderRepository providerRepository;
-
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
+    @Autowired
+    private ImageService imageService;
 
     private User currentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -59,55 +69,81 @@ public class MenuItemController {
         return provider;
     }
 
-    @PostMapping
-    public ResponseEntity<MenuItem> create(@RequestBody MenuItem body) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MenuItemDtos.Response> create(
+            @RequestPart("data") MenuItemDtos.CreateRequest data,
+            @RequestPart(value = "image", required = false) MultipartFile image) throws Exception {
         TiffinProvider provider = currentProviderOrThrow();
-        body.setProvider(provider);
-        body.setIsDeleted(false);
-        return ResponseEntity.ok(menuItemRepository.save(body));
+        Category category = categoryRepository.findById(data.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+        MenuItem item = new MenuItem();
+        item.setProvider(provider);
+        item.setCategory(category);
+        item.setItemName(data.getItemName());
+        item.setDescription(data.getDescription());
+        item.setPrice(data.getPrice());
+        item.setIngredients(data.getIngredients());
+        item.setMealType(data.getMealType());
+        item.setIsAvailable(data.getIsAvailable() != null ? data.getIsAvailable() : Boolean.TRUE);
+        item.setIsDeleted(false);
+        MenuItem saved = menuItemRepository.save(item);
+        if (image != null && !image.isEmpty()) {
+            imageService.saveImage(image, ImageType.PRODUCT, saved.getId());
+        }
+        return ResponseEntity.ok(toResponse(saved));
     }
 
     @GetMapping
-    public ResponseEntity<List<MenuItem>> listMine() {
+    public ResponseEntity<List<MenuItemDtos.Response>> listMine() {
         TiffinProvider provider = currentProviderOrThrow();
-        List<MenuItem> items = menuItemRepository.findAll().stream()
-                .filter(mi -> mi.getProvider().getId().equals(provider.getId()))
-                .filter(mi -> !Boolean.TRUE.equals(mi.getIsDeleted()))
-                .toList();
+        List<MenuItemDtos.Response> items = menuItemRepository
+                .findAllByProvider_IdAndIsDeletedFalse(provider.getId())
+                .stream().map(this::toResponse).toList();
         return ResponseEntity.ok(items);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<MenuItem> getMine(@PathVariable Long id) {
+    public ResponseEntity<MenuItemDtos.Response> getMine(@PathVariable Long id) {
         TiffinProvider provider = currentProviderOrThrow();
         MenuItem item = menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found"));
         if (!item.getProvider().getId().equals(provider.getId())) {
             throw new ForbiddenException("Cannot access another provider's item");
         }
-        return ResponseEntity.ok(item);
+        return ResponseEntity.ok(toResponse(item));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<MenuItem> update(@PathVariable Long id, @RequestBody MenuItem body) {
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MenuItemDtos.Response> update(
+            @PathVariable Long id,
+            @RequestPart("data") MenuItemDtos.UpdateRequest data,
+            @RequestPart(value = "image", required = false) MultipartFile image) throws Exception {
         TiffinProvider provider = currentProviderOrThrow();
         MenuItem item = menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found"));
         if (!item.getProvider().getId().equals(provider.getId())) {
             throw new ForbiddenException("Cannot modify another provider's item");
         }
-        item.setCategory(body.getCategory());
-        item.setDescription(body.getDescription());
-        item.setItemName(body.getItemName());
-        item.setIngredients(body.getIngredients());
-        item.setMealType(body.getMealType());
-        item.setPrice(body.getPrice());
-        item.setIsAvailable(body.getIsAvailable() != null ? body.getIsAvailable() : item.getIsAvailable());
-        return ResponseEntity.ok(menuItemRepository.save(item));
+        if (data.getCategoryId() != null) {
+            Category category = categoryRepository.findById(data.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+            item.setCategory(category);
+        }
+        if (data.getDescription() != null) item.setDescription(data.getDescription());
+        if (data.getItemName() != null) item.setItemName(data.getItemName());
+        if (data.getIngredients() != null) item.setIngredients(data.getIngredients());
+        if (data.getMealType() != null) item.setMealType(data.getMealType());
+        if (data.getPrice() != null) item.setPrice(data.getPrice());
+        if (data.getIsAvailable() != null) item.setIsAvailable(data.getIsAvailable());
+        MenuItem saved = menuItemRepository.save(item);
+        if (image != null && !image.isEmpty()) {
+            imageService.saveImage(image, ImageType.PRODUCT, saved.getId());
+        }
+        return ResponseEntity.ok(toResponse(saved));
     }
 
     @PatchMapping("/{id}/availability")
-    public ResponseEntity<MenuItem> toggleAvailability(@PathVariable Long id, @RequestBody java.util.Map<String, Boolean> req) {
+    public ResponseEntity<MenuItemDtos.Response> toggleAvailability(@PathVariable Long id, @RequestBody java.util.Map<String, Boolean> req) {
         TiffinProvider provider = currentProviderOrThrow();
         MenuItem item = menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found"));
@@ -118,7 +154,8 @@ public class MenuItemController {
         if (available != null) {
             item.setIsAvailable(available);
         }
-        return ResponseEntity.ok(menuItemRepository.save(item));
+        MenuItem saved = menuItemRepository.save(item);
+        return ResponseEntity.ok(toResponse(saved));
     }
 
     @DeleteMapping("/{id}")
@@ -132,6 +169,19 @@ public class MenuItemController {
         item.setIsDeleted(true);
         menuItemRepository.save(item);
         return ResponseEntity.noContent().build();
+    }
+
+    private MenuItemDtos.Response toResponse(MenuItem item) {
+        MenuItemDtos.Response res = new MenuItemDtos.Response();
+        res.setId(item.getId());
+        res.setCategoryId(item.getCategory() != null ? item.getCategory().getId() : null);
+        res.setItemName(item.getItemName());
+        res.setDescription(item.getDescription());
+        res.setPrice(item.getPrice());
+        res.setIngredients(item.getIngredients());
+        res.setMealType(item.getMealType());
+        res.setIsAvailable(item.getIsAvailable());
+        return res;
     }
 }
 

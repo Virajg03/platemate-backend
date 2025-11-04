@@ -16,12 +16,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.platemate.dto.TiffinProviderRequest;
+import com.platemate.enums.ImageType;
 import com.platemate.model.TiffinProvider;
 import com.platemate.service.ImageService;
 import com.platemate.service.TiffinProviderService;
 import com.platemate.utils.ImageResponse;
 
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 @RestController
@@ -81,6 +81,12 @@ public class TiffinProviderController {
     public ResponseEntity<Void> deleteProvider(@PathVariable Long id) {
         service.deleteProvider(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(path = "/{id}/profile-image", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN','PROVIDER')")
+    public ResponseEntity<com.platemate.model.Image> uploadProviderProfileImage(@PathVariable Long id, @org.springframework.web.bind.annotation.RequestPart("file") org.springframework.web.multipart.MultipartFile file) throws Exception {
+        return ResponseEntity.ok(imageService.saveImage(file, ImageType.PROVIDER_PROFILE, id));
     }
 }
 

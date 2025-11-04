@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.MenuItem;
+import com.platemate.repository.CategoryRepository;
 import com.platemate.repository.MenuItemRepository;
 
 @Service
@@ -15,10 +16,8 @@ public class MenuItemService {
     @Autowired
     MenuItemRepository menuItemRepository;
 
-
-    public MenuItem addMenuItem(MenuItem menuItem) {
-        return menuItemRepository.save(menuItem);
-    }
+    @Autowired
+    CategoryRepository categoryRepository;
 
     public List<MenuItem> getAllMenuItems() {
         return menuItemRepository.findAll();
