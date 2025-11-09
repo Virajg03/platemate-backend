@@ -5,14 +5,26 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.widget.NestedScrollView;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,10 +49,20 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     private CardView cardEditProfile;
     private CardView cardLogout;
     private LinearLayout emptyStateLayout;
+    
+    // Bottom Navigation
+    private BottomNavigationView bottomNavigationView;
+    private FrameLayout fragmentContainer;
+    private NestedScrollView dashboardScrollView;
+    private boolean isDashboardVisible = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        // Enable edge-to-edge display
+        EdgeToEdge.enable(this);
+        
         setContentView(R.layout.activity_provider_dashboard);
         
         // Initialize API and Session
@@ -55,8 +77,14 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         // Initialize views
         initializeViews();
         
+        // Setup window insets handling for system bars
+        setupWindowInsets();
+        
         // Setup click listeners
         setupClickListeners();
+        
+        // Setup bottom navigation
+        setupBottomNavigation();
         
         // Load provider details and products
         loadProviderDetails();
@@ -75,6 +103,11 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         cardLogout = findViewById(R.id.cardLogout);
         emptyStateLayout = findViewById(R.id.emptyStateLayout);
         
+        // Bottom Navigation views
+        bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        fragmentContainer = findViewById(R.id.fragmentContainer);
+        dashboardScrollView = findViewById(R.id.dashboardScrollView);
+        
         productList = new ArrayList<>();
         productAdapter = new ProductAdapter(productList, this);
         productsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -84,6 +117,49 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         String username = sessionManager.getUsername();
         if (username != null) {
             tvProviderEmail.setText(username);
+        }
+    }
+
+    private void setupWindowInsets() {
+        CoordinatorLayout coordinatorLayout = findViewById(R.id.coordinatorLayout);
+        
+        if (coordinatorLayout != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(coordinatorLayout, (v, insets) -> {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                
+                // Handle bottom navigation margin for system navigation bar
+                if (bottomNavigationView != null && bottomNavigationView.getParent() instanceof ViewGroup) {
+                    ViewGroup parent = (ViewGroup) bottomNavigationView.getParent();
+                    ViewGroup.MarginLayoutParams navParams = 
+                        (ViewGroup.MarginLayoutParams) parent.getLayoutParams();
+                    if (navParams != null) {
+                        navParams.bottomMargin = systemBars.bottom;
+                        parent.setLayoutParams(navParams);
+                    }
+                }
+                
+                // Update fragment container margin dynamically
+                updateFragmentContainerMargin(systemBars.bottom);
+                
+                return insets;
+            });
+        }
+    }
+
+    private void updateFragmentContainerMargin(int systemBarBottom) {
+        if (bottomNavigationView != null && fragmentContainer != null) {
+            bottomNavigationView.post(() -> {
+                int bottomNavHeight = bottomNavigationView.getHeight();
+                if (bottomNavHeight == 0) {
+                    // If height not measured yet, use default
+                    bottomNavHeight = 60;
+                }
+                
+                FrameLayout.LayoutParams params = 
+                    (FrameLayout.LayoutParams) fragmentContainer.getLayoutParams();
+                params.bottomMargin = bottomNavHeight + systemBarBottom;
+                fragmentContainer.setLayoutParams(params);
+            });
         }
     }
 
@@ -102,6 +178,76 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         
         // Logout click listener
         cardLogout.setOnClickListener(v -> showLogoutDialog());
+    }
+
+    private void setupBottomNavigation() {
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            
+            if (itemId == R.id.nav_dashboard) {
+                showDashboard();
+                return true;
+            } else if (itemId == R.id.nav_orders) {
+                showOrdersFragment();
+                return true;
+            } else if (itemId == R.id.nav_products) {
+                showProductsFragment();
+                return true;
+            }
+            return false;
+        });
+        
+        // Set Dashboard as default selected item
+        bottomNavigationView.setSelectedItemId(R.id.nav_dashboard);
+    }
+
+    private void showDashboard() {
+        isDashboardVisible = true;
+        dashboardScrollView.setVisibility(View.VISIBLE);
+        fragmentContainer.setVisibility(View.GONE);
+        fabAddProduct.setVisibility(View.VISIBLE);
+    }
+
+    private void showOrdersFragment() {
+        isDashboardVisible = false;
+        dashboardScrollView.setVisibility(View.GONE);
+        fragmentContainer.setVisibility(View.VISIBLE);
+        fabAddProduct.setVisibility(View.GONE);
+        
+        // Update fragment container margin when showing fragment
+        ViewCompat.setOnApplyWindowInsetsListener(fragmentContainer, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            updateFragmentContainerMargin(systemBars.bottom);
+            return insets;
+        });
+        
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        
+        // Always replace to ensure correct fragment is shown when switching tabs
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.fragmentContainer, new OrdersFragment(), "orders");
+        transaction.commit();
+    }
+
+    private void showProductsFragment() {
+        isDashboardVisible = false;
+        dashboardScrollView.setVisibility(View.GONE);
+        fragmentContainer.setVisibility(View.VISIBLE);
+        fabAddProduct.setVisibility(View.VISIBLE);
+        
+        // Update fragment container margin when showing fragment
+        ViewCompat.setOnApplyWindowInsetsListener(fragmentContainer, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            updateFragmentContainerMargin(systemBars.bottom);
+            return insets;
+        });
+        
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        
+        // Always replace to ensure correct fragment is shown when switching tabs
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.fragmentContainer, new ProductsFragment(), "products");
+        transaction.commit();
     }
 
     private void showLogoutDialog() {

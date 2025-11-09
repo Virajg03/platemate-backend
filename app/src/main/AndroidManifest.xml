@@ -16,6 +16,12 @@
         android:theme="@style/Theme.Platemate"
         android:usesCleartextTraffic="true">
         <activity
+            android:name=".activity_provider_product"
+            android:exported="false" />
+        <activity
+            android:name=".activity_provider_orders"
+            android:exported="false" />
+        <activity
             android:name=".CustomerHomeActivity"
             android:exported="false" />
         <activity
