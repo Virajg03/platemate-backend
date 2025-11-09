@@ -8,6 +8,7 @@ public class LoginUserDetails {
     private String token;
     private String refreshToken;
     private String username;
+    private Long userId;
 
     public String getRole() { return role; }
     public void setRole(String value) { this.role = value; }
@@ -20,4 +21,7 @@ public class LoginUserDetails {
 
     public String getUsername() { return username; }
     public void setUsername(String value) { this.username = value; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long value) { this.userId = value; }
 }

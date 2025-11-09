@@ -36,6 +36,15 @@
         <activity
             android:name=".MainActivity"
             android:exported="true" />
+        <activity
+            android:name=".ProviderDetailsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ProviderDashboardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AddProductActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

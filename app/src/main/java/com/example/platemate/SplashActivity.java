@@ -27,17 +27,26 @@ public class SplashActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         binding = ActivitySplashBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        binding.startBtn.setOnClickListener(v ->
-            startActivity(new Intent(SplashActivity.this, SignUpActivity.class)));
-        setupSignInClickableText();
+
         SessionManager sessionManager = new SessionManager(this);
+
+        // Check if user is logged in
         if (sessionManager.isLoggedIn()) {
-            Intent intent = new Intent(this, MainActivity.class);
-            startActivity(intent);
+            // User is logged in, skip splash and go to MainActivity
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                navigateToMainActivity();
+            }, 2000); // 2 seconds delay
         } else {
-            Intent intent = new Intent(this, LoginActivity.class);
-            startActivity(intent);
+            // User is not logged in, show splash screen with buttons
+            setupSignInClickableText();
+            binding.startBtn.setOnClickListener(v ->
+                startActivity(new Intent(SplashActivity.this, SignUpActivity.class)));
         }
+    }
+
+    private void navigateToMainActivity() {
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
         finish();
     }
 

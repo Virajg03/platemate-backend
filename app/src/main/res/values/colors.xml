@@ -9,5 +9,12 @@
     <color name="orange">#DC6F31</color>
     <color name="red">#FF0000</color>
     <color name="login_orange">#FF775C</color>
-    <color name="grey">#F5F5F5</color>
+    <color name="brutalBlack">#161616</color>
+    <color name="brutalWhite">#FFFFFFFF</color>
+    <color name="brutalPaper">#FFF5E0</color>     <!-- screen base -->
+    <color name="brutalEggShell">#FFFCE8</color>  <!-- input fill -->
+    <color name="brutalMuted">#EDE8D5</color>     <!-- disabled -->
+    <color name="brutalYellow">#FFD43B</color>
+    <color name="brutalYellowDark">#F2BE00</color>
+    <color name="brutalCoral">#FFB59E</color>
 </resources>
