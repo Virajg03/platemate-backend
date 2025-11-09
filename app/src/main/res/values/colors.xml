@@ -9,4 +9,5 @@
     <color name="orange">#DC6F31</color>
     <color name="red">#FF0000</color>
     <color name="login_orange">#FF775C</color>
+    <color name="grey">#F5F5F5</color>
 </resources>
