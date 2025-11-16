@@ -17,7 +17,7 @@ import retrofit2.Response;
 public class ProviderDetailsActivity extends AppCompatActivity {
     private EditText etBusinessName, etDescription, etCommissionRate, 
                      etDeliveryRadius, etZone;
-    private EditText etStreet, etCity, etState, etZipCode, etCountry;
+    private EditText etStreet, etCity, etState, etZipCode;
     private CheckBox cbProvidesDelivery;
     private Button btnSaveDetails;
     private ApiInterface apiInterface;
@@ -67,7 +67,6 @@ public class ProviderDetailsActivity extends AppCompatActivity {
         etCity = findViewById(R.id.etCity);
         etState = findViewById(R.id.etState);
         etZipCode = findViewById(R.id.etZipCode);
-        etCountry = findViewById(R.id.etCountry);
     }
 
     private void setupBackButton() {
@@ -141,9 +140,6 @@ public class ProviderDetailsActivity extends AppCompatActivity {
             if (address.getZipCode() != null) {
                 etZipCode.setText(address.getZipCode());
             }
-            if (address.getCountry() != null) {
-                etCountry.setText(address.getCountry());
-            }
         }
     }
 
@@ -169,13 +165,12 @@ public class ProviderDetailsActivity extends AppCompatActivity {
         String city = etCity.getText().toString().trim();
         String state = etState.getText().toString().trim();
         String zipCode = etZipCode.getText().toString().trim();
-        String country = etCountry.getText().toString().trim();
 
         // Validation
         if (businessName.isEmpty() || description.isEmpty() || 
             commissionRateStr.isEmpty() || zoneStr.isEmpty() ||
             street.isEmpty() || city.isEmpty() || state.isEmpty() || 
-            zipCode.isEmpty() || country.isEmpty()) {
+            zipCode.isEmpty()) {
             Toast.makeText(this, "Please fill all required fields", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -204,7 +199,6 @@ public class ProviderDetailsActivity extends AppCompatActivity {
             address.setCity(city);
             address.setState(state);
             address.setZipCode(zipCode);
-            address.setCountry(country);
             providerDetails.setAddress(address);
 
             Call<ProviderDetails> call = apiInterface.saveProviderDetails(providerDetails);

@@ -402,8 +402,7 @@
         app:tint="@android:color/white"
         app:backgroundTint="@color/login_orange"
         app:elevation="12dp"
-        app:borderWidth="4dp"
-        app:borderColor="@color/black" />
+        app:borderWidth="4dp" />
 
     <!-- Bottom Navigation Bar with Border -->
     <FrameLayout
