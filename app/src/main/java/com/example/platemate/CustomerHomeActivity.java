@@ -35,9 +35,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
     private SessionManager sessionManager;
     private ApiInterface apiInterface;
     
-    // TODO: Create adapters for best food and categories
-    // private BestFoodAdapter bestFoodAdapter;
-    // private CategoryAdapter categoryAdapter;
+    private BestFoodAdapter bestFoodAdapter;
+    private CategoryAdapter categoryAdapter;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,15 +108,35 @@ public class CustomerHomeActivity extends AppCompatActivity {
         bestFoodRecyclerView.setLayoutManager(
             new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         );
-        // bestFoodAdapter = new BestFoodAdapter(new ArrayList<>(), this);
-        // bestFoodRecyclerView.setAdapter(bestFoodAdapter);
+        bestFoodAdapter = new BestFoodAdapter(new ArrayList<>());
+        bestFoodAdapter.setOnItemClickListener(new BestFoodAdapter.OnItemClickListener() {
+            @Override
+            public void onAddToCartClick(Product product) {
+                // TODO: Add product to cart
+                Toast.makeText(CustomerHomeActivity.this, 
+                    "Added " + product.getName() + " to cart", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onItemClick(Product product) {
+                // TODO: Navigate to product detail activity
+                Toast.makeText(CustomerHomeActivity.this, 
+                    "Product: " + product.getName(), Toast.LENGTH_SHORT).show();
+            }
+        });
+        bestFoodRecyclerView.setAdapter(bestFoodAdapter);
         
         // Setup category RecyclerView
         categoryRecyclerView.setLayoutManager(
             new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         );
-        // categoryAdapter = new CategoryAdapter(new ArrayList<>(), this);
-        // categoryRecyclerView.setAdapter(categoryAdapter);
+        categoryAdapter = new CategoryAdapter(new ArrayList<>());
+        categoryAdapter.setOnItemClickListener(category -> {
+            // TODO: Filter products by category
+            Toast.makeText(CustomerHomeActivity.this, 
+                "Selected category: " + category.getName(), Toast.LENGTH_SHORT).show();
+        });
+        categoryRecyclerView.setAdapter(categoryAdapter);
     }
     
     private void loadBestFoods() {
@@ -143,10 +162,17 @@ public class CustomerHomeActivity extends AppCompatActivity {
         //     }
         // });
         
-        // Temporary: Hide progress bar after delay
+        // Temporary: Load sample data for testing
+        List<Product> sampleProducts = new ArrayList<>();
+        sampleProducts.add(new Product("Pepperoni Pizza", "Delicious pepperoni pizza", 13.10, "Pizza"));
+        sampleProducts.add(new Product("Cheese Burger", "Juicy cheese burger", 13.10, "Burger"));
+        sampleProducts.add(new Product("Vegetable Pizza", "Fresh vegetable pizza", 12.50, "Pizza"));
+        sampleProducts.add(new Product("Chicken Burger", "Tasty chicken burger", 14.00, "Burger"));
+        
         bestFoodRecyclerView.postDelayed(() -> {
             progressBarBestFood.setVisibility(View.GONE);
             bestFoodRecyclerView.setVisibility(View.VISIBLE);
+            bestFoodAdapter.updateList(sampleProducts);
         }, 1000);
     }
     
@@ -155,12 +181,35 @@ public class CustomerHomeActivity extends AppCompatActivity {
         categoryRecyclerView.setVisibility(View.GONE);
         
         // TODO: Implement API call to get categories
-        // Similar to loadBestFoods()
+        // Call<List<Category>> call = apiInterface.getCategories();
+        // call.enqueue(new Callback<List<Category>>() {
+        //     @Override
+        //     public void onResponse(Call<List<Category>> call, Response<List<Category>> response) {
+        //         progressBarCategory.setVisibility(View.GONE);
+        //         categoryRecyclerView.setVisibility(View.VISIBLE);
+        //         if (response.isSuccessful() && response.body() != null) {
+        //             categoryAdapter.updateList(response.body());
+        //         }
+        //     }
+        //     @Override
+        //     public void onFailure(Call<List<Category>> call, Throwable t) {
+        //         progressBarCategory.setVisibility(View.GONE);
+        //         categoryRecyclerView.setVisibility(View.VISIBLE);
+        //         Toast.makeText(CustomerHomeActivity.this, "Failed to load categories", Toast.LENGTH_SHORT).show();
+        //     }
+        // });
         
-        // Temporary: Hide progress bar after delay
+        // Temporary: Load sample data for testing
+        List<Category> sampleCategories = new ArrayList<>();
+        sampleCategories.add(new Category("Pizza", android.R.drawable.ic_menu_gallery)); // Replace with actual icon
+        sampleCategories.add(new Category("Burger", android.R.drawable.ic_menu_gallery));
+        sampleCategories.add(new Category("Hotdog", android.R.drawable.ic_menu_gallery));
+        sampleCategories.add(new Category("Drink", android.R.drawable.ic_menu_gallery));
+        
         categoryRecyclerView.postDelayed(() -> {
             progressBarCategory.setVisibility(View.GONE);
             categoryRecyclerView.setVisibility(View.VISIBLE);
+            categoryAdapter.updateList(sampleCategories);
         }, 1000);
     }
     
