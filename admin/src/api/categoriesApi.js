@@ -8,13 +8,56 @@ export const getCategories = () => api.get("/api/categories");
 export const getCategoryById = (id) =>
   api.get(`/api/categories/${id}`);
 
-// CREATE
-export const createCategory = (data) =>
-  api.post("/api/categories", data);
+// CREATE - Handles image upload via FormData
+export const createCategory = (data, imageFile = null) => {
+  const formData = new FormData();
+  
+  // Create JSON string for the data part
+  const dataJson = JSON.stringify({
+    categoryName: data.categoryName,
+    description: data.description || "",
+  });
+  
+  formData.append("data", new Blob([dataJson], { type: "application/json" }));
+  
+  // Add image if provided
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
+  
+  return api.post("/api/categories", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
 
-// UPDATE
-export const updateCategory = (id, data) =>
-  api.put(`/api/categories/${id}`, data);
+// UPDATE - Handles image update via FormData
+// If imageFile is provided, it replaces the existing image
+// If imageFile is null/undefined, existing image remains unchanged
+export const updateCategory = (id, data, imageFile = null) => {
+  const formData = new FormData();
+  
+  // Create JSON string for the data part
+  const dataJson = JSON.stringify({
+    categoryName: data.categoryName,
+    description: data.description || "",
+  });
+  
+  formData.append("data", new Blob([dataJson], { type: "application/json" }));
+  
+  // Only append image if a new file is provided
+  // If imageFile is null, we don't append it, so backend keeps existing image
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
+  
+  return api.put(`/api/categories/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
 
 // DELETE
 export const deleteCategory = (id) =>
