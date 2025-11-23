@@ -1,5 +1,8 @@
 package com.example.platemate;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,24 +16,24 @@ import com.bumptech.glide.Glide;
 import java.util.List;
 
 public class BestFoodAdapter extends RecyclerView.Adapter<BestFoodAdapter.BestFoodViewHolder> {
-    private List<Product> productList;
+    private List<MenuItem> menuItemList;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
-        void onAddToCartClick(Product product);
-        void onItemClick(Product product);
+        void onAddToCartClick(MenuItem menuItem);
+        void onItemClick(MenuItem menuItem);
     }
 
-    public BestFoodAdapter(List<Product> productList) {
-        this.productList = productList;
+    public BestFoodAdapter(List<MenuItem> menuItemList) {
+        this.menuItemList = menuItemList;
     }
 
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }
 
-    public void updateList(List<Product> newList) {
-        this.productList = newList;
+    public void updateList(List<MenuItem> newList) {
+        this.menuItemList = newList;
         notifyDataSetChanged();
     }
 
@@ -44,13 +47,13 @@ public class BestFoodAdapter extends RecyclerView.Adapter<BestFoodAdapter.BestFo
 
     @Override
     public void onBindViewHolder(@NonNull BestFoodViewHolder holder, int position) {
-        Product product = productList.get(position);
-        holder.bind(product);
+        MenuItem menuItem = menuItemList.get(position);
+        holder.bind(menuItem);
     }
 
     @Override
     public int getItemCount() {
-        return productList != null ? productList.size() : 0;
+        return menuItemList != null ? menuItemList.size() : 0;
     }
 
     class BestFoodViewHolder extends RecyclerView.ViewHolder {
@@ -69,29 +72,35 @@ public class BestFoodAdapter extends RecyclerView.Adapter<BestFoodAdapter.BestFo
 
             itemView.setOnClickListener(v -> {
                 if (listener != null && getAdapterPosition() != RecyclerView.NO_POSITION) {
-                    listener.onItemClick(productList.get(getAdapterPosition()));
+                    listener.onItemClick(menuItemList.get(getAdapterPosition()));
                 }
             });
 
             btnAddToCart.setOnClickListener(v -> {
                 if (listener != null && getAdapterPosition() != RecyclerView.NO_POSITION) {
-                    listener.onAddToCartClick(productList.get(getAdapterPosition()));
+                    listener.onAddToCartClick(menuItemList.get(getAdapterPosition()));
                 }
             });
         }
 
-        public void bind(Product product) {
-            tvProductName.setText(product.getName());
-            tvProductPrice.setText("$" + String.format("%.2f", product.getPrice()));
+        public void bind(MenuItem menuItem) {
+            tvProductName.setText(menuItem.getItemName());
+            tvProductPrice.setText("₹" + String.format("%.2f", menuItem.getPrice()));
 
-            // Load image using Glide
-            if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
-                Glide.with(itemView.getContext())
-                    .load(product.getImageUrl())
-                    .placeholder(R.drawable.neubrutal_card)
-                    .error(R.drawable.neubrutal_card)
-                    .centerCrop()
-                    .into(ivProductImage);
+            // Load image from base64
+            String base64Image = menuItem.getFirstImageBase64();
+            if (base64Image != null && !base64Image.isEmpty()) {
+                try {
+                    byte[] decodedBytes = Base64.decode(base64Image, Base64.DEFAULT);
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                    if (bitmap != null) {
+                        ivProductImage.setImageBitmap(bitmap);
+                    } else {
+                        ivProductImage.setImageResource(android.R.drawable.ic_menu_gallery);
+                    }
+                } catch (Exception e) {
+                    ivProductImage.setImageResource(android.R.drawable.ic_menu_gallery);
+                }
             } else {
                 ivProductImage.setImageResource(android.R.drawable.ic_menu_gallery);
             }

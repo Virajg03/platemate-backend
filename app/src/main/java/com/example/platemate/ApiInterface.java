@@ -12,6 +12,7 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Part;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface ApiInterface {
     // Auth endpoints
@@ -82,4 +83,63 @@ public interface ApiInterface {
 
     @GET("/api/categories/{id}")
     Call<Category> getCategoryById(@Path("id") Long id);
+
+    // Menu Item endpoints (Customer)
+    @GET("/api/customers/menu-items")
+    Call<MenuItemResponse> getMenuItems(
+            @Query("page") int page,
+            @Query("size") int size,
+            @Query("sort") String sort
+    );
+
+    @GET("/api/customers/menu-items/category/{categoryId}")
+    Call<MenuItemResponse> getMenuItemsByCategory(
+            @Path("categoryId") Long categoryId,
+            @Query("page") int page,
+            @Query("size") int size,
+            @Query("sort") String sort
+    );
+
+    @GET("/api/customers/menu-items/{id}")
+    Call<MenuItem> getMenuItemById(@Path("id") Long id);
+
+    @GET("/api/customers/menu-items/search")
+    Call<MenuItemResponse> searchMenuItems(
+            @Query("q") String query,
+            @Query("page") int page,
+            @Query("size") int size,
+            @Query("sort") String sort
+    );
+
+    // Cart endpoints
+    @POST("/api/customers/cart")
+    Call<CartItem> addToCart(@Body AddToCartRequest request);
+
+    @GET("/api/customers/cart")
+    Call<CartSummary> getCart();
+
+    @PUT("/api/customers/cart/{cartItemId}")
+    Call<CartItem> updateCartItem(
+            @Path("cartItemId") Long cartItemId,
+            @Body UpdateCartRequest request
+    );
+
+    @DELETE("/api/customers/cart/{cartItemId}")
+    Call<Void> removeCartItem(@Path("cartItemId") Long cartItemId);
+
+    @DELETE("/api/customers/cart")
+    Call<Void> clearCart();
+
+    // Order endpoints
+    @POST("/api/customers/orders")
+    Call<Order> createOrder(@Body CreateOrderRequest request);
+
+    @GET("/api/customers/orders")
+    Call<List<Order>> getCustomerOrders();
+
+    @GET("/api/customers/orders/{id}")
+    Call<Order> getCustomerOrder(@Path("id") Long id);
+
+    @POST("/api/customers/orders/{id}/cancel")
+    Call<Order> cancelOrder(@Path("id") Long id);
 }

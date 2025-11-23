@@ -3,7 +3,6 @@ package com.example.platemate;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -99,8 +98,9 @@ public class CustomerHomeActivity extends AppCompatActivity {
     private void setupClickListeners() {
         logoutBtn.setOnClickListener(v -> showLogoutDialog());
         cartBtn.setOnClickListener(v -> {
-            // TODO: Navigate to cart activity
-            Toast.makeText(this, "Cart feature coming soon!", Toast.LENGTH_SHORT).show();
+            // Navigate to cart activity
+            Intent intent = new Intent(this, CartActivity.class);
+            startActivity(intent);
         });
         // filterBtn is commented out in layout, so skip setting listener
         // if (filterBtn != null) {
@@ -132,17 +132,15 @@ public class CustomerHomeActivity extends AppCompatActivity {
         bestFoodAdapter = new BestFoodAdapter(new ArrayList<>());
         bestFoodAdapter.setOnItemClickListener(new BestFoodAdapter.OnItemClickListener() {
             @Override
-            public void onAddToCartClick(Product product) {
-                // TODO: Add product to cart
-                Toast.makeText(CustomerHomeActivity.this, 
-                    "Added " + product.getName() + " to cart", Toast.LENGTH_SHORT).show();
+            public void onAddToCartClick(MenuItem menuItem) {
+                addToCart(menuItem);
             }
 
             @Override
-            public void onItemClick(Product product) {
-                // TODO: Navigate to product detail activity
+            public void onItemClick(MenuItem menuItem) {
+                // TODO: Navigate to menu item detail activity
                 Toast.makeText(CustomerHomeActivity.this, 
-                    "Product: " + product.getName(), Toast.LENGTH_SHORT).show();
+                    "Menu Item: " + menuItem.getItemName(), Toast.LENGTH_SHORT).show();
             }
         });
         bestFoodRecyclerView.setAdapter(bestFoodAdapter);
@@ -171,37 +169,70 @@ public class CustomerHomeActivity extends AppCompatActivity {
         progressBarBestFood.setVisibility(View.VISIBLE);
         bestFoodRecyclerView.setVisibility(View.GONE);
         
-        // TODO: Implement API call to get best foods
-        // Call<List<Product>> call = apiInterface.getBestFoods();
-        // call.enqueue(new Callback<List<Product>>() {
-        //     @Override
-        //     public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
-        //         progressBarBestFood.setVisibility(View.GONE);
-        //         bestFoodRecyclerView.setVisibility(View.VISIBLE);
-        //         if (response.isSuccessful() && response.body() != null) {
-        //             bestFoodAdapter.updateList(response.body());
-        //         }
-        //     }
-        //     @Override
-        //     public void onFailure(Call<List<Product>> call, Throwable t) {
-        //         progressBarBestFood.setVisibility(View.GONE);
-        //         bestFoodRecyclerView.setVisibility(View.VISIBLE);
-        //         Toast.makeText(CustomerHomeActivity.this, "Failed to load foods", Toast.LENGTH_SHORT).show();
-        //     }
-        // });
+        // Load menu items from backend
+        Call<MenuItemResponse> call = apiInterface.getMenuItems(0, 20, "id,desc");
+        call.enqueue(new Callback<MenuItemResponse>() {
+            @Override
+            public void onResponse(Call<MenuItemResponse> call, Response<MenuItemResponse> response) {
+                progressBarBestFood.setVisibility(View.GONE);
+                bestFoodRecyclerView.setVisibility(View.VISIBLE);
+                
+                if (response.isSuccessful() && response.body() != null) {
+                    MenuItemResponse menuItemResponse = response.body();
+                    if (menuItemResponse.getContent() != null && !menuItemResponse.getContent().isEmpty()) {
+                        bestFoodAdapter.updateList(menuItemResponse.getContent());
+                    } else {
+                        showEmptyMenuItems();
+                    }
+                } else {
+                    Toast.makeText(CustomerHomeActivity.this, 
+                        "Failed to load menu items", Toast.LENGTH_SHORT).show();
+                    showEmptyMenuItems();
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<MenuItemResponse> call, Throwable t) {
+                progressBarBestFood.setVisibility(View.GONE);
+                bestFoodRecyclerView.setVisibility(View.VISIBLE);
+                Toast.makeText(CustomerHomeActivity.this, 
+                    "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                showEmptyMenuItems();
+            }
+        });
+    }
+    
+    private void showEmptyMenuItems() {
+        // Show empty state if no menu items
+        bestFoodAdapter.updateList(new ArrayList<>());
+    }
+    
+    private void addToCart(MenuItem menuItem) {
+        if (menuItem.getId() == null) {
+            Toast.makeText(this, "Invalid menu item", Toast.LENGTH_SHORT).show();
+            return;
+        }
         
-        // Temporary: Load sample data for testing
-        List<Product> sampleProducts = new ArrayList<>();
-        sampleProducts.add(new Product("Pepperoni Pizza", "Delicious pepperoni pizza", 13.10, "Pizza"));
-        sampleProducts.add(new Product("Cheese Burger", "Juicy cheese burger", 13.10, "Burger"));
-        sampleProducts.add(new Product("Vegetable Pizza", "Fresh vegetable pizza", 12.50, "Pizza"));
-        sampleProducts.add(new Product("Chicken Burger", "Tasty chicken burger", 14.00, "Burger"));
-        
-        bestFoodRecyclerView.postDelayed(() -> {
-            progressBarBestFood.setVisibility(View.GONE);
-            bestFoodRecyclerView.setVisibility(View.VISIBLE);
-            bestFoodAdapter.updateList(sampleProducts);
-        }, 1000);
+        AddToCartRequest request = new AddToCartRequest(menuItem.getId(), 1, null);
+        Call<CartItem> call = apiInterface.addToCart(request);
+        call.enqueue(new Callback<CartItem>() {
+            @Override
+            public void onResponse(Call<CartItem> call, Response<CartItem> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Toast.makeText(CustomerHomeActivity.this, 
+                        "Added " + menuItem.getItemName() + " to cart", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(CustomerHomeActivity.this, 
+                        "Failed to add to cart", Toast.LENGTH_SHORT).show();
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<CartItem> call, Throwable t) {
+                Toast.makeText(CustomerHomeActivity.this, 
+                    "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
     
     private void loadCategories() {
@@ -272,7 +303,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
     }
     
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(android.view.MenuItem item) {
         return super.onOptionsItemSelected(item);
     }
     
