@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.Customer;
@@ -50,6 +51,26 @@ public class CustomerService {
     public User requireUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
+    }
+
+    // ---------------- Auto-create Customer on Signup ----------------
+
+    /**
+     * Create a Customer with default values for new customer signup
+     * This is called automatically when a CUSTOMER user signs up
+     */
+    @Transactional
+    public Customer createCustomerWithDefaults(User user) {
+        Customer customer = new Customer();
+        customer.setUser(user);
+        
+        // Set default/placeholder values
+        // Use username as default full name (can be updated later during profile setup)
+        customer.setFullName(user.getUsername()); // Placeholder, will be updated during onboarding
+        customer.setDateOfBirth(null); // Optional, can be set later
+        customer.setIsDeleted(false);
+        
+        return customerRepository.save(customer);
     }
 }
 

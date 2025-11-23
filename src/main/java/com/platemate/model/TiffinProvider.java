@@ -42,6 +42,9 @@ public class TiffinProvider extends BaseEntity {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    @Column(name = "is_onboarding", nullable = false)
+    private Boolean isOnboarding = false;
+
     @Transient
     private List<RatingReview> ratings;
 
@@ -162,5 +165,13 @@ public class TiffinProvider extends BaseEntity {
 
     public void setPlaceImages(List<Image> placeImages) {
         this.placeImages = placeImages;
+    }
+
+    public Boolean getIsOnboarding() {
+        return isOnboarding;
+    }
+
+    public void setIsOnboarding(Boolean isOnboarding) {
+        this.isOnboarding = isOnboarding;
     }
 }

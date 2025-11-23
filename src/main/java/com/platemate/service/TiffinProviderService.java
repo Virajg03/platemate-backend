@@ -72,6 +72,8 @@ public class TiffinProviderService {
         provider.setDeliveryRadius(request.getDeliveryRadius());
         // New providers must be reviewed by admin
         provider.setIsVerified(false);
+        // New provider starts in onboarding
+        provider.setIsOnboarding(true);
 
         // ✅ Save
         return repository.save(provider);
@@ -157,6 +159,67 @@ public class TiffinProviderService {
      */
     public TiffinProvider changeZone(Long providerId, Long newZoneId) {
         return assignZone(providerId, newZoneId);
+    }
+
+    // ---------------- Auto-create Provider on Signup ----------------
+
+    /**
+     * Create a TiffinProvider with default values for new provider signup
+     * This is called automatically when a PROVIDER user signs up
+     */
+    @Transactional
+    public TiffinProvider createProviderWithDefaults(User user) {
+        // Get or create a default zone
+        DeliveryZone defaultZone = getOrCreateDefaultZone();
+        
+        TiffinProvider provider = new TiffinProvider();
+        provider.setUser(user);
+        provider.setZone(defaultZone);
+        
+        // Set default/placeholder values
+        provider.setBusinessName("My Tiffin Service"); // Placeholder, will be updated during onboarding
+        provider.setDescription(""); // Empty, will be filled during onboarding
+        provider.setCommissionRate(0.00);
+        provider.setProvidesDelivery(false);
+        provider.setDeliveryRadius(null);
+        
+        // New providers must be reviewed by admin
+        provider.setIsVerified(false);
+        // New provider starts in onboarding
+        provider.setIsOnboarding(true);
+        provider.setIsDeleted(false);
+        
+        return repository.save(provider);
+    }
+
+    /**
+     * Get or create a default delivery zone
+     * Creates a default zone if none exist, or returns the first one
+     */
+    private DeliveryZone getOrCreateDefaultZone() {
+        List<DeliveryZone> allZones = deliveryZoneRepository.findAll();
+        
+        // If zones exist, try to find one named "Default" or use the first one
+        if (!allZones.isEmpty()) {
+            // Look for a zone with name containing "Default"
+            Optional<DeliveryZone> defaultZone = allZones.stream()
+                .filter(zone -> zone.getZoneName().toLowerCase().contains("default"))
+                .findFirst();
+            
+            if (defaultZone.isPresent()) {
+                return defaultZone.get();
+            }
+            
+            // If no default zone found, use the first available zone
+            return allZones.get(0);
+        }
+        
+        // If no zones exist at all, create a default one
+        DeliveryZone newDefaultZone = new DeliveryZone();
+        newDefaultZone.setZoneName("Default Zone");
+        newDefaultZone.setCity("Default City");
+        newDefaultZone.setPincodeRanges("[]"); // Empty JSON array
+        return deliveryZoneRepository.save(newDefaultZone);
     }
 }
 

@@ -13,6 +13,11 @@ import com.platemate.model.MenuItem;
 public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
     java.util.List<MenuItem> findAllByProvider_IdAndIsDeletedFalse(Long providerId);
     
+    // Eagerly load category for provider's own products
+    @EntityGraph(attributePaths = {"category"})
+    @Query("SELECT mi FROM MenuItem mi WHERE mi.provider.id = :providerId AND mi.isDeleted = false")
+    java.util.List<MenuItem> findAllByProvider_IdAndIsDeletedFalseWithCategory(@Param("providerId") Long providerId);
+    
     // Customer-facing queries - only available and non-deleted items from verified providers
     // Using @EntityGraph to eagerly load provider and category relationships
     @EntityGraph(attributePaths = {"provider", "provider.user", "category"})
