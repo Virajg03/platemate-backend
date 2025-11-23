@@ -25,6 +25,7 @@ import com.platemate.enums.ImageType;
 import com.platemate.exception.ForbiddenException;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.Category;
+import com.platemate.model.Image;
 import com.platemate.model.MenuItem;
 import com.platemate.model.TiffinProvider;
 import com.platemate.model.User;
@@ -91,9 +92,20 @@ public class MenuItemController {
         item.setIsDeleted(false);
         MenuItem saved = menuItemRepository.save(item);
         if (image != null && !image.isEmpty()) {
-            imageService.saveImage(image, ImageType.PRODUCT, saved.getId());
+            try {
+                Image savedImage = imageService.saveImage(image, ImageType.PRODUCT, saved.getId());
+                // Reload menu item with image after saving
+                saved = menuItemService.findByIdWithExtras(saved.getId()).orElse(saved);
+            } catch (Exception e) {
+                // Log the error but don't fail the request
+                System.err.println("Error saving menu item image: " + e.getMessage());
+                e.printStackTrace();
+                // Still load extras even if image save failed
+                menuItemService.loadMenuItemExtras(saved);
+            }
+        } else {
+            menuItemService.loadMenuItemExtras(saved);
         }
-        menuItemService.loadMenuItemExtras(saved);
         return ResponseEntity.ok(toResponse(saved));
     }
 
@@ -143,9 +155,20 @@ public class MenuItemController {
         if (data.getIsAvailable() != null) item.setIsAvailable(data.getIsAvailable());
         MenuItem saved = menuItemRepository.save(item);
         if (image != null && !image.isEmpty()) {
-            imageService.saveImage(image, ImageType.PRODUCT, saved.getId());
+            try {
+                Image savedImage = imageService.saveImage(image, ImageType.PRODUCT, saved.getId());
+                // Reload menu item with image after saving
+                saved = menuItemService.findByIdWithExtras(saved.getId()).orElse(saved);
+            } catch (Exception e) {
+                // Log the error but don't fail the request
+                System.err.println("Error saving menu item image: " + e.getMessage());
+                e.printStackTrace();
+                // Still load extras even if image save failed
+                menuItemService.loadMenuItemExtras(saved);
+            }
+        } else {
+            menuItemService.loadMenuItemExtras(saved);
         }
-        menuItemService.loadMenuItemExtras(saved);
         return ResponseEntity.ok(toResponse(saved));
     }
 

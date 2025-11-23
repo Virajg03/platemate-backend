@@ -49,42 +49,49 @@ public class MenuItemService {
     }
 
     // Customer-facing methods with pagination
+    @Transactional(readOnly = true)
     public Page<MenuItem> getAvailableMenuItems(Pageable pageable) {
         Page<MenuItem> page = menuItemRepository.findAvailableMenuItems(pageable);
         page.getContent().forEach(this::loadExtras);
         return page;
     }
 
+    @Transactional(readOnly = true)
     public Page<MenuItem> getAvailableMenuItemsByProvider(Long providerId, Pageable pageable) {
         Page<MenuItem> page = menuItemRepository.findAvailableMenuItemsByProvider(providerId, pageable);
         page.getContent().forEach(this::loadExtras);
         return page;
     }
 
+    @Transactional(readOnly = true)
     public Page<MenuItem> getAvailableMenuItemsByCategory(Long categoryId, Pageable pageable) {
         Page<MenuItem> page = menuItemRepository.findAvailableMenuItemsByCategory(categoryId, pageable);
         page.getContent().forEach(this::loadExtras);
         return page;
     }
 
+    @Transactional(readOnly = true)
     public Page<MenuItem> getAvailableMenuItemsByMealType(MealType mealType, Pageable pageable) {
         Page<MenuItem> page = menuItemRepository.findAvailableMenuItemsByMealType(mealType, pageable);
         page.getContent().forEach(this::loadExtras);
         return page;
     }
 
+    @Transactional(readOnly = true)
     public Page<MenuItem> searchAvailableMenuItems(String searchTerm, Pageable pageable) {
         Page<MenuItem> page = menuItemRepository.searchAvailableMenuItems(searchTerm, pageable);
         page.getContent().forEach(this::loadExtras);
         return page;
     }
 
+    @Transactional(readOnly = true)
     public Page<MenuItem> getAvailableMenuItemsByProviderAndCategory(Long providerId, Long categoryId, Pageable pageable) {
         Page<MenuItem> page = menuItemRepository.findAvailableMenuItemsByProviderAndCategory(providerId, categoryId, pageable);
         page.getContent().forEach(this::loadExtras);
         return page;
     }
 
+    @Transactional(readOnly = true)
     public MenuItem getAvailableMenuItemById(Long itemId) {
         MenuItem item = menuItemRepository.findAvailableMenuItemById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found or not available"));
@@ -92,12 +99,29 @@ public class MenuItemService {
         return item;
     }
 
-    // ---------------- Load product images ----------------
+    // ---------------- Load product images ---------------- 
     @Transactional(readOnly = true)
     private void loadExtras(MenuItem menuItem) {
         List<com.platemate.model.Image> images = imageRepository.findAllByImageTypeAndOwnerId(
                 ImageType.PRODUCT, menuItem.getId());
+        // Explicitly access base64Data to force loading within transaction
+        images.forEach(image -> {
+            String base64 = image.getBase64Data();
+            if (base64 != null) {
+                // Force load by accessing the data
+                base64.length();
+            }
+        });
         menuItem.setImages(images);
+    }
+    
+    // Method to find menu item by ID and load extras (for provider's own items)
+    @Transactional(readOnly = true)
+    public java.util.Optional<MenuItem> findByIdWithExtras(Long id) {
+        return menuItemRepository.findById(id).map(item -> {
+            loadExtras(item);
+            return item;
+        });
     }
 
     // Public method to load extras for a menu item (used by controllers)

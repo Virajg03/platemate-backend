@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,6 +30,7 @@ public class CustomerMenuItemController {
      * Query params: page (default 0), size (default 20), sort (default "id,asc")
      */
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<MenuItemDtos.PaginatedResponse<MenuItemDtos.CustomerResponse>> getAllMenuItems(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
@@ -53,6 +55,7 @@ public class CustomerMenuItemController {
      * Get menu items by provider ID with pagination
      */
     @GetMapping("/provider/{providerId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<MenuItemDtos.PaginatedResponse<MenuItemDtos.CustomerResponse>> getMenuItemsByProvider(
             @PathVariable Long providerId,
             @RequestParam(defaultValue = "0") int page,
@@ -78,6 +81,7 @@ public class CustomerMenuItemController {
      * Get menu items by category ID with pagination
      */
     @GetMapping("/category/{categoryId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<MenuItemDtos.PaginatedResponse<MenuItemDtos.CustomerResponse>> getMenuItemsByCategory(
             @PathVariable Long categoryId,
             @RequestParam(defaultValue = "0") int page,
@@ -103,6 +107,7 @@ public class CustomerMenuItemController {
      * Get menu items by meal type with pagination
      */
     @GetMapping("/meal-type/{mealType}")
+    @Transactional(readOnly = true)
     public ResponseEntity<MenuItemDtos.PaginatedResponse<MenuItemDtos.CustomerResponse>> getMenuItemsByMealType(
             @PathVariable MealType mealType,
             @RequestParam(defaultValue = "0") int page,
@@ -128,6 +133,7 @@ public class CustomerMenuItemController {
      * Search menu items by name or description with pagination
      */
     @GetMapping("/search")
+    @Transactional(readOnly = true)
     public ResponseEntity<MenuItemDtos.PaginatedResponse<MenuItemDtos.CustomerResponse>> searchMenuItems(
             @RequestParam String q,
             @RequestParam(defaultValue = "0") int page,
@@ -153,6 +159,7 @@ public class CustomerMenuItemController {
      * Get menu items by provider and category with pagination
      */
     @GetMapping("/provider/{providerId}/category/{categoryId}")
+    @Transactional(readOnly = true)
     public ResponseEntity<MenuItemDtos.PaginatedResponse<MenuItemDtos.CustomerResponse>> getMenuItemsByProviderAndCategory(
             @PathVariable Long providerId,
             @PathVariable Long categoryId,
@@ -180,6 +187,7 @@ public class CustomerMenuItemController {
      * Get a single menu item by ID
      */
     @GetMapping("/{id}")
+    @Transactional(readOnly = true)
     public ResponseEntity<MenuItemDtos.CustomerResponse> getMenuItemById(@PathVariable Long id) {
         MenuItem menuItem = menuItemService.getAvailableMenuItemById(id);
         return ResponseEntity.ok(toCustomerResponse(menuItem));
@@ -210,14 +218,20 @@ public class CustomerMenuItemController {
             }
         }
         
-        // Map images to base64 lists
+        // Map images to base64 lists - access base64Data within transaction
         if (item.getImages() != null && !item.getImages().isEmpty()) {
-            java.util.List<String> base64List = item.getImages().stream()
-                    .map(com.platemate.model.Image::getBase64Data)
-                    .toList();
-            java.util.List<String> fileTypeList = item.getImages().stream()
-                    .map(com.platemate.model.Image::getFileType)
-                    .toList();
+            java.util.List<String> base64List = new java.util.ArrayList<>();
+            java.util.List<String> fileTypeList = new java.util.ArrayList<>();
+            
+            for (com.platemate.model.Image image : item.getImages()) {
+                // Explicitly access base64Data to ensure it's loaded within transaction
+                String base64 = image.getBase64Data();
+                if (base64 != null) {
+                    base64List.add(base64);
+                    fileTypeList.add(image.getFileType());
+                }
+            }
+            
             response.setImageBase64List(base64List);
             response.setImageFileTypeList(fileTypeList);
         }
