@@ -82,7 +82,19 @@ public class SessionManager {
      */
     public void setProfileComplete(boolean isComplete) {
         editor.putBoolean(KEY_PROFILE_COMPLETE, isComplete);
-        editor.apply();
+        editor.commit(); // Use commit() instead of apply() for immediate write
+    }
+    
+    // Verify profile complete status was saved
+    public boolean verifyProfileComplete() {
+        boolean saved = prefs.getBoolean(KEY_PROFILE_COMPLETE, false);
+        if (!saved) {
+            // Retry saving
+            editor.putBoolean(KEY_PROFILE_COMPLETE, true);
+            editor.commit();
+            return prefs.getBoolean(KEY_PROFILE_COMPLETE, false);
+        }
+        return true;
     }
 
     /** Get stored auth token (may be null). */

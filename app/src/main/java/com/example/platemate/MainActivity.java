@@ -5,16 +5,21 @@ import android.os.Bundle;
 import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private SessionManager sessionManager;
+    private ApiInterface apiInterface;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         sessionManager = new SessionManager(this);
+        apiInterface = RetrofitClient.getInstance(this).getApi();
 
         // If not logged in -> go to Login
         if (!sessionManager.isLoggedIn()) {
@@ -47,13 +52,9 @@ public class MainActivity extends AppCompatActivity {
         Intent intent;
         switch (role) {
             case "Provider":
-                if (!sessionManager.isProfileComplete()) {
-                    intent = new Intent(this, ProviderDetailsActivity.class);
-                } else {
-                    intent = new Intent(this, ProviderDashboardActivity.class);
-                }
-                break;
-
+                // Always check onboarding status from API, not local flag
+                checkProviderOnboardingStatus();
+                return; // Don't navigate yet, wait for API response
             case "Delivery Partner":
                 // TODO: create DeliveryPartnerActivity when needed
                 intent = new Intent(this, CustomerHomeActivity.class);
@@ -67,5 +68,40 @@ public class MainActivity extends AppCompatActivity {
 
         startActivity(intent);
         finish();
+    }
+
+    private void checkProviderOnboardingStatus() {
+        Call<ProfileStatusResponse> call = apiInterface.checkProfileComplete();
+        call.enqueue(new Callback<ProfileStatusResponse>() {
+            @Override
+            public void onResponse(Call<ProfileStatusResponse> call, Response<ProfileStatusResponse> response) {
+                Intent intent;
+                if (response.isSuccessful() && response.body() != null) {
+                    boolean isComplete = response.body().getIsComplete();
+                    if (!isComplete) {
+                        // Force show ProviderDetailsActivity if onboarding not complete
+                        intent = new Intent(MainActivity.this, ProviderDetailsActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    } else {
+                        intent = new Intent(MainActivity.this, ProviderDashboardActivity.class);
+                    }
+                } else {
+                    // On error, assume onboarding needed
+                    intent = new Intent(MainActivity.this, ProviderDetailsActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                }
+                startActivity(intent);
+                finish();
+            }
+
+            @Override
+            public void onFailure(Call<ProfileStatusResponse> call, Throwable t) {
+                // On failure, force onboarding
+                Intent intent = new Intent(MainActivity.this, ProviderDetailsActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
+        });
     }
 }

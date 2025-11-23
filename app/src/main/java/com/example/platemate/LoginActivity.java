@@ -143,16 +143,18 @@ public class LoginActivity extends AppCompatActivity {
             public void onResponse(Call<ProfileStatusResponse> call, Response<ProfileStatusResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     boolean isComplete = response.body().getIsComplete();
+                    // If onboarding is not complete, force show ProviderDetailsActivity
                     if (!isComplete) {
-                        // Redirect to provider details form
                         Intent intent = new Intent(LoginActivity.this, ProviderDetailsActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                         startActivity(intent);
                     } else {
                         navigateToMainActivity();
                     }
                 } else {
-                    // If API fails, assume profile incomplete for safety
+                    // If API fails, assume profile incomplete for safety - force onboarding
                     Intent intent = new Intent(LoginActivity.this, ProviderDetailsActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
                 }
                 finish();
@@ -160,8 +162,9 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<ProfileStatusResponse> call, Throwable t) {
-                // On failure, redirect to provider details form
+                // On failure, redirect to provider details form - force onboarding
                 Intent intent = new Intent(LoginActivity.this, ProviderDetailsActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             }

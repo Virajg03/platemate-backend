@@ -85,7 +85,8 @@
                     android:layout_marginBottom="16dp"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                     app:boxStrokeColor="@android:color/transparent"
-                    app:boxBackgroundColor="@android:color/transparent">
+                    app:boxBackgroundColor="@android:color/transparent"
+                    app:endIconMode="dropdown_menu">
 
                     <AutoCompleteTextView
                         android:id="@+id/etCategory"
@@ -96,30 +97,31 @@
                         android:padding="16dp"
                         android:inputType="none"
                         android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:focusable="false"
+                        android:focusableInTouchMode="true"
+                        android:clickable="true" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <EditText
-                    android:id="@+id/etQuantity"
+                <Spinner
+                    android:id="@+id/spMealType"
                     android:layout_width="match_parent"
                     android:layout_height="60dp"
                     android:layout_marginBottom="16dp"
-                    android:hint="Available Quantity *"
                     android:background="@drawable/neubrutal_edittext"
-                    android:padding="16dp"
-                    android:inputType="number"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
+                    android:padding="16dp" />
 
                 <EditText
-                    android:id="@+id/etImageUrl"
+                    android:id="@+id/etIngredients"
                     android:layout_width="match_parent"
-                    android:layout_height="60dp"
+                    android:layout_height="120dp"
                     android:layout_marginBottom="24dp"
-                    android:hint="Image URL (Optional)"
+                    android:hint="Ingredients *"
                     android:background="@drawable/neubrutal_edittext"
                     android:padding="16dp"
-                    android:inputType="textUri"
+                    android:gravity="top"
+                    android:inputType="textMultiLine"
+                    android:minLines="3"
                     android:textSize="16sp" />
 
                 <Button

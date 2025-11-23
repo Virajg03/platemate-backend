@@ -28,6 +28,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -55,6 +56,9 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     private FrameLayout fragmentContainer;
     private NestedScrollView dashboardScrollView;
     private boolean isDashboardVisible = true;
+    
+    // Request code for activity result
+    private static final int REQUEST_CODE_EDIT_PROFILE = 1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,6 +89,16 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         
         // Setup bottom navigation
         setupBottomNavigation();
+        
+        // Check if profile was just completed
+        boolean profileJustCompleted = getIntent().getBooleanExtra("profileJustCompleted", false);
+        if (profileJustCompleted) {
+            // Show welcome message after a short delay
+            new android.os.Handler().postDelayed(() -> {
+                Toast.makeText(this, "Welcome! Your profile is now complete. Start adding products!", 
+                    Toast.LENGTH_LONG).show();
+            }, 500);
+        }
         
         // Load provider details and products
         loadProviderDetails();
@@ -149,16 +163,29 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     private void updateFragmentContainerMargin(int systemBarBottom) {
         if (bottomNavigationView != null && fragmentContainer != null) {
             bottomNavigationView.post(() -> {
-                int bottomNavHeight = bottomNavigationView.getHeight();
-                if (bottomNavHeight == 0) {
-                    // If height not measured yet, use default
-                    bottomNavHeight = 60;
+                try {
+                    int bottomNavHeight = bottomNavigationView.getHeight();
+                    if (bottomNavHeight == 0) {
+                        // If height not measured yet, use default
+                        bottomNavHeight = 60;
+                    }
+                    
+                    // Use ViewGroup.MarginLayoutParams instead of FrameLayout.LayoutParams
+                    // This works for both FrameLayout and CoordinatorLayout parent containers
+                    ViewGroup.MarginLayoutParams params = 
+                        (ViewGroup.MarginLayoutParams) fragmentContainer.getLayoutParams();
+                    
+                    if (params != null) {
+                        params.bottomMargin = bottomNavHeight + systemBarBottom;
+                        fragmentContainer.setLayoutParams(params);
+                    }
+                } catch (ClassCastException e) {
+                    // Log error but don't crash - layout params might be of unexpected type
+                    e.printStackTrace();
+                } catch (Exception e) {
+                    // Catch any other exceptions to prevent crashes
+                    e.printStackTrace();
                 }
-                
-                FrameLayout.LayoutParams params = 
-                    (FrameLayout.LayoutParams) fragmentContainer.getLayoutParams();
-                params.bottomMargin = bottomNavHeight + systemBarBottom;
-                fragmentContainer.setLayoutParams(params);
             });
         }
     }
@@ -170,10 +197,10 @@ public class ProviderDashboardActivity extends AppCompatActivity {
             startActivity(intent);
         });
         
-        // Edit Profile click listener
+        // Edit Profile click listener - use startActivityForResult for better data refresh
         cardEditProfile.setOnClickListener(v -> {
             Intent intent = new Intent(ProviderDashboardActivity.this, ProviderDetailsActivity.class);
-            startActivity(intent);
+            startActivityForResult(intent, REQUEST_CODE_EDIT_PROFILE);
         });
         
         // Logout click listener
@@ -266,14 +293,14 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     }
 
     private void loadProviderDetails() {
-        Call<ProviderDetails> call = apiInterface.getProviderDetails();
-        call.enqueue(new Callback<ProviderDetails>() {
+        Call<Map<String, Object>> call = apiInterface.getProviderDetails();
+        call.enqueue(new Callback<Map<String, Object>>() {
             @Override
-            public void onResponse(Call<ProviderDetails> call, Response<ProviderDetails> response) {
+            public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    ProviderDetails details = response.body();
-                    if (details.getBusinessName() != null && !details.getBusinessName().isEmpty()) {
-                        tvBusinessName.setText(details.getBusinessName());
+                    Map<String, Object> details = response.body();
+                    if (details.get("businessName") != null && !details.get("businessName").toString().isEmpty()) {
+                        tvBusinessName.setText(details.get("businessName").toString());
                     } else {
                         tvBusinessName.setText("My Tiffin Service");
                     }
@@ -287,7 +314,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<ProviderDetails> call, Throwable t) {
+            public void onFailure(Call<Map<String, Object>> call, Throwable t) {
                 // Use default or username if API fails
                 String username = sessionManager.getUsername();
                 if (username != null) {
@@ -300,8 +327,64 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // Check onboarding status on resume
+        checkOnboardingStatus();
         loadProviderDetails(); // Refresh provider details
         loadProducts(); // Refresh when returning from Add/Edit screen
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_EDIT_PROFILE && resultCode == RESULT_OK) {
+            // Profile was updated, refresh data immediately
+            loadProviderDetails();
+            loadProducts();
+            // Show success message (optional, since ProviderDetailsActivity already shows it)
+            // Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void checkOnboardingStatus() {
+        // Only check if user is a provider
+        String role = sessionManager.getRole();
+        if (!"Provider".equals(role)) {
+            return; // Not a provider, skip check
+        }
+        
+        Call<ProfileStatusResponse> call = apiInterface.checkProfileComplete();
+        call.enqueue(new Callback<ProfileStatusResponse>() {
+            @Override
+            public void onResponse(Call<ProfileStatusResponse> call, Response<ProfileStatusResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    ProfileStatusResponse status = response.body();
+                    boolean isComplete = Boolean.TRUE.equals(status.getIsComplete());
+                    boolean isOnboarding = Boolean.TRUE.equals(status.getIsOnboarding());
+                    
+                    // Update session flag to match backend
+                    sessionManager.setProfileComplete(isComplete);
+                    
+                    if (!isComplete || isOnboarding) {
+                        // Profile not complete - force redirect to complete profile
+                        Intent intent = new Intent(ProviderDashboardActivity.this, ProviderDetailsActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                    }
+                    // If complete, just continue - don't redirect
+                }
+                // If API fails, don't redirect - just log (user might have network issues)
+                // Better UX: assume profile is complete if API fails
+            }
+
+            @Override
+            public void onFailure(Call<ProfileStatusResponse> call, Throwable t) {
+                // On failure, don't block user - just log
+                // Only redirect if we're certain profile is incomplete
+                // For now, assume profile is complete if API fails (better UX)
+                // User can still access dashboard and complete profile later if needed
+            }
+        });
     }
 
     private void loadProducts() {
@@ -309,23 +392,62 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         call.enqueue(new Callback<List<Product>>() {
             @Override
             public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    productList.clear();
-                    productList.addAll(response.body());
-                    productAdapter.notifyDataSetChanged();
-                    updateProductCount();
-                    updateEmptyState();
-                } else {
+                try {
+                    if (response.isSuccessful()) {
+                        List<Product> products = response.body();
+                        if (products != null) {
+                            productList.clear();
+                            productList.addAll(products);
+                            productAdapter.notifyDataSetChanged();
+                            updateProductCount();
+                            updateEmptyState();
+                        } else {
+                            // Empty response - no products yet
+                            productList.clear();
+                            productAdapter.notifyDataSetChanged();
+                            updateProductCount();
+                            updateEmptyState();
+                        }
+                    } else {
+                        // Handle error response
+                        String errorMessage = "Failed to load products";
+                        if (response.code() == 403) {
+                            errorMessage = "Provider not verified yet. Please wait for admin approval.";
+                        } else if (response.code() == 404) {
+                            errorMessage = "Products endpoint not found";
+                        } else if (response.code() == 401) {
+                            errorMessage = "Authentication required. Please login again.";
+                        } else if (response.errorBody() != null) {
+                            try {
+                                String errorBody = response.errorBody().string();
+                                if (errorBody != null && !errorBody.isEmpty()) {
+                                    errorMessage = errorBody;
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        Toast.makeText(ProviderDashboardActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                        updateEmptyState();
+                    }
+                } catch (Exception e) {
+                    // Catch any parsing or other exceptions to prevent app crash
+                    e.printStackTrace();
                     Toast.makeText(ProviderDashboardActivity.this, 
-                        "Failed to load products", Toast.LENGTH_SHORT).show();
+                        "Error loading products: " + (e.getMessage() != null ? e.getMessage() : "Unknown error"), 
+                        Toast.LENGTH_SHORT).show();
                     updateEmptyState();
                 }
             }
 
             @Override
             public void onFailure(Call<List<Product>> call, Throwable t) {
-                Toast.makeText(ProviderDashboardActivity.this, 
-                    "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                // Network error or other failure - don't crash the app
+                String errorMessage = "Network error. Please check your connection.";
+                if (t.getMessage() != null && !t.getMessage().isEmpty()) {
+                    errorMessage = "Error: " + t.getMessage();
+                }
+                Toast.makeText(ProviderDashboardActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
                 updateEmptyState();
             }
         });

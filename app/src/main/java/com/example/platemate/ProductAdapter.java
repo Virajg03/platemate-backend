@@ -55,16 +55,52 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
         }
 
         public void bind(Product product) {
-            tvName.setText(product.getName());
-            tvDescription.setText(product.getDescription());
-            tvPrice.setText("₹" + product.getPrice());
-            tvCategory.setText(product.getCategory());
-            tvQuantity.setText("Qty: " + product.getQuantity());
+            // Safely handle name - use "Unnamed Product" if null
+            String name = product.getName();
+            if (name == null || name.isEmpty()) {
+                name = "Unnamed Product";
+            }
+            tvName.setText(name);
             
-            // Load image using Glide
-            if (product.getImageUrl() != null && !product.getImageUrl().isEmpty()) {
+            // Safely handle description - use empty string if null
+            String description = product.getDescription();
+            if (description == null) {
+                description = "";
+            }
+            tvDescription.setText(description);
+            
+            // Safely handle price - use 0.0 if null
+            Double price = product.getPrice();
+            if (price == null) {
+                price = 0.0;
+            }
+            tvPrice.setText("₹" + price);
+            
+            // Safely handle category - use "N/A" if null
+            String category = product.getCategory();
+            if (category == null || category.isEmpty()) {
+                category = "N/A";
+            }
+            tvCategory.setText(category);
+            
+            // Safely handle quantity - use 0 if null
+            Integer quantity = product.getQuantity();
+            if (quantity == null) {
+                quantity = 0;
+            }
+            tvQuantity.setText("Qty: " + quantity);
+            
+            // Load image using Glide - handle null and construct full URL if needed
+            String imageUrl = product.getImageUrl();
+            if (imageUrl != null && !imageUrl.isEmpty()) {
+                // Construct full URL if it's a relative path
+                if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
+                    // Get base URL from RetrofitClient
+                    String baseUrl = "https://trypanosomal-annalise-stenographic.ngrok-free.dev";
+                    imageUrl = baseUrl + imageUrl;
+                }
                 Glide.with(itemView.getContext())
-                    .load(product.getImageUrl())
+                    .load(imageUrl)
                     .placeholder(R.drawable.neubrutal_card)
                     .error(R.drawable.neubrutal_card)
                     .into(ivProduct);

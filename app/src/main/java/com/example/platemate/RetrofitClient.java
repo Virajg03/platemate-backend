@@ -12,8 +12,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class RetrofitClient {
-    private static final String BASE_URL = "http://10.0.2.2:8080";
-//    private static final String BASE_URL = "https://d08a51180962.ngrok-free.app";
+//    private static final String BASE_URL = "http://10.0.2.2:8080";
+    private static final String BASE_URL = "https://trypanosomal-annalise-stenographic.ngrok-free.dev";
     private static RetrofitClient instance;
     private Retrofit retrofit;
     private SessionManager sessionManager;

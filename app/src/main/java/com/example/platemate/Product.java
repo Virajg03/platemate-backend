@@ -2,14 +2,14 @@ package com.example.platemate;
 
 public class Product {
     private Long id;
-    private String name;
-    private String description;
-    private Double price;
-    private String imageUrl;
-    private String category;
-    private Boolean isAvailable;
-    private Integer quantity;
-    private String providerId;
+    private String name = "";
+    private String description = "";
+    private Double price = 0.0;
+    private String imageUrl = "";
+    private String category = "";
+    private Boolean isAvailable = true;
+    private Integer quantity = 0;
+    private String providerId = "";
 
     public Product() {}
 

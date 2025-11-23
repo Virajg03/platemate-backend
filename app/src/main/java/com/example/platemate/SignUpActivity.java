@@ -255,11 +255,11 @@ public class SignUpActivity extends AppCompatActivity {
         String password = passwordEditText.getText().toString().trim();
         String confirmPassword = confirmPasswordEditText.getText().toString().trim();
         String phone = phoneEditText.getText().toString().trim();
-        String role = autoCompleteTextView.getText().toString().trim();
+        String selectedRole = autoCompleteTextView.getText().toString().trim();
 
         // Validation - Check empty fields
         if (username.isEmpty() || email.isEmpty() || password.isEmpty() || 
-            confirmPassword.isEmpty() || phone.isEmpty() || role.isEmpty()) {
+            confirmPassword.isEmpty() || phone.isEmpty() || selectedRole.isEmpty()) {
             Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -296,15 +296,16 @@ public class SignUpActivity extends AppCompatActivity {
             return;
         }
 
-        // Role validation
-        if (!role.equals("Customer") && !role.equals("Provider") && !role.equals("Delivery Partner")) {
-            Toast.makeText(this, "Please select a valid role", Toast.LENGTH_SHORT).show();
+        // Map user-friendly dropdown selection to backend enum format
+        String backendRole = mapRoleToBackendFormat(selectedRole);
+        if (backendRole == null) {
+            Toast.makeText(this, "Please select a valid profile type", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Create signup request
+        // Create signup request with properly formatted role
         SignUpInputDetails signUpDetails = new SignUpInputDetails(
-            username, email, password, phone, role
+            username, email, password, phone, backendRole
         );
 
         Call<LoginUserDetails> call = apiInterface.signup(signUpDetails);
@@ -320,8 +321,15 @@ public class SignUpActivity extends AppCompatActivity {
                     startActivity(intent);
                     finish();
                 } else {
-                    Toast.makeText(SignUpActivity.this, 
-                        "Registration failed. Please try again.", Toast.LENGTH_SHORT).show();
+                    String errorMsg = "Registration failed";
+                    if (response.errorBody() != null) {
+                        try {
+                            errorMsg = response.errorBody().string();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    Toast.makeText(SignUpActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -331,5 +339,28 @@ public class SignUpActivity extends AppCompatActivity {
                     "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    /**
+     * Maps user-friendly dropdown values to backend Role enum format
+     * 
+     * @param selectedRole The role selected from dropdown (e.g., "Customer", "Provider", "Delivery Partner")
+     * @return Backend enum format (e.g., "ROLE_CUSTOMER", "ROLE_PROVIDER", "DELIVERY_PARTNER") or null if invalid
+     */
+    private String mapRoleToBackendFormat(String selectedRole) {
+        if (selectedRole == null || selectedRole.trim().isEmpty()) {
+            return null;
+        }
+        
+        switch (selectedRole.trim()) {
+            case "Customer":
+                return "ROLE_CUSTOMER";
+            case "Provider":
+                return "ROLE_PROVIDER";
+            case "Delivery Partner":
+                return "DELIVERY_PARTNER";
+            default:
+                return null;
+        }
     }
 }
