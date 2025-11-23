@@ -42,7 +42,7 @@ public class TiffinProvider extends BaseEntity {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
-    @Column(name = "is_onboarding", nullable = false)
+    @Column(name = "is_onboarding")
     private Boolean isOnboarding = false;
 
     @Transient
