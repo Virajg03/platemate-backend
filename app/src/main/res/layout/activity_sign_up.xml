@@ -68,7 +68,7 @@
                 android:background="@drawable/custom_edittext"
                 android:drawableLeft="@drawable/mail_icon"
                 android:drawablePadding="3dp"
-                android:hint="User Name"
+                android:hint="Email"
                 android:inputType="textEmailAddress"
                 android:padding="8dp"
                 android:textColorHighlight="@color/cardview_dark_background" />
@@ -107,7 +107,7 @@
                 android:background="@drawable/custom_edittext"
                 android:drawableLeft="@drawable/phone_icon"
                 android:drawablePadding="3dp"
-                android:hint="User Name"
+                android:hint="Mobile No"
                 android:inputType="phone"
                 android:padding="8dp"
                 android:textColorHighlight="@color/cardview_dark_background" />

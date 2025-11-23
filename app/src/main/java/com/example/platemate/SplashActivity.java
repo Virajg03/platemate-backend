@@ -8,7 +8,9 @@ import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -29,13 +31,11 @@ public class SplashActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         SessionManager sessionManager = new SessionManager(this);
-
+        Log.d("SplashActivity", "Session Manager:================");
         // Check if user is logged in
         if (sessionManager.isLoggedIn()) {
-            // User is logged in, skip splash and go to MainActivity
-            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
-                navigateToMainActivity();
-            }, 2000); // 2 seconds delay
+            // User is logged in, navigate directly to appropriate activity (no delay)
+            navigateToHomeActivity(sessionManager);
         } else {
             // User is not logged in, show splash screen with buttons
             setupSignInClickableText();
@@ -44,8 +44,37 @@ public class SplashActivity extends AppCompatActivity {
         }
     }
 
-    private void navigateToMainActivity() {
-        Intent intent = new Intent(this, MainActivity.class);
+    private void navigateToHomeActivity(SessionManager sessionManager) {
+        String role = sessionManager.getRole();
+        Intent intent;
+        
+        // Navigate based on user role
+        if (role == null || role.trim().isEmpty()) {
+            // No role set, go to login
+            intent = new Intent(this, LoginActivity.class);
+        } else {
+            switch (role) {
+                case "Provider":
+                    if (!sessionManager.isProfileComplete()) {
+                        intent = new Intent(this, ProviderDetailsActivity.class);
+                    } else {
+                        intent = new Intent(this, ProviderDashboardActivity.class);
+                    }
+                    break;
+                    
+                case "Delivery Partner":
+                    // TODO: create DeliveryPartnerActivity when needed
+                    intent = new Intent(this, CustomerHomeActivity.class);
+                    break;
+                    
+                case "Customer":
+                default:
+                    // For customers, go directly to customer home
+                    intent = new Intent(this, CustomerHomeActivity.class);
+                    break;
+            }
+        }
+        
         startActivity(intent);
         finish();
     }

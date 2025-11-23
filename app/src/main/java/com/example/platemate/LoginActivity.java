@@ -131,7 +131,7 @@ public class LoginActivity extends AppCompatActivity {
                         .setMessage(t.toString())  // shows full exception
                         .setPositiveButton("OK", null)
                         .show();
-//                Toast.makeText(LoginActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -1,5 +1,8 @@
 package com.example.platemate;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -69,17 +72,34 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         }
 
         public void bind(Category category) {
-            tvCategoryName.setText(category.getName());
+            tvCategoryName.setText(category.getCategoryName());
 
-            // Load icon from resource or URL
-            if (category.getIconResId() != 0) {
-                ivCategoryIcon.setImageResource(category.getIconResId());
+            // Priority: Base64 image > Icon URL > Resource ID > Default
+            if (category.getImageBase64() != null && !category.getImageBase64().isEmpty()) {
+                // Load base64 image
+                try {
+                    byte[] decodedBytes = Base64.decode(category.getImageBase64(), Base64.DEFAULT);
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                    if (bitmap != null) {
+                        ivCategoryIcon.setImageBitmap(bitmap);
+                    } else {
+                        // If bitmap decode fails, fall back to default
+                        ivCategoryIcon.setImageResource(android.R.drawable.ic_menu_gallery);
+                    }
+                } catch (Exception e) {
+                    // If base64 decode fails, fall back to default
+                    ivCategoryIcon.setImageResource(android.R.drawable.ic_menu_gallery);
+                }
             } else if (category.getIconUrl() != null && !category.getIconUrl().isEmpty()) {
+                // Load from URL using Glide
                 Glide.with(itemView.getContext())
                     .load(category.getIconUrl())
                     .placeholder(R.drawable.neubrutal_card)
                     .error(R.drawable.neubrutal_card)
                     .into(ivCategoryIcon);
+            } else if (category.getIconResId() != 0) {
+                // Load from resource ID
+                ivCategoryIcon.setImageResource(category.getIconResId());
             } else {
                 // Default icon
                 ivCategoryIcon.setImageResource(android.R.drawable.ic_menu_gallery);

@@ -45,4 +45,11 @@ public interface ApiInterface {
 
     @GET("/api/products/{id}")
     Call<Product> getProductById(@Path("id") Long id);
+
+    // Category endpoints
+    @GET("/api/categories")
+    Call<List<Category>> getCategories();
+
+    @GET("/api/categories/{id}")
+    Call<Category> getCategoryById(@Path("id") Long id);
 }

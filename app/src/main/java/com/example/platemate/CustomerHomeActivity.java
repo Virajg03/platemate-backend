@@ -11,12 +11,19 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import android.widget.FrameLayout;
+import android.widget.ScrollView;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -26,17 +33,24 @@ import java.util.List;
 public class CustomerHomeActivity extends AppCompatActivity {
     
     private TextView welcomeText, userNameText;
-    private ImageView logoutBtn, filterBtn, cartBtn, searchIcon;
+    private ImageView logoutBtn, cartBtn, searchIcon;
+    // private ImageView filterBtn; // Commented out - filter button is not in layout
     private EditText searchEditText;
     private RecyclerView bestFoodRecyclerView, categoryRecyclerView;
     private ProgressBar progressBarBestFood, progressBarCategory;
     private TextView todayBestFoodTitle, viewAllText, chooseCategoryTitle;
+    
+    private BottomNavigationView bottomNavigationView;
+    private ScrollView homeScrollView;
+    private FrameLayout fragmentContainer;
     
     private SessionManager sessionManager;
     private ApiInterface apiInterface;
     
     private BestFoodAdapter bestFoodAdapter;
     private CategoryAdapter categoryAdapter;
+    
+    private boolean isHomeVisible = true;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +69,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         
         initializeViews();
         setupClickListeners();
+        setupBottomNavigation();
         loadUserData();
         setupRecyclerViews();
         loadBestFoods();
@@ -65,7 +80,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
         welcomeText = findViewById(R.id.textView14);
         userNameText = findViewById(R.id.textView13);
         logoutBtn = findViewById(R.id.logoutbtn);
-        filterBtn = findViewById(R.id.filter);
         cartBtn = findViewById(R.id.cartbtn);
         searchIcon = findViewById(R.id.searchfilter);
         searchEditText = findViewById(R.id.editTextText);
@@ -76,18 +90,25 @@ public class CustomerHomeActivity extends AppCompatActivity {
         todayBestFoodTitle = findViewById(R.id.textView10);
         viewAllText = findViewById(R.id.textView11);
         chooseCategoryTitle = findViewById(R.id.textView12);
+        
+        bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        homeScrollView = findViewById(R.id.homeScrollView);
+        fragmentContainer = findViewById(R.id.fragmentContainer);
     }
     
     private void setupClickListeners() {
-        logoutBtn.setOnClickListener(v -> handleLogout());
+        logoutBtn.setOnClickListener(v -> showLogoutDialog());
         cartBtn.setOnClickListener(v -> {
             // TODO: Navigate to cart activity
             Toast.makeText(this, "Cart feature coming soon!", Toast.LENGTH_SHORT).show();
         });
-        filterBtn.setOnClickListener(v -> {
-            // TODO: Show filter dialog
-            Toast.makeText(this, "Filter feature coming soon!", Toast.LENGTH_SHORT).show();
-        });
+        // filterBtn is commented out in layout, so skip setting listener
+        // if (filterBtn != null) {
+        //     filterBtn.setOnClickListener(v -> {
+        //         // TODO: Show filter dialog
+        //         Toast.makeText(this, "Filter feature coming soon!", Toast.LENGTH_SHORT).show();
+        //     });
+        // }
         viewAllText.setOnClickListener(v -> {
             // TODO: Navigate to all foods activity
             Toast.makeText(this, "View all foods coming soon!", Toast.LENGTH_SHORT).show();
@@ -126,15 +147,22 @@ public class CustomerHomeActivity extends AppCompatActivity {
         });
         bestFoodRecyclerView.setAdapter(bestFoodAdapter);
         
-        // Setup category RecyclerView
-        categoryRecyclerView.setLayoutManager(
-            new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        );
+        // Setup category RecyclerView with Grid Layout (2 columns)
+        androidx.recyclerview.widget.GridLayoutManager gridLayoutManager = 
+            new androidx.recyclerview.widget.GridLayoutManager(this, 2);
+        categoryRecyclerView.setLayoutManager(gridLayoutManager);
         categoryAdapter = new CategoryAdapter(new ArrayList<>());
         categoryAdapter.setOnItemClickListener(category -> {
-            // TODO: Filter products by category
-            Toast.makeText(CustomerHomeActivity.this, 
-                "Selected category: " + category.getName(), Toast.LENGTH_SHORT).show();
+            // Filter products by category
+            if (category.getId() != null) {
+                // TODO: Navigate to filtered menu items or filter current list
+                Toast.makeText(CustomerHomeActivity.this, 
+                    "Selected category: " + category.getCategoryName(), Toast.LENGTH_SHORT).show();
+                // You can add navigation to a filtered product list here
+            } else {
+                Toast.makeText(CustomerHomeActivity.this, 
+                    "Selected category: " + category.getCategoryName(), Toast.LENGTH_SHORT).show();
+            }
         });
         categoryRecyclerView.setAdapter(categoryAdapter);
     }
@@ -180,37 +208,53 @@ public class CustomerHomeActivity extends AppCompatActivity {
         progressBarCategory.setVisibility(View.VISIBLE);
         categoryRecyclerView.setVisibility(View.GONE);
         
-        // TODO: Implement API call to get categories
-        // Call<List<Category>> call = apiInterface.getCategories();
-        // call.enqueue(new Callback<List<Category>>() {
-        //     @Override
-        //     public void onResponse(Call<List<Category>> call, Response<List<Category>> response) {
-        //         progressBarCategory.setVisibility(View.GONE);
-        //         categoryRecyclerView.setVisibility(View.VISIBLE);
-        //         if (response.isSuccessful() && response.body() != null) {
-        //             categoryAdapter.updateList(response.body());
-        //         }
-        //     }
-        //     @Override
-        //     public void onFailure(Call<List<Category>> call, Throwable t) {
-        //         progressBarCategory.setVisibility(View.GONE);
-        //         categoryRecyclerView.setVisibility(View.VISIBLE);
-        //         Toast.makeText(CustomerHomeActivity.this, "Failed to load categories", Toast.LENGTH_SHORT).show();
-        //     }
-        // });
-        
-        // Temporary: Load sample data for testing
-        List<Category> sampleCategories = new ArrayList<>();
-        sampleCategories.add(new Category("Pizza", android.R.drawable.ic_menu_gallery)); // Replace with actual icon
-        sampleCategories.add(new Category("Burger", android.R.drawable.ic_menu_gallery));
-        sampleCategories.add(new Category("Hotdog", android.R.drawable.ic_menu_gallery));
-        sampleCategories.add(new Category("Drink", android.R.drawable.ic_menu_gallery));
-        
-        categoryRecyclerView.postDelayed(() -> {
-            progressBarCategory.setVisibility(View.GONE);
-            categoryRecyclerView.setVisibility(View.VISIBLE);
-            categoryAdapter.updateList(sampleCategories);
-        }, 1000);
+        Call<List<Category>> call = apiInterface.getCategories();
+        call.enqueue(new Callback<List<Category>>() {
+            @Override
+            public void onResponse(Call<List<Category>> call, Response<List<Category>> response) {
+                progressBarCategory.setVisibility(View.GONE);
+                categoryRecyclerView.setVisibility(View.VISIBLE);
+                
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Category> categories = response.body();
+                    if (categories != null && !categories.isEmpty()) {
+                        categoryAdapter.updateList(categories);
+                    } else {
+                        // Show empty state or default categories
+                        showEmptyCategories();
+                    }
+                } else {
+                    Toast.makeText(CustomerHomeActivity.this, 
+                        "Failed to load categories", Toast.LENGTH_SHORT).show();
+                    showEmptyCategories();
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<List<Category>> call, Throwable t) {
+                progressBarCategory.setVisibility(View.GONE);
+                categoryRecyclerView.setVisibility(View.VISIBLE);
+                Toast.makeText(CustomerHomeActivity.this, 
+                    "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                showEmptyCategories();
+            }
+        });
+    }
+    
+    private void showEmptyCategories() {
+        // Show default/empty categories if API fails
+        List<Category> defaultCategories = new ArrayList<>();
+        defaultCategories.add(new Category("All", android.R.drawable.ic_menu_gallery));
+        categoryAdapter.updateList(defaultCategories);
+    }
+    
+    private void showLogoutDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("Logout")
+            .setMessage("Are you sure you want to logout?")
+            .setPositiveButton("Yes", (dialog, which) -> handleLogout())
+            .setNegativeButton("No", null)
+            .show();
     }
     
     private void handleLogout() {
@@ -230,5 +274,89 @@ public class CustomerHomeActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);
+    }
+    
+    private void setupBottomNavigation() {
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            
+            if (itemId == R.id.nav_home) {
+                showHome();
+                return true;
+            } else if (itemId == R.id.nav_orders) {
+                showOrdersFragment();
+                return true;
+            } else if (itemId == R.id.nav_profile) {
+                showProfileFragment();
+                return true;
+            }
+            return false;
+        });
+        
+        // Set Home as default selected item
+        bottomNavigationView.setSelectedItemId(R.id.nav_home);
+    }
+    
+    private void showHome() {
+        isHomeVisible = true;
+        homeScrollView.setVisibility(View.VISIBLE);
+        fragmentContainer.setVisibility(View.GONE);
+    }
+    
+    private void showOrdersFragment() {
+        isHomeVisible = false;
+        homeScrollView.setVisibility(View.GONE);
+        fragmentContainer.setVisibility(View.VISIBLE);
+        
+        // Update fragment container margin when showing fragment
+        ViewCompat.setOnApplyWindowInsetsListener(fragmentContainer, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            updateFragmentContainerMargin(systemBars.bottom);
+            return insets;
+        });
+        
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        
+        // Always replace to ensure correct fragment is shown when switching tabs
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.fragmentContainer, new CustomerOrdersFragment(), "orders");
+        transaction.commit();
+    }
+    
+    private void showProfileFragment() {
+        isHomeVisible = false;
+        homeScrollView.setVisibility(View.GONE);
+        fragmentContainer.setVisibility(View.VISIBLE);
+        
+        // Update fragment container margin when showing fragment
+        ViewCompat.setOnApplyWindowInsetsListener(fragmentContainer, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            updateFragmentContainerMargin(systemBars.bottom);
+            return insets;
+        });
+        
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        
+        // Always replace to ensure correct fragment is shown when switching tabs
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.fragmentContainer, new CustomerProfileFragment(), "profile");
+        transaction.commit();
+    }
+    
+    private void updateFragmentContainerMargin(int systemBarBottom) {
+        if (bottomNavigationView != null && fragmentContainer != null) {
+            bottomNavigationView.post(() -> {
+                int bottomNavHeight = bottomNavigationView.getHeight();
+                if (bottomNavHeight == 0) {
+                    // If height not measured yet, use default
+                    bottomNavHeight = 60;
+                }
+                
+                CoordinatorLayout.LayoutParams params = 
+                    (CoordinatorLayout.LayoutParams) fragmentContainer.getLayoutParams();
+                params.bottomMargin = bottomNavHeight + systemBarBottom;
+                fragmentContainer.setLayoutParams(params);
+            });
+        }
     }
 }
