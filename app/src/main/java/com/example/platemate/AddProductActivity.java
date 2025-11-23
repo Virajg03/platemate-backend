@@ -6,7 +6,6 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.gson.Gson;
 import okhttp3.MediaType;
@@ -126,17 +125,15 @@ public class AddProductActivity extends AppCompatActivity {
                         } else {
                             // No valid categories found
                             runOnUiThread(() -> {
-                                Toast.makeText(AddProductActivity.this, 
-                                    "No valid categories found. Please contact admin.", 
-                                    Toast.LENGTH_LONG).show();
+                                ToastUtils.showWarning(AddProductActivity.this, 
+                                    "No valid categories found. Please contact admin.");
                             });
                         }
                     } else {
                         // Empty response
                         runOnUiThread(() -> {
-                            Toast.makeText(AddProductActivity.this, 
-                                "No categories found. Please contact admin to add categories.", 
-                                Toast.LENGTH_LONG).show();
+                            ToastUtils.showWarning(AddProductActivity.this, 
+                                "No categories found. Please contact admin to add categories.");
                         });
                     }
                 } else {
@@ -160,7 +157,7 @@ public class AddProductActivity extends AppCompatActivity {
                     }
                     final String finalErrorMessage = errorMessage;
                     runOnUiThread(() -> {
-                        Toast.makeText(AddProductActivity.this, finalErrorMessage, Toast.LENGTH_SHORT).show();
+                        ToastUtils.showError(AddProductActivity.this, finalErrorMessage);
                     });
                 }
             }
@@ -172,7 +169,7 @@ public class AddProductActivity extends AppCompatActivity {
                     if (t.getMessage() != null && !t.getMessage().isEmpty()) {
                         errorMessage = "Error: " + t.getMessage();
                     }
-                    Toast.makeText(AddProductActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(AddProductActivity.this, errorMessage);
                 });
             }
         });
@@ -189,14 +186,14 @@ public class AddProductActivity extends AppCompatActivity {
         // Validate required fields
         if (name.isEmpty() || description.isEmpty() || priceStr.isEmpty() || 
             categoryName.isEmpty() || ingredients.isEmpty() || mealType == null) {
-            Toast.makeText(this, "Please fill all required fields", Toast.LENGTH_SHORT).show();
+            ToastUtils.showInfo(this, "Please fill all required fields");
             return;
         }
 
         // Get categoryId from category name
         Long categoryId = categoryNameToIdMap.get(categoryName);
         if (categoryId == null) {
-            Toast.makeText(this, "Please select a valid category", Toast.LENGTH_SHORT).show();
+            ToastUtils.showInfo(this, "Please select a valid category");
             return;
         }
 
@@ -239,13 +236,13 @@ public class AddProductActivity extends AppCompatActivity {
             // }
 
             // Make API call
-            Call<MenuItemResponse> call = apiInterface.createMenuItem(dataPart, imagePart);
+            Call<MenuItemResponse> call = apiInterface.createProviderMenuItem(dataPart, imagePart);
             call.enqueue(new Callback<MenuItemResponse>() {
                 @Override
                 public void onResponse(Call<MenuItemResponse> call, Response<MenuItemResponse> response) {
                     if (response.isSuccessful()) {
-                        Toast.makeText(AddProductActivity.this, 
-                            "Product added successfully!", Toast.LENGTH_SHORT).show();
+                        ToastUtils.showSuccess(AddProductActivity.this, 
+                            "Product added successfully!");
                         finish();
                     } else {
                         String errorMessage = "Failed to add product";
@@ -260,19 +257,18 @@ public class AddProductActivity extends AppCompatActivity {
                                 e.printStackTrace();
                             }
                         }
-                        Toast.makeText(AddProductActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                        ToastUtils.showError(AddProductActivity.this, errorMessage);
                     }
                 }
 
                 @Override
                 public void onFailure(Call<MenuItemResponse> call, Throwable t) {
-                    Toast.makeText(AddProductActivity.this, 
-                        "Error: " + (t.getMessage() != null ? t.getMessage() : "Network error"), 
-                        Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(AddProductActivity.this, 
+                        "Error: " + (t.getMessage() != null ? t.getMessage() : "Network error"));
                 }
             });
         } catch (NumberFormatException e) {
-            Toast.makeText(this, "Invalid price format", Toast.LENGTH_SHORT).show();
+            ToastUtils.showError(this, "Invalid price format");
         }
     }
 

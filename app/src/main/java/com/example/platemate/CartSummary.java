@@ -30,3 +30,4 @@ public class CartSummary {
     public void setGroupedByProvider(Map<Long, List<CartItem>> groupedByProvider) { this.groupedByProvider = groupedByProvider; }
 }
 
+

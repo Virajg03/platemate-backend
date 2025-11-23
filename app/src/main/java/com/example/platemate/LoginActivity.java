@@ -13,7 +13,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
@@ -92,7 +91,7 @@ public class LoginActivity extends AppCompatActivity {
         String password = passwordEditText.getText().toString().trim();
 
         if (username.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Please enter username and password", Toast.LENGTH_SHORT).show();
+            ToastUtils.showInfo(this, "Please enter username and password");
             return;
         }
 
@@ -112,7 +111,7 @@ public class LoginActivity extends AppCompatActivity {
                     SessionManager sessionManager = new SessionManager(LoginActivity.this);
                     sessionManager.saveLoginSession(token, refreshToken, role, username, userId);
 
-                    Toast.makeText(LoginActivity.this, "Login Successful!", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showSuccess(LoginActivity.this, "Login Successful!");
 
                     // Check if provider needs to fill details
                     if ("Provider".equals(role)) {
@@ -121,7 +120,7 @@ public class LoginActivity extends AppCompatActivity {
                         navigateToMainActivity();
                     }
                 } else {
-                    Toast.makeText(LoginActivity.this, "Invalid credentials!", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(LoginActivity.this, "Invalid credentials!");
                 }
             }
             @Override
@@ -131,7 +130,7 @@ public class LoginActivity extends AppCompatActivity {
                         .setMessage(t.toString())  // shows full exception
                         .setPositiveButton("OK", null)
                         .show();
-                Toast.makeText(LoginActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(LoginActivity.this, "Error: " + t.getMessage());
             }
         });
     }

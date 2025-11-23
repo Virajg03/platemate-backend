@@ -8,7 +8,6 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import retrofit2.Call;
@@ -151,15 +150,15 @@ public class ProviderDetailsActivity extends AppCompatActivity {
                     Map<String, Object> details = response.body();
                     populateFields(details);
                 } else {
-                    Toast.makeText(ProviderDetailsActivity.this, 
-                        "Failed to load profile details", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(ProviderDetailsActivity.this, 
+                        "Failed to load profile details");
                 }
             }
 
             @Override
             public void onFailure(Call<Map<String, Object>> call, Throwable t) {
-                Toast.makeText(ProviderDetailsActivity.this, 
-                    "Error loading profile: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(ProviderDetailsActivity.this, 
+                    "Error loading profile: " + t.getMessage());
             }
         });
     }
@@ -283,12 +282,12 @@ public class ProviderDetailsActivity extends AppCompatActivity {
             commissionRateStr.isEmpty() || zoneStr.isEmpty() ||
             street.isEmpty() || city.isEmpty() || state.isEmpty() || 
             zipCode.isEmpty()) {
-            Toast.makeText(this, "Please fill all required fields", Toast.LENGTH_SHORT).show();
+            ToastUtils.showInfo(this, "Please fill all required fields");
             return;
         }
 
         if (providesDelivery && deliveryRadiusStr.isEmpty()) {
-            Toast.makeText(this, "Please enter delivery radius", Toast.LENGTH_SHORT).show();
+            ToastUtils.showInfo(this, "Please enter delivery radius");
             return;
         }
 
@@ -327,9 +326,8 @@ public class ProviderDetailsActivity extends AppCompatActivity {
                     // Verify backend set isOnboarding to false
                     if (Boolean.TRUE.equals(isOnboarding)) {
                         // Backend didn't update properly - show error
-                        Toast.makeText(ProviderDetailsActivity.this, 
-                            "Profile saved but onboarding status not updated. Please try again.", 
-                            Toast.LENGTH_LONG).show();
+                        ToastUtils.showWarning(ProviderDetailsActivity.this, 
+                            "Profile saved but onboarding status not updated. Please try again.");
                         return; // Don't navigate if onboarding not complete
                     }
                     
@@ -343,9 +341,8 @@ public class ProviderDetailsActivity extends AppCompatActivity {
                         sessionManager.setProfileComplete(true);
                     }
                     
-                    Toast.makeText(ProviderDetailsActivity.this, 
-                        isEditing ? "Profile updated successfully!" : "Profile completed successfully! Welcome to PlateMate!", 
-                        Toast.LENGTH_SHORT).show();
+                    ToastUtils.showSuccess(ProviderDetailsActivity.this, 
+                        isEditing ? "Profile updated successfully!" : "Profile completed successfully! Welcome to PlateMate!");
                     
                     // Always navigate to dashboard after successful save
                     navigateToProviderDashboard();
@@ -359,18 +356,18 @@ public class ProviderDetailsActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
                     }
-                    Toast.makeText(ProviderDetailsActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(ProviderDetailsActivity.this, errorMessage);
                 }
             }
 
                 @Override
                 public void onFailure(Call<Map<String, Object>> call, Throwable t) {
-                    Toast.makeText(ProviderDetailsActivity.this, 
-                        "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(ProviderDetailsActivity.this, 
+                        "Error: " + t.getMessage());
                 }
             });
         } catch (NumberFormatException e) {
-            Toast.makeText(this, "Invalid number format", Toast.LENGTH_SHORT).show();
+            ToastUtils.showError(this, "Invalid number format");
         }
     }
 

@@ -17,6 +17,10 @@ public class SessionManager {
     private static final String KEY_USERNAME = "username";
     private static final String KEY_PROFILE_COMPLETE = "profile_complete";
     private static final String KEY_USER_ID = "user_id";
+    private static final String KEY_DELIVERY_STREET = "delivery_street";
+    private static final String KEY_DELIVERY_CITY = "delivery_city";
+    private static final String KEY_DELIVERY_STATE = "delivery_state";
+    private static final String KEY_DELIVERY_ZIPCODE = "delivery_zipcode";
 
     private final SharedPreferences prefs;
     private final SharedPreferences.Editor editor;
@@ -164,5 +168,50 @@ public class SessionManager {
     public void removeRole() {
         editor.remove(KEY_ROLE);
         editor.apply();
+    }
+    
+    // Address management methods
+    public void saveDeliveryAddress(String street, String city, String state, String zipCode) {
+        editor.putString(KEY_DELIVERY_STREET, street);
+        editor.putString(KEY_DELIVERY_CITY, city);
+        editor.putString(KEY_DELIVERY_STATE, state);
+        editor.putString(KEY_DELIVERY_ZIPCODE, zipCode);
+        editor.apply();
+    }
+    
+    public String getDeliveryStreet() {
+        return prefs.getString(KEY_DELIVERY_STREET, null);
+    }
+    
+    public String getDeliveryCity() {
+        return prefs.getString(KEY_DELIVERY_CITY, null);
+    }
+    
+    public String getDeliveryState() {
+        return prefs.getString(KEY_DELIVERY_STATE, null);
+    }
+    
+    public String getDeliveryZipCode() {
+        return prefs.getString(KEY_DELIVERY_ZIPCODE, null);
+    }
+    
+    public String getFullDeliveryAddress() {
+        String street = getDeliveryStreet();
+        String city = getDeliveryCity();
+        String state = getDeliveryState();
+        String zipCode = getDeliveryZipCode();
+        
+        if (street == null || city == null || state == null || zipCode == null) {
+            return null;
+        }
+        
+        return street + ", " + city + ", " + state + " " + zipCode;
+    }
+    
+    public boolean hasDeliveryAddress() {
+        return getDeliveryStreet() != null && 
+               getDeliveryCity() != null && 
+               getDeliveryState() != null && 
+               getDeliveryZipCode() != null;
     }
 }

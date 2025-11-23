@@ -18,7 +18,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -260,7 +259,7 @@ public class SignUpActivity extends AppCompatActivity {
         // Validation - Check empty fields
         if (username.isEmpty() || email.isEmpty() || password.isEmpty() || 
             confirmPassword.isEmpty() || phone.isEmpty() || selectedRole.isEmpty()) {
-            Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+            ToastUtils.showInfo(this, "Please fill all fields");
             return;
         }
         
@@ -268,7 +267,7 @@ public class SignUpActivity extends AppCompatActivity {
         if (!isValidEmail(email)) {
             emailEditText.setError("Please enter a valid email address");
             emailEditText.requestFocus();
-            Toast.makeText(this, "Please enter a valid email address", Toast.LENGTH_SHORT).show();
+            ToastUtils.showError(this, "Please enter a valid email address");
             return;
         }
         
@@ -276,7 +275,7 @@ public class SignUpActivity extends AppCompatActivity {
         if (!isValidPhone(phone)) {
             phoneEditText.setError("Please enter a valid 10-digit phone number");
             phoneEditText.requestFocus();
-            Toast.makeText(this, "Please enter a valid 10-digit phone number", Toast.LENGTH_SHORT).show();
+            ToastUtils.showError(this, "Please enter a valid 10-digit phone number");
             return;
         }
         
@@ -284,7 +283,7 @@ public class SignUpActivity extends AppCompatActivity {
         if (!isValidPassword(password)) {
             passwordEditText.setError(getPasswordValidationMessage(password));
             passwordEditText.requestFocus();
-            Toast.makeText(this, getPasswordValidationMessage(password), Toast.LENGTH_LONG).show();
+            ToastUtils.showWarning(this, getPasswordValidationMessage(password));
             return;
         }
         
@@ -292,14 +291,14 @@ public class SignUpActivity extends AppCompatActivity {
         if (!password.equals(confirmPassword)) {
             confirmPasswordEditText.setError("Passwords do not match");
             confirmPasswordEditText.requestFocus();
-            Toast.makeText(this, "Passwords do not match", Toast.LENGTH_SHORT).show();
+            ToastUtils.showError(this, "Passwords do not match");
             return;
         }
 
         // Map user-friendly dropdown selection to backend enum format
         String backendRole = mapRoleToBackendFormat(selectedRole);
         if (backendRole == null) {
-            Toast.makeText(this, "Please select a valid profile type", Toast.LENGTH_SHORT).show();
+            ToastUtils.showError(this, "Please select a valid profile type");
             return;
         }
 
@@ -313,8 +312,8 @@ public class SignUpActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<LoginUserDetails> call, Response<LoginUserDetails> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    Toast.makeText(SignUpActivity.this, 
-                        "Registration successful! Please login.", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showSuccess(SignUpActivity.this, 
+                        "Registration successful! Please login.");
                     // Redirect to login
                     Intent intent = new Intent(SignUpActivity.this, LoginActivity.class);
                     intent.putExtra("username", username); // Pre-fill username
@@ -329,14 +328,14 @@ public class SignUpActivity extends AppCompatActivity {
                             e.printStackTrace();
                         }
                     }
-                    Toast.makeText(SignUpActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(SignUpActivity.this, errorMsg);
                 }
             }
 
             @Override
             public void onFailure(Call<LoginUserDetails> call, Throwable t) {
-                Toast.makeText(SignUpActivity.this, 
-                    "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(SignUpActivity.this, 
+                    "Error: " + t.getMessage());
             }
         });
     }

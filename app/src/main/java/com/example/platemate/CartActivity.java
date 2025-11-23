@@ -8,7 +8,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -74,6 +73,16 @@ public class CartActivity extends AppCompatActivity {
             public void onRemoveClick(CartItem item) {
                 removeCartItem(item);
             }
+            
+            @Override
+            public void onItemClick(CartItem item) {
+                // Navigate to product detail page
+                if (item.getMenuItemId() != null) {
+                    Intent intent = new Intent(CartActivity.this, ProductDetailActivity.class);
+                    intent.putExtra("menuItemId", item.getMenuItemId());
+                    startActivity(intent);
+                }
+            }
         });
         rvCartItems.setAdapter(cartAdapter);
     }
@@ -83,7 +92,7 @@ public class CartActivity extends AppCompatActivity {
         
         btnProceedToCheckout.setOnClickListener(v -> {
             if (cartItems.isEmpty()) {
-                Toast.makeText(this, "Your cart is empty", Toast.LENGTH_SHORT).show();
+                ToastUtils.showInfo(this, "Your cart is empty");
                 return;
             }
             proceedToCheckout();
@@ -105,14 +114,14 @@ public class CartActivity extends AppCompatActivity {
                         showEmptyState(cartItems.isEmpty());
                     }
                 } else {
-                    Toast.makeText(CartActivity.this, "Failed to load cart", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(CartActivity.this, "Failed to load cart");
                     showEmptyState(true);
                 }
             }
             
             @Override
             public void onFailure(Call<CartSummary> call, Throwable t) {
-                Toast.makeText(CartActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(CartActivity.this, "Error: " + t.getMessage());
                 showEmptyState(true);
             }
         });
@@ -132,14 +141,14 @@ public class CartActivity extends AppCompatActivity {
                 if (response.isSuccessful()) {
                     loadCart(); // Reload cart to get updated totals
                 } else {
-                    Toast.makeText(CartActivity.this, "Failed to update cart", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(CartActivity.this, "Failed to update cart");
                     loadCart(); // Reload to revert changes
                 }
             }
             
             @Override
             public void onFailure(Call<CartItem> call, Throwable t) {
-                Toast.makeText(CartActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(CartActivity.this, "Error: " + t.getMessage());
                 loadCart(); // Reload to revert changes
             }
         });
@@ -151,16 +160,16 @@ public class CartActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(CartActivity.this, "Item removed from cart", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showSuccess(CartActivity.this, "Item removed from cart");
                     loadCart();
                 } else {
-                    Toast.makeText(CartActivity.this, "Failed to remove item", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(CartActivity.this, "Failed to remove item");
                 }
             }
             
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
-                Toast.makeText(CartActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(CartActivity.this, "Error: " + t.getMessage());
             }
         });
     }
@@ -168,11 +177,21 @@ public class CartActivity extends AppCompatActivity {
     private void updateOrderSummary(Double subtotal) {
         if (subtotal == null) subtotal = 0.0;
         
+        // Only show delivery fee if cart is not empty
+        boolean isEmpty = cartItems.isEmpty();
+        double deliveryFee = isEmpty ? 0.0 : DELIVERY_FEE;
         double tax = subtotal * TAX_RATE;
-        double total = subtotal + DELIVERY_FEE + tax;
+        double total = subtotal + deliveryFee + tax;
         
         tvSubtotal.setText("₹" + String.format("%.2f", subtotal));
-        tvDeliveryFee.setText("₹" + String.format("%.2f", DELIVERY_FEE));
+        
+        // Hide delivery fee section if cart is empty
+        View deliveryFeeLayout = findViewById(R.id.deliveryFeeLayout);
+        if (deliveryFeeLayout != null) {
+            deliveryFeeLayout.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+        }
+        
+        tvDeliveryFee.setText("₹" + String.format("%.2f", deliveryFee));
         tvTax.setText("₹" + String.format("%.2f", tax));
         tvTotal.setText("₹" + String.format("%.2f", total));
     }
@@ -192,6 +211,50 @@ public class CartActivity extends AppCompatActivity {
     }
     
     private void proceedToCheckout() {
+        // Check if user has delivery address
+        String deliveryAddress = sessionManager.getFullDeliveryAddress();
+        
+        if (deliveryAddress == null || deliveryAddress.isEmpty()) {
+            // Show address dialog
+            showAddressDialog();
+        } else {
+            // Proceed with order creation
+            createOrder(deliveryAddress);
+        }
+    }
+    
+    private void showAddressDialog() {
+        // Get address from session manager (address is loaded with user profile)
+        Address existingAddress = null;
+        SessionManager sm = new SessionManager(this);
+        if (sm.hasDeliveryAddress()) {
+            existingAddress = new Address();
+            existingAddress.setStreet(sm.getDeliveryStreet());
+            existingAddress.setCity(sm.getDeliveryCity());
+            existingAddress.setState(sm.getDeliveryState());
+            existingAddress.setZipCode(sm.getDeliveryZipCode());
+        }
+        
+        // Show dialog with existing address if available
+        AddressDialog.show(CartActivity.this, existingAddress, new AddressDialog.AddressDialogListener() {
+            @Override
+            public void onAddressSaved(String street, String city, String state, String zipCode) {
+                // Address is already saved to backend by AddressDialog
+                // Create full address string
+                String fullAddress = street + ", " + city + ", " + state + " " + zipCode;
+                
+                // Proceed with order creation
+                createOrder(fullAddress);
+            }
+            
+            @Override
+            public void onCancel() {
+                ToastUtils.showInfo(CartActivity.this, "Order cancelled. Please add address to proceed.");
+            }
+        });
+    }
+    
+    private void createOrder(String deliveryAddress) {
         // Get all cart item IDs
         List<Long> cartItemIds = new ArrayList<>();
         for (CartItem item : cartItems) {
@@ -204,9 +267,6 @@ public class CartActivity extends AppCompatActivity {
         double tax = subtotal * TAX_RATE;
         double total = subtotal + DELIVERY_FEE + tax;
         
-        // TODO: Get delivery address from user profile or address management
-        String deliveryAddress = "Your Address Here"; // Replace with actual address
-        
         CreateOrderRequest request = new CreateOrderRequest(cartItemIds, deliveryAddress, DELIVERY_FEE);
         
         Call<Order> call = apiInterface.createOrder(request);
@@ -215,7 +275,7 @@ public class CartActivity extends AppCompatActivity {
             public void onResponse(Call<Order> call, Response<Order> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Order order = response.body();
-                    Toast.makeText(CartActivity.this, "Order placed successfully!", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showSuccess(CartActivity.this, "Order placed successfully!");
                     
                     // Navigate to order details or order history
                     Intent intent = new Intent(CartActivity.this, CustomerHomeActivity.class);
@@ -223,13 +283,13 @@ public class CartActivity extends AppCompatActivity {
                     startActivity(intent);
                     finish();
                 } else {
-                    Toast.makeText(CartActivity.this, "Failed to place order", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(CartActivity.this, "Failed to place order");
                 }
             }
             
             @Override
             public void onFailure(Call<Order> call, Throwable t) {
-                Toast.makeText(CartActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(CartActivity.this, "Error: " + t.getMessage());
             }
         });
     }
@@ -240,4 +300,5 @@ public class CartActivity extends AppCompatActivity {
         loadCart(); // Reload cart when returning to this activity
     }
 }
+
 

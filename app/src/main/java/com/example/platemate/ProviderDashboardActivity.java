@@ -9,7 +9,6 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -95,8 +94,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         if (profileJustCompleted) {
             // Show welcome message after a short delay
             new android.os.Handler().postDelayed(() -> {
-                Toast.makeText(this, "Welcome! Your profile is now complete. Start adding products!", 
-                    Toast.LENGTH_LONG).show();
+                ToastUtils.showSuccess(this, "Welcome! Your profile is now complete. Start adding products!");
             }, 500);
         }
         
@@ -427,15 +425,14 @@ public class ProviderDashboardActivity extends AppCompatActivity {
                                 e.printStackTrace();
                             }
                         }
-                        Toast.makeText(ProviderDashboardActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                        ToastUtils.showError(ProviderDashboardActivity.this, errorMessage);
                         updateEmptyState();
                     }
                 } catch (Exception e) {
                     // Catch any parsing or other exceptions to prevent app crash
                     e.printStackTrace();
-                    Toast.makeText(ProviderDashboardActivity.this, 
-                        "Error loading products: " + (e.getMessage() != null ? e.getMessage() : "Unknown error"), 
-                        Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(ProviderDashboardActivity.this, 
+                        "Error loading products: " + (e.getMessage() != null ? e.getMessage() : "Unknown error"));
                     updateEmptyState();
                 }
             }
@@ -447,7 +444,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
                 if (t.getMessage() != null && !t.getMessage().isEmpty()) {
                     errorMessage = "Error: " + t.getMessage();
                 }
-                Toast.makeText(ProviderDashboardActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(ProviderDashboardActivity.this, errorMessage);
                 updateEmptyState();
             }
         });

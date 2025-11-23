@@ -39,30 +39,30 @@ public interface ApiInterface {
     @GET("/api/provider/products")
     Call<List<Product>> getProviderProducts();
 
-    // Menu Items endpoints (new standard)
+    // Provider Menu Items endpoints
     @GET("/api/providers/menu-items")
     Call<List<MenuItemResponse>> getProviderMenuItems();
 
     @Multipart
     @POST("/api/providers/menu-items")
-    Call<MenuItemResponse> createMenuItem(
+    Call<MenuItemResponse> createProviderMenuItem(
         @Part("data") RequestBody data,
         @Part MultipartBody.Part image  // Optional - pass null if no image
     );
 
     @Multipart
     @PUT("/api/providers/menu-items/{id}")
-    Call<MenuItemResponse> updateMenuItem(
+    Call<MenuItemResponse> updateProviderMenuItem(
         @Path("id") Long id,
         @Part("data") RequestBody data,
         @Part MultipartBody.Part image
     );
 
     @DELETE("/api/providers/menu-items/{id}")
-    Call<Void> deleteMenuItem(@Path("id") Long id);
+    Call<Void> deleteProviderMenuItem(@Path("id") Long id);
 
     @GET("/api/providers/menu-items/{id}")
-    Call<MenuItemResponse> getMenuItemById(@Path("id") Long id);
+    Call<MenuItemResponse> getProviderMenuItemById(@Path("id") Long id);
 
     // Legacy product endpoints (deprecated - use menu-items instead)
     @POST("/api/products")
@@ -84,16 +84,16 @@ public interface ApiInterface {
     @GET("/api/categories/{id}")
     Call<Category> getCategoryById(@Path("id") Long id);
 
-    // Menu Item endpoints (Customer)
+    // Customer Menu Items endpoints
     @GET("/api/customers/menu-items")
-    Call<MenuItemResponse> getMenuItems(
+    Call<MenuItemResponse> getCustomerMenuItems(
             @Query("page") int page,
             @Query("size") int size,
             @Query("sort") String sort
     );
 
     @GET("/api/customers/menu-items/category/{categoryId}")
-    Call<MenuItemResponse> getMenuItemsByCategory(
+    Call<MenuItemResponse> getCustomerMenuItemsByCategory(
             @Path("categoryId") Long categoryId,
             @Query("page") int page,
             @Query("size") int size,
@@ -101,10 +101,10 @@ public interface ApiInterface {
     );
 
     @GET("/api/customers/menu-items/{id}")
-    Call<MenuItem> getMenuItemById(@Path("id") Long id);
+    Call<MenuItem> getCustomerMenuItemById(@Path("id") Long id);
 
     @GET("/api/customers/menu-items/search")
-    Call<MenuItemResponse> searchMenuItems(
+    Call<MenuItemResponse> searchCustomerMenuItems(
             @Query("q") String query,
             @Query("page") int page,
             @Query("size") int size,
@@ -142,4 +142,28 @@ public interface ApiInterface {
 
     @POST("/api/customers/orders/{id}/cancel")
     Call<Order> cancelOrder(@Path("id") Long id);
+
+    // Customer Profile endpoints - using /api/users/{id} instead of /api/customers/profile
+    @GET("/api/users/{id}")
+    Call<User> getCustomerProfile(@Path("id") Long userId);
+
+    @PUT("/api/users/{id}")
+    Call<User> updateCustomerProfile(@Path("id") Long userId, @Body User user);
+
+    // Image upload endpoint (using ImageController)
+    @Multipart
+    @POST("/images/upload/{imageType}/{ownerId}")
+    Call<Image> uploadImage(
+        @Path("imageType") String imageType,
+        @Path("ownerId") Long ownerId,
+        @Part("file") MultipartBody.Part file
+    );
+    
+    // Get image by ID
+    @GET("/images/view/{id}")
+    Call<okhttp3.ResponseBody> getImage(@Path("id") Long id);
+
+    // Customer Address endpoints - using /api/users/{userId}/address
+    @POST("/api/users/{userId}/address")
+    Call<Address> saveOrUpdateCustomerAddress(@Path("userId") Long userId, @Body AddressRequest addressRequest);
 }

@@ -8,7 +8,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -110,8 +109,9 @@ public class CustomerHomeActivity extends AppCompatActivity {
         //     });
         // }
         viewAllText.setOnClickListener(v -> {
-            // TODO: Navigate to all foods activity
-            Toast.makeText(this, "View all foods coming soon!", Toast.LENGTH_SHORT).show();
+            // Navigate to all products activity
+            Intent intent = new Intent(this, AllProductsActivity.class);
+            startActivity(intent);
         });
     }
     
@@ -138,9 +138,14 @@ public class CustomerHomeActivity extends AppCompatActivity {
 
             @Override
             public void onItemClick(MenuItem menuItem) {
-                // TODO: Navigate to menu item detail activity
-                Toast.makeText(CustomerHomeActivity.this, 
-                    "Menu Item: " + menuItem.getItemName(), Toast.LENGTH_SHORT).show();
+                // Navigate to product detail activity
+                if (menuItem.getId() != null) {
+                    Intent intent = new Intent(CustomerHomeActivity.this, ProductDetailActivity.class);
+                    intent.putExtra("menuItemId", menuItem.getId());
+                    startActivity(intent);
+                } else {
+                    ToastUtils.showError(CustomerHomeActivity.this, "Invalid product");
+                }
             }
         });
         bestFoodRecyclerView.setAdapter(bestFoodAdapter);
@@ -154,12 +159,12 @@ public class CustomerHomeActivity extends AppCompatActivity {
             // Filter products by category
             if (category.getId() != null) {
                 // TODO: Navigate to filtered menu items or filter current list
-                Toast.makeText(CustomerHomeActivity.this, 
-                    "Selected category: " + category.getCategoryName(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showInfo(CustomerHomeActivity.this, 
+                    "Selected category: " + category.getCategoryName());
                 // You can add navigation to a filtered product list here
             } else {
-                Toast.makeText(CustomerHomeActivity.this, 
-                    "Selected category: " + category.getCategoryName(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showInfo(CustomerHomeActivity.this, 
+                    "Selected category: " + category.getCategoryName());
             }
         });
         categoryRecyclerView.setAdapter(categoryAdapter);
@@ -170,7 +175,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         bestFoodRecyclerView.setVisibility(View.GONE);
         
         // Load menu items from backend
-        Call<MenuItemResponse> call = apiInterface.getMenuItems(0, 20, "id,desc");
+        Call<MenuItemResponse> call = apiInterface.getCustomerMenuItems(0, 20, "id,desc");
         call.enqueue(new Callback<MenuItemResponse>() {
             @Override
             public void onResponse(Call<MenuItemResponse> call, Response<MenuItemResponse> response) {
@@ -185,8 +190,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
                         showEmptyMenuItems();
                     }
                 } else {
-                    Toast.makeText(CustomerHomeActivity.this, 
-                        "Failed to load menu items", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(CustomerHomeActivity.this, 
+                        "Failed to load menu items");
                     showEmptyMenuItems();
                 }
             }
@@ -195,8 +200,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
             public void onFailure(Call<MenuItemResponse> call, Throwable t) {
                 progressBarBestFood.setVisibility(View.GONE);
                 bestFoodRecyclerView.setVisibility(View.VISIBLE);
-                Toast.makeText(CustomerHomeActivity.this, 
-                    "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(CustomerHomeActivity.this, 
+                    "Error: " + t.getMessage());
                 showEmptyMenuItems();
             }
         });
@@ -209,7 +214,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
     
     private void addToCart(MenuItem menuItem) {
         if (menuItem.getId() == null) {
-            Toast.makeText(this, "Invalid menu item", Toast.LENGTH_SHORT).show();
+            ToastUtils.showError(this, "Invalid menu item");
             return;
         }
         
@@ -219,18 +224,18 @@ public class CustomerHomeActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<CartItem> call, Response<CartItem> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    Toast.makeText(CustomerHomeActivity.this, 
-                        "Added " + menuItem.getItemName() + " to cart", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showSuccess(CustomerHomeActivity.this, 
+                        "Added " + menuItem.getItemName() + " to cart");
                 } else {
-                    Toast.makeText(CustomerHomeActivity.this, 
-                        "Failed to add to cart", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(CustomerHomeActivity.this, 
+                        "Failed to add to cart");
                 }
             }
             
             @Override
             public void onFailure(Call<CartItem> call, Throwable t) {
-                Toast.makeText(CustomerHomeActivity.this, 
-                    "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(CustomerHomeActivity.this, 
+                    "Error: " + t.getMessage());
             }
         });
     }
@@ -255,8 +260,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
                         showEmptyCategories();
                     }
                 } else {
-                    Toast.makeText(CustomerHomeActivity.this, 
-                        "Failed to load categories", Toast.LENGTH_SHORT).show();
+                    ToastUtils.showError(CustomerHomeActivity.this, 
+                        "Failed to load categories");
                     showEmptyCategories();
                 }
             }
@@ -265,8 +270,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
             public void onFailure(Call<List<Category>> call, Throwable t) {
                 progressBarCategory.setVisibility(View.GONE);
                 categoryRecyclerView.setVisibility(View.VISIBLE);
-                Toast.makeText(CustomerHomeActivity.this, 
-                    "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                ToastUtils.showError(CustomerHomeActivity.this, 
+                    "Error: " + t.getMessage());
                 showEmptyCategories();
             }
         });
