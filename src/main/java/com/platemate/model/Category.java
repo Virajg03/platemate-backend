@@ -13,6 +13,9 @@ public class Category extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Transient
+    private Image categoryImage;
+
     public Category() {}
 
     public String getCategoryName() { return categoryName; }
@@ -20,4 +23,7 @@ public class Category extends BaseEntity {
 
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    public Image getCategoryImage() { return categoryImage; }
+    public void setCategoryImage(Image categoryImage) { this.categoryImage = categoryImage; }
 }

@@ -61,6 +61,8 @@ public class MenuItemDtos {
         private String ingredients;
         private MealType mealType;
         private Boolean isAvailable;
+        private java.util.List<String> imageBase64List;
+        private java.util.List<String> imageFileTypeList;
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
         public Long getCategoryId() { return categoryId; }
@@ -77,6 +79,10 @@ public class MenuItemDtos {
         public void setMealType(MealType mealType) { this.mealType = mealType; }
         public Boolean getIsAvailable() { return isAvailable; }
         public void setIsAvailable(Boolean isAvailable) { this.isAvailable = isAvailable; }
+        public java.util.List<String> getImageBase64List() { return imageBase64List; }
+        public void setImageBase64List(java.util.List<String> imageBase64List) { this.imageBase64List = imageBase64List; }
+        public java.util.List<String> getImageFileTypeList() { return imageFileTypeList; }
+        public void setImageFileTypeList(java.util.List<String> imageFileTypeList) { this.imageFileTypeList = imageFileTypeList; }
     }
 
     // Customer-facing DTOs with provider information
@@ -92,6 +98,8 @@ public class MenuItemDtos {
         private Long providerId;
         private String providerName;
         private String providerBusinessName;
+        private java.util.List<String> imageBase64List;
+        private java.util.List<String> imageFileTypeList;
         
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
@@ -115,6 +123,10 @@ public class MenuItemDtos {
         public void setProviderName(String providerName) { this.providerName = providerName; }
         public String getProviderBusinessName() { return providerBusinessName; }
         public void setProviderBusinessName(String providerBusinessName) { this.providerBusinessName = providerBusinessName; }
+        public java.util.List<String> getImageBase64List() { return imageBase64List; }
+        public void setImageBase64List(java.util.List<String> imageBase64List) { this.imageBase64List = imageBase64List; }
+        public java.util.List<String> getImageFileTypeList() { return imageFileTypeList; }
+        public void setImageFileTypeList(java.util.List<String> imageFileTypeList) { this.imageFileTypeList = imageFileTypeList; }
     }
 
     public static class PaginatedResponse<T> {

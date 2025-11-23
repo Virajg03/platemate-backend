@@ -139,4 +139,20 @@ public class MenuItem extends BaseEntity {
     public void setIsDeleted(Boolean isDeleted) {
         this.isDeleted = isDeleted;
     }
+
+    public List<RatingReview> getRatings() {
+        return ratings;
+    }
+
+    public void setRatings(List<RatingReview> ratings) {
+        this.ratings = ratings;
+    }
+
+    public List<Image> getImages() {
+        return images;
+    }
+
+    public void setImages(List<Image> images) {
+        this.images = images;
+    }
 }

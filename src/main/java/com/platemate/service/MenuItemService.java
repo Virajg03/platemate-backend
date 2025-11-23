@@ -6,11 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.platemate.enums.ImageType;
 import com.platemate.enums.MealType;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.MenuItem;
 import com.platemate.repository.CategoryRepository;
+import com.platemate.repository.ImageRepository;
 import com.platemate.repository.MenuItemRepository;
 
 @Service
@@ -22,8 +25,13 @@ public class MenuItemService {
     @Autowired
     CategoryRepository categoryRepository;
 
+    @Autowired
+    ImageRepository imageRepository;
+
     public List<MenuItem> getAllMenuItems() {
-        return menuItemRepository.findAll();
+        List<MenuItem> items = menuItemRepository.findAll();
+        items.forEach(this::loadExtras);
+        return items;
     }
 
     public MenuItem updateMenuItem(Long id, MenuItem updatedItem) {
@@ -34,37 +42,66 @@ public class MenuItemService {
             item.setIngredients(updatedItem.getIngredients());
             item.setMealType(updatedItem.getMealType());
             item.setPrice(updatedItem.getPrice());
-            return menuItemRepository.save(item);
+            MenuItem saved = menuItemRepository.save(item);
+            loadExtras(saved);
+            return saved;
         }).orElseThrow(() -> new ResourceNotFoundException("Address not found with id " + id));
     }
 
     // Customer-facing methods with pagination
     public Page<MenuItem> getAvailableMenuItems(Pageable pageable) {
-        return menuItemRepository.findAvailableMenuItems(pageable);
+        Page<MenuItem> page = menuItemRepository.findAvailableMenuItems(pageable);
+        page.getContent().forEach(this::loadExtras);
+        return page;
     }
 
     public Page<MenuItem> getAvailableMenuItemsByProvider(Long providerId, Pageable pageable) {
-        return menuItemRepository.findAvailableMenuItemsByProvider(providerId, pageable);
+        Page<MenuItem> page = menuItemRepository.findAvailableMenuItemsByProvider(providerId, pageable);
+        page.getContent().forEach(this::loadExtras);
+        return page;
     }
 
     public Page<MenuItem> getAvailableMenuItemsByCategory(Long categoryId, Pageable pageable) {
-        return menuItemRepository.findAvailableMenuItemsByCategory(categoryId, pageable);
+        Page<MenuItem> page = menuItemRepository.findAvailableMenuItemsByCategory(categoryId, pageable);
+        page.getContent().forEach(this::loadExtras);
+        return page;
     }
 
     public Page<MenuItem> getAvailableMenuItemsByMealType(MealType mealType, Pageable pageable) {
-        return menuItemRepository.findAvailableMenuItemsByMealType(mealType, pageable);
+        Page<MenuItem> page = menuItemRepository.findAvailableMenuItemsByMealType(mealType, pageable);
+        page.getContent().forEach(this::loadExtras);
+        return page;
     }
 
     public Page<MenuItem> searchAvailableMenuItems(String searchTerm, Pageable pageable) {
-        return menuItemRepository.searchAvailableMenuItems(searchTerm, pageable);
+        Page<MenuItem> page = menuItemRepository.searchAvailableMenuItems(searchTerm, pageable);
+        page.getContent().forEach(this::loadExtras);
+        return page;
     }
 
     public Page<MenuItem> getAvailableMenuItemsByProviderAndCategory(Long providerId, Long categoryId, Pageable pageable) {
-        return menuItemRepository.findAvailableMenuItemsByProviderAndCategory(providerId, categoryId, pageable);
+        Page<MenuItem> page = menuItemRepository.findAvailableMenuItemsByProviderAndCategory(providerId, categoryId, pageable);
+        page.getContent().forEach(this::loadExtras);
+        return page;
     }
 
     public MenuItem getAvailableMenuItemById(Long itemId) {
-        return menuItemRepository.findAvailableMenuItemById(itemId)
+        MenuItem item = menuItemRepository.findAvailableMenuItemById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found or not available"));
+        loadExtras(item);
+        return item;
+    }
+
+    // ---------------- Load product images ----------------
+    @Transactional(readOnly = true)
+    private void loadExtras(MenuItem menuItem) {
+        List<com.platemate.model.Image> images = imageRepository.findAllByImageTypeAndOwnerId(
+                ImageType.PRODUCT, menuItem.getId());
+        menuItem.setImages(images);
+    }
+
+    // Public method to load extras for a menu item (used by controllers)
+    public void loadMenuItemExtras(MenuItem menuItem) {
+        loadExtras(menuItem);
     }
 }

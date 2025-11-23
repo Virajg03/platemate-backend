@@ -210,6 +210,18 @@ public class CustomerMenuItemController {
             }
         }
         
+        // Map images to base64 lists
+        if (item.getImages() != null && !item.getImages().isEmpty()) {
+            java.util.List<String> base64List = item.getImages().stream()
+                    .map(com.platemate.model.Image::getBase64Data)
+                    .toList();
+            java.util.List<String> fileTypeList = item.getImages().stream()
+                    .map(com.platemate.model.Image::getFileType)
+                    .toList();
+            response.setImageBase64List(base64List);
+            response.setImageFileTypeList(fileTypeList);
+        }
+        
         return response;
     }
 }

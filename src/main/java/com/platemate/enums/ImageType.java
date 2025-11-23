@@ -5,6 +5,7 @@ public enum ImageType {
     PROVIDER_PROFILE,
     DELIVERY_PARTNER_PROFILE,
     PRODUCT,
+    CATEGORY,
     DL_FRONT,
     DL_BACK,
     PLACE

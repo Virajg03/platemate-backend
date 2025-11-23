@@ -12,4 +12,10 @@ public interface ImageRepository extends JpaRepository<Image, Long> {
 
     @Query("SELECT i.id FROM Image i WHERE i.imageType = :imageType AND i.ownerId = :ownerId")
     Long findIdByImageTypeAndOwnerId(@Param("imageType") ImageType imageType, @Param("ownerId") Long ownerId);
+
+    @Query("SELECT i FROM Image i WHERE i.imageType = :imageType AND i.ownerId = :ownerId")
+    java.util.Optional<Image> findImageByImageTypeAndOwnerId(@Param("imageType") ImageType imageType, @Param("ownerId") Long ownerId);
+
+    @Query("SELECT i FROM Image i WHERE i.imageType = :imageType AND i.ownerId = :ownerId")
+    java.util.List<Image> findAllByImageTypeAndOwnerId(@Param("imageType") ImageType imageType, @Param("ownerId") Long ownerId);
 }

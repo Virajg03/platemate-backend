@@ -25,11 +25,12 @@ public class ImageController {
         this.imageService = imageService;
     }
 
-    @PostMapping("/upload/{imageType}/{ownerId}")
+    @PostMapping(value = "/upload/{imageType}/{ownerId}",
+             consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Image> uploadImage(
             @RequestParam("file") MultipartFile file,
-            @PathVariable ImageType imageType,
-            @PathVariable Long ownerId) throws Exception {
+            @PathVariable("imageType") ImageType imageType,
+            @PathVariable("ownerId") Long ownerId) throws Exception {
         return ResponseEntity.ok(imageService.saveImage(file, imageType, ownerId));
     }
 

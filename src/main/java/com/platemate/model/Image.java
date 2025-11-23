@@ -8,8 +8,10 @@ import jakarta.persistence.*;
 @Table(name = "images")
 public class Image extends BaseEntity {
 
+    @Column(name = "file_name")
     private String fileName;
 
+    @Column(name = "file_type")
     private String fileType;
 
     @Lob
@@ -18,10 +20,11 @@ public class Image extends BaseEntity {
     private String base64Data;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name = "image_type", nullable = false)
     private ImageType imageType;  // PROFILE / PRODUCT / PLACE / DL
 
     // this helps us link image to any entity
+    @Column(name = "owner_id")
     private Long ownerId;
 
     public Image() {

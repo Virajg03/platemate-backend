@@ -33,6 +33,7 @@ import com.platemate.repository.MenuItemRepository;
 import com.platemate.repository.TiffinProviderRepository;
 import com.platemate.repository.UserRepository;
 import com.platemate.service.ImageService;
+import com.platemate.service.MenuItemService;
 
 @RestController
 @RequestMapping("/api/providers/menu-items")
@@ -49,6 +50,8 @@ public class MenuItemController {
     private CategoryRepository categoryRepository;
     @Autowired
     private ImageService imageService;
+    @Autowired
+    private MenuItemService menuItemService;
 
     private User currentUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -90,15 +93,17 @@ public class MenuItemController {
         if (image != null && !image.isEmpty()) {
             imageService.saveImage(image, ImageType.PRODUCT, saved.getId());
         }
+        menuItemService.loadMenuItemExtras(saved);
         return ResponseEntity.ok(toResponse(saved));
     }
 
     @GetMapping
     public ResponseEntity<List<MenuItemDtos.Response>> listMine() {
         TiffinProvider provider = currentProviderOrThrow();
-        List<MenuItemDtos.Response> items = menuItemRepository
-                .findAllByProvider_IdAndIsDeletedFalse(provider.getId())
-                .stream().map(this::toResponse).toList();
+        List<MenuItem> menuItems = menuItemRepository
+                .findAllByProvider_IdAndIsDeletedFalse(provider.getId());
+        menuItems.forEach(menuItemService::loadMenuItemExtras);
+        List<MenuItemDtos.Response> items = menuItems.stream().map(this::toResponse).toList();
         return ResponseEntity.ok(items);
     }
 
@@ -110,6 +115,7 @@ public class MenuItemController {
         if (!item.getProvider().getId().equals(provider.getId())) {
             throw new ForbiddenException("Cannot access another provider's item");
         }
+        menuItemService.loadMenuItemExtras(item);
         return ResponseEntity.ok(toResponse(item));
     }
 
@@ -139,6 +145,7 @@ public class MenuItemController {
         if (image != null && !image.isEmpty()) {
             imageService.saveImage(image, ImageType.PRODUCT, saved.getId());
         }
+        menuItemService.loadMenuItemExtras(saved);
         return ResponseEntity.ok(toResponse(saved));
     }
 
@@ -155,6 +162,7 @@ public class MenuItemController {
             item.setIsAvailable(available);
         }
         MenuItem saved = menuItemRepository.save(item);
+        menuItemService.loadMenuItemExtras(saved);
         return ResponseEntity.ok(toResponse(saved));
     }
 
@@ -181,6 +189,19 @@ public class MenuItemController {
         res.setIngredients(item.getIngredients());
         res.setMealType(item.getMealType());
         res.setIsAvailable(item.getIsAvailable());
+        
+        // Map images to base64 lists
+        if (item.getImages() != null && !item.getImages().isEmpty()) {
+            java.util.List<String> base64List = item.getImages().stream()
+                    .map(com.platemate.model.Image::getBase64Data)
+                    .toList();
+            java.util.List<String> fileTypeList = item.getImages().stream()
+                    .map(com.platemate.model.Image::getFileType)
+                    .toList();
+            res.setImageBase64List(base64List);
+            res.setImageFileTypeList(fileTypeList);
+        }
+        
         return res;
     }
 }
