@@ -19,7 +19,7 @@ public class AddressRequest {
     private String pincode;
     
     @SerializedName("address_type")
-    private String addressType; // "DELIVERY" or "BUSINESS"
+    private String addressType; // Valid values: "OTHER", "OFFICE", "HOME", "BUSINESS"
     
     public AddressRequest(String street1, String street2, String city, String state, String pincode, String addressType) {
         this.street1 = street1;

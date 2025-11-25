@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,7 +33,8 @@ import java.io.InputStream;
 public class CustomerProfileFragment extends Fragment {
     
     private ImageView ivProfilePicture, btnEditProfilePicture, backButton, btnEditAddress;
-    private TextView tvUserName, tvUsername, tvFullName, tvEmail, tvStreetAddress, tvCityStateZip;
+    private LinearLayout btnEditProfile;
+    private TextView tvUserName, tvUsername, tvFullName, tvEmail, tvDateOfBirth, tvStreetAddress, tvCityStateZip;
     private LinearLayout logoutButton, addressDisplayLayout, noAddressLayout;
     private ProgressBar progressBar;
     
@@ -73,6 +75,7 @@ public class CustomerProfileFragment extends Fragment {
         tvUsername = view.findViewById(R.id.tvUsername);
         tvFullName = view.findViewById(R.id.tvFullName);
         tvEmail = view.findViewById(R.id.tvEmail);
+        tvDateOfBirth = view.findViewById(R.id.tvDateOfBirth);
         tvStreetAddress = view.findViewById(R.id.tvStreetAddress);
         tvCityStateZip = view.findViewById(R.id.tvCityStateZip);
         logoutButton = view.findViewById(R.id.btnLogout);
@@ -108,6 +111,12 @@ public class CustomerProfileFragment extends Fragment {
         if (btnEditAddress != null) {
             btnEditAddress.setOnClickListener(v -> showAddressEditDialog());
         }
+        
+        // Edit profile
+        btnEditProfile = view.findViewById(R.id.btnEditProfile);
+        if (btnEditProfile != null) {
+            btnEditProfile.setOnClickListener(v -> showEditProfileDialog());
+        }
     }
     
     private void loadCustomerProfile() {
@@ -117,6 +126,7 @@ public class CustomerProfileFragment extends Fragment {
         
         // Get user ID from stored currentUserId or session
         Long userId = currentUserId != null ? currentUserId : sessionManager.getUserId();
+        Log.d("User Id On Customer Profile", "currentUserId: " + currentUserId + ", sessionUserId: " + sessionManager.getUserId() + ", using: " + userId);
         if (userId == null) {
             if (progressBar != null) {
                 progressBar.setVisibility(View.GONE);
@@ -124,23 +134,39 @@ public class CustomerProfileFragment extends Fragment {
             loadFromSessionManager();
             return;
         }
-        
+        Log.d("Before Calling getCustomerProfile", "Dummy Message");
         Call<User> call = apiInterface.getCustomerProfile(userId);
+        Log.d("After Calling getCustomerProfile", "Dummy Message");
         call.enqueue(new Callback<User>() {
             @Override
             public void onResponse(Call<User> call, Response<User> response) {
                 if (progressBar != null) {
                     progressBar.setVisibility(View.GONE);
                 }
+                Log.d("In onResponse getCustomerProfile", String.valueOf(response));
+
                 
                 if (response.isSuccessful() && response.body() != null) {
                     User user = response.body();
                     // Store user ID for later use (e.g., image upload)
                     currentUserId = user.getId();
-                    // Also save to session manager if not already saved
-                    if (currentUserId != null && sessionManager.getUserId() == null) {
-                        // Note: We can't directly set userId in SessionManager, 
-                        // but we'll use currentUserId variable
+                    Log.d("CustomerProfileFragment", "Profile loaded - userId from response: " + currentUserId);
+                    
+                    // Save userId to session manager if not already saved or if different
+                    if (currentUserId != null) {
+                        Long savedUserId = sessionManager.getUserId();
+                        Log.d("CustomerProfileFragment", "Saved userId in session: " + savedUserId);
+                        if (savedUserId == null || !savedUserId.equals(currentUserId)) {
+                            // Update session with userId - we need to preserve other session data
+                            String token = sessionManager.getToken();
+                            String refreshToken = sessionManager.getRefreshToken();
+                            String role = sessionManager.getRole();
+                            String username = sessionManager.getUsername();
+                            sessionManager.saveLoginSession(token, refreshToken, role, username, currentUserId);
+                            Log.d("CustomerProfileFragment", "Updated session with userId: " + currentUserId);
+                        }
+                    } else {
+                        Log.e("CustomerProfileFragment", "WARNING: User response has null ID!");
                     }
                     // Convert User to Customer format for display
                     customer = convertUserToCustomer(user);
@@ -150,6 +176,12 @@ public class CustomerProfileFragment extends Fragment {
                         displayAddress(customerAddress);
                     }
                     displayCustomerProfile(customer);
+                    
+                    // Fetch DOB separately from Customer endpoint
+                    loadCustomerDOB(currentUserId);
+                    
+                    // Check for missing fields and show notification
+                    checkAndNotifyMissingFields(user, customer);
                 } else {
                     // Load from session manager as fallback
                     loadFromSessionManager();
@@ -161,6 +193,7 @@ public class CustomerProfileFragment extends Fragment {
                 if (progressBar != null) {
                     progressBar.setVisibility(View.GONE);
                 }
+
                 // Load from session manager as fallback
                 loadFromSessionManager();
             }
@@ -173,8 +206,48 @@ public class CustomerProfileFragment extends Fragment {
         c.setUsername(user.getUsername());
         c.setEmail(user.getEmail());
         c.setPhone(user.getPhoneNumber());
-        // Note: profileImageId would need to be fetched separately if needed
+        c.setFullName(user.getFullName()); // Set fullName from User model
+        c.setProfileImageId(user.getProfileImageId()); // Set profileImageId from User model
+        // Note: DOB will be fetched separately from Customer endpoint
         return c;
+    }
+    
+    private void loadCustomerDOB(Long userId) {
+        // Fetch customer details to get DOB
+        Call<CustomerUpdateResponse> call = apiInterface.getCustomerByUserId(userId);
+        call.enqueue(new Callback<CustomerUpdateResponse>() {
+            @Override
+            public void onResponse(Call<CustomerUpdateResponse> call, Response<CustomerUpdateResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    CustomerUpdateResponse customerResponse = response.body();
+                    String dob = customerResponse.getDateOfBirth();
+                    if (dob != null && !dob.isEmpty() && customer != null) {
+                        customer.setDateOfBirth(dob);
+                        displayDOB(dob);
+                    }
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<CustomerUpdateResponse> call, Throwable t) {
+                // Silently fail - DOB is optional
+            }
+        });
+    }
+    
+    private void displayDOB(String dob) {
+        if (tvDateOfBirth != null && dob != null && !dob.isEmpty()) {
+            // Format the date for display (assuming backend returns yyyy-MM-dd)
+            try {
+                // If it's already in a readable format, use it as is
+                // Otherwise, format it
+                tvDateOfBirth.setText(dob);
+            } catch (Exception e) {
+                tvDateOfBirth.setText(dob);
+            }
+        } else if (tvDateOfBirth != null) {
+            tvDateOfBirth.setText("N/A");
+        }
     }
     
     private void loadCustomerAddress() {
@@ -221,15 +294,31 @@ public class CustomerProfileFragment extends Fragment {
             }
         }
         
-        // Full name (using username if no full name)
+        // Full name (from customer model, fallback to username if not available)
         if (tvFullName != null) {
-            tvFullName.setText(username != null ? username : "N/A");
+            String fullName = customer.getFullName();
+            if (fullName == null || fullName.isEmpty()) {
+                // Use username as fallback
+                tvFullName.setText(username != null ? username : "N/A");
+            } else {
+                tvFullName.setText(fullName);
+            }
         }
         
         // Email
         if (tvEmail != null) {
             String email = customer.getEmail();
             tvEmail.setText(email != null && !email.isEmpty() ? email : "N/A");
+        }
+        
+        // Date of Birth
+        if (tvDateOfBirth != null) {
+            String dob = customer.getDateOfBirth();
+            if (dob != null && !dob.isEmpty()) {
+                displayDOB(dob);
+            } else {
+                tvDateOfBirth.setText("N/A");
+            }
         }
         
         // Profile image - prioritize imageId, then imageUrl, then base64
@@ -337,7 +426,18 @@ public class CustomerProfileFragment extends Fragment {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        android.util.Log.d("CustomerProfileFragment", "onActivityResult - requestCode: " + requestCode + ", resultCode: " + resultCode);
         
+        // Handle image picker for EditProfileDialog ONLY if the dialog is open
+        if ((requestCode == EditProfileDialog.REQUEST_CODE_PICK_IMAGE || 
+             requestCode == EditProfileDialog.REQUEST_CODE_CAMERA) &&
+            EditProfileDialog.isDialogOpen()) {
+            android.util.Log.d("CustomerProfileFragment", "Handling EditProfileDialog image picker result");
+            EditProfileDialog.handleImagePickerResult(getActivity(), requestCode, resultCode, data);
+            return;
+        }
+        
+        // Handle direct profile image upload (from edit icon beside profile image)
         if (resultCode != Activity.RESULT_OK) return;
         
         Bitmap bitmap = null;
@@ -348,6 +448,7 @@ public class CustomerProfileFragment extends Fragment {
                 InputStream inputStream = getActivity().getContentResolver().openInputStream(imageUri);
                 bitmap = BitmapFactory.decodeStream(inputStream);
             } catch (Exception e) {
+                android.util.Log.e("CustomerProfileFragment", "Failed to load image from gallery", e);
                 ToastUtils.showError(getContext(), "Failed to load image");
                 return;
             }
@@ -363,22 +464,57 @@ public class CustomerProfileFragment extends Fragment {
     private void uploadProfileImage(Bitmap bitmap) {
         if (getContext() == null) return;
         
-        // Get user ID - prioritize currentUserId, then customer object, then session
+        // We need customerId, not userId. Fetch it from backend if we don't have it
+        // First try to get it from customer object if available
         Long customerId = null;
-        if (currentUserId != null) {
-            customerId = currentUserId;
-        } else if (customer != null && customer.getId() != null) {
-            customerId = customer.getId();
+        if (customer != null && customer.getId() != null) {
+            // Check if this is actually customerId or userId
+            // We need to fetch customerId from backend using userId
+            Long userId = currentUserId != null ? currentUserId : sessionManager.getUserId();
+            if (userId == null) {
+                ToastUtils.showError(getContext(), "Unable to identify user. Please ensure you are logged in and try again.");
+                return;
+            }
+            // Fetch customerId from backend
+            fetchCustomerIdAndUploadImage(userId, bitmap);
+            return;
         } else {
-            customerId = sessionManager.getUserId();
-        }
-        
-        // If still null, we can't proceed
-        if (customerId == null) {
-            ToastUtils.showError(getContext(), "Unable to identify user. Please ensure you are logged in and try again.");
+            Long userId = currentUserId != null ? currentUserId : sessionManager.getUserId();
+            if (userId == null) {
+                ToastUtils.showError(getContext(), "Unable to identify user. Please ensure you are logged in and try again.");
+                return;
+            }
+            fetchCustomerIdAndUploadImage(userId, bitmap);
             return;
         }
-        
+    }
+    
+    private void fetchCustomerIdAndUploadImage(Long userId, Bitmap bitmap) {
+        // Fetch customerId from backend using userId
+        Call<CustomerUpdateResponse> call = apiInterface.getCustomerByUserId(userId);
+        call.enqueue(new Callback<CustomerUpdateResponse>() {
+            @Override
+            public void onResponse(Call<CustomerUpdateResponse> call, Response<CustomerUpdateResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Long customerId = response.body().getId();
+                    if (customerId != null) {
+                        uploadProfileImageWithCustomerId(bitmap, customerId);
+                    } else {
+                        ToastUtils.showError(getContext(), "Customer profile not found");
+                    }
+                } else {
+                    ToastUtils.showError(getContext(), "Failed to fetch customer profile");
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<CustomerUpdateResponse> call, Throwable t) {
+                ToastUtils.showError(getContext(), "Error: " + t.getMessage());
+            }
+        });
+    }
+    
+    private void uploadProfileImageWithCustomerId(Bitmap bitmap, Long customerId) {
         try {
             // Convert bitmap to byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -402,8 +538,7 @@ public class CustomerProfileFragment extends Fragment {
                 progressBar.setVisibility(View.VISIBLE);
             }
             
-            // Use ImageController endpoint: /images/upload/{imageType}/{ownerId}
-            // ImageType: CUSTOMER_PROFILE (assuming this is the enum value)
+            // Use customerId as ownerId (same pattern as provider uses providerId)
             String imageType = "CUSTOMER_PROFILE";
             Call<Image> call = apiInterface.uploadImage(imageType, customerId, imagePart);
             call.enqueue(new Callback<Image>() {
@@ -493,6 +628,60 @@ public class CustomerProfileFragment extends Fragment {
         });
     }
     
+    private void showEditProfileDialog() {
+        // Ensure we have userId before showing dialog
+        Long userId = currentUserId != null ? currentUserId : sessionManager.getUserId();
+        if (userId == null) {
+            ToastUtils.showError(getContext(), "Unable to identify user. Please log in again.");
+            return;
+        }
+        
+        Log.d("CustomerProfileFragment", "Showing EditProfileDialog with userId: " + userId + ", customer: " + (customer != null ? customer.getId() : "null"));
+        
+        // Ensure customer has DOB before showing dialog - fetch if needed
+        if (customer != null && (customer.getDateOfBirth() == null || customer.getDateOfBirth().isEmpty())) {
+            // Fetch customer details to get DOB
+            Call<CustomerUpdateResponse> call = apiInterface.getCustomerByUserId(userId);
+            call.enqueue(new Callback<CustomerUpdateResponse>() {
+                @Override
+                public void onResponse(Call<CustomerUpdateResponse> call, Response<CustomerUpdateResponse> response) {
+                    if (response.isSuccessful() && response.body() != null && customer != null) {
+                        String dob = response.body().getDateOfBirth();
+                        if (dob != null && !dob.isEmpty()) {
+                            customer.setDateOfBirth(dob);
+                        }
+                    }
+                    // Show dialog regardless of DOB fetch result
+                    showEditProfileDialogInternal();
+                }
+                
+                @Override
+                public void onFailure(Call<CustomerUpdateResponse> call, Throwable t) {
+                    // Show dialog even if DOB fetch fails
+                    showEditProfileDialogInternal();
+                }
+            });
+        } else {
+            showEditProfileDialogInternal();
+        }
+    }
+    
+    private void showEditProfileDialogInternal() {
+        // Pass Fragment instead of Context so we can use Fragment's startActivityForResult
+        EditProfileDialog.show(this, customer, new EditProfileDialog.EditProfileDialogListener() {
+            @Override
+            public void onProfileSaved() {
+                // Reload profile
+                loadCustomerProfile();
+            }
+            
+            @Override
+            public void onCancel() {
+                // Do nothing
+            }
+        });
+    }
+    
     private void showLogoutDialog() {
         if (getActivity() != null) {
             new AlertDialog.Builder(getActivity())
@@ -512,6 +701,46 @@ public class CustomerProfileFragment extends Fragment {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             getActivity().finish();
+        }
+    }
+    
+    private void checkAndNotifyMissingFields(User user, Customer customer) {
+        if (getContext() == null || getActivity() == null) return;
+        
+        java.util.List<String> missingFields = new java.util.ArrayList<>();
+        
+        // Check fullName
+        String fullName = customer != null ? customer.getFullName() : null;
+        if (fullName == null || fullName.trim().isEmpty()) {
+            missingFields.add("Full Name");
+        }
+        
+        // Check email
+        String email = user != null ? user.getEmail() : null;
+        if (email == null || email.trim().isEmpty()) {
+            missingFields.add("Email");
+        }
+        
+        // Show notification if fields are missing
+        if (!missingFields.isEmpty()) {
+            String message = "Please complete your profile. Missing: " + 
+                String.join(", ", missingFields) + ". Click Edit Profile to update.";
+            
+            // Use Snackbar for better UX
+            com.google.android.material.snackbar.Snackbar snackbar = 
+                com.google.android.material.snackbar.Snackbar.make(
+                    getView(),
+                    message,
+                    com.google.android.material.snackbar.Snackbar.LENGTH_LONG
+                );
+            
+            snackbar.setAction("EDIT PROFILE", v -> {
+                snackbar.dismiss();
+                showEditProfileDialog();
+            });
+            
+            snackbar.setActionTextColor(getResources().getColor(R.color.login_orange, null));
+            snackbar.show();
         }
     }
 }

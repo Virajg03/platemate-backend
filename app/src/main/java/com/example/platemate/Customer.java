@@ -27,6 +27,12 @@ public class Customer {
     @SerializedName("address")
     private Address address;
     
+    @SerializedName("fullName")
+    private String fullName;
+    
+    @SerializedName("dateOfBirth")
+    private String dateOfBirth;
+    
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -51,5 +57,11 @@ public class Customer {
     
     public Long getProfileImageId() { return profileImageId; }
     public void setProfileImageId(Long profileImageId) { this.profileImageId = profileImageId; }
+    
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+    
+    public String getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
 }
 

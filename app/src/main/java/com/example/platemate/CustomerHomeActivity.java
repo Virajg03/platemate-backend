@@ -156,12 +156,12 @@ public class CustomerHomeActivity extends AppCompatActivity {
         categoryRecyclerView.setLayoutManager(gridLayoutManager);
         categoryAdapter = new CategoryAdapter(new ArrayList<>());
         categoryAdapter.setOnItemClickListener(category -> {
-            // Filter products by category
+            // Navigate to AllProductsActivity with category filter
             if (category.getId() != null) {
-                // TODO: Navigate to filtered menu items or filter current list
-                ToastUtils.showInfo(CustomerHomeActivity.this, 
-                    "Selected category: " + category.getCategoryName());
-                // You can add navigation to a filtered product list here
+                Intent intent = new Intent(CustomerHomeActivity.this, AllProductsActivity.class);
+                intent.putExtra("categoryId", category.getId());
+                intent.putExtra("categoryName", category.getCategoryName());
+                startActivity(intent);
             } else {
                 ToastUtils.showInfo(CustomerHomeActivity.this, 
                     "Selected category: " + category.getCategoryName());

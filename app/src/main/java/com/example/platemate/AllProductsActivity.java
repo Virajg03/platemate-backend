@@ -22,7 +22,7 @@ public class AllProductsActivity extends AppCompatActivity {
     private RecyclerView rvProducts;
     private ProgressBar progressBar, progressBarLoadMore;
     private ImageView backButton;
-    private TextView emptyStateText;
+    private TextView emptyStateText, tvTitle;
     
     private ApiInterface apiInterface;
     private BestFoodAdapter adapter;
@@ -33,6 +33,8 @@ public class AllProductsActivity extends AppCompatActivity {
     private boolean isLoading = false;
     private boolean hasMorePages = true;
     private GridLayoutManager layoutManager;
+    private Long categoryId = null; // Category filter
+    private String categoryName = null; // Category name for display
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +43,16 @@ public class AllProductsActivity extends AppCompatActivity {
         
         apiInterface = RetrofitClient.getInstance(this).getApi();
         productList = new ArrayList<>();
+        
+        // Get category filter from intent
+        if (getIntent() != null) {
+            categoryId = getIntent().hasExtra("categoryId") ? 
+                getIntent().getLongExtra("categoryId", -1) : null;
+            if (categoryId != null && categoryId == -1) {
+                categoryId = null;
+            }
+            categoryName = getIntent().getStringExtra("categoryName");
+        }
         
         initializeViews();
         setupRecyclerView();
@@ -54,6 +66,14 @@ public class AllProductsActivity extends AppCompatActivity {
         progressBarLoadMore = findViewById(R.id.progressBarLoadMore);
         backButton = findViewById(R.id.backButton);
         emptyStateText = findViewById(R.id.emptyStateText);
+        tvTitle = findViewById(R.id.tvTitle);
+        
+        // Update title based on category filter
+        if (categoryName != null && !categoryName.isEmpty()) {
+            tvTitle.setText(categoryName.toUpperCase());
+        } else {
+            tvTitle.setText("ALL PRODUCTS");
+        }
     }
     
     private void setupRecyclerView() {
@@ -118,7 +138,14 @@ public class AllProductsActivity extends AppCompatActivity {
             progressBarLoadMore.setVisibility(View.VISIBLE);
         }
         
-        Call<MenuItemResponse> call = apiInterface.getCustomerMenuItems(currentPage, pageSize, "id,desc");
+        Call<MenuItemResponse> call;
+        // Use category-filtered endpoint if categoryId is provided
+        if (categoryId != null) {
+            call = apiInterface.getCustomerMenuItemsByCategory(categoryId, currentPage, pageSize, "id,desc");
+        } else {
+            call = apiInterface.getCustomerMenuItems(currentPage, pageSize, "id,desc");
+        }
+        
         call.enqueue(new Callback<MenuItemResponse>() {
             @Override
             public void onResponse(Call<MenuItemResponse> call, Response<MenuItemResponse> response) {

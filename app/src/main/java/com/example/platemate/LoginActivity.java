@@ -109,15 +109,13 @@ public class LoginActivity extends AppCompatActivity {
                     Long userId = userDetails.getUserId();
 
                     SessionManager sessionManager = new SessionManager(LoginActivity.this);
-                    sessionManager.saveLoginSession(token, refreshToken, role, username, userId);
-
-                    ToastUtils.showSuccess(LoginActivity.this, "Login Successful!");
-
-                    // Check if provider needs to fill details
-                    if ("Provider".equals(role)) {
-                        checkProviderProfileComplete();
+                    
+                    // If userId is not in response, fetch it from backend
+                    if (userId == null) {
+                        fetchUserIdAndSaveSession(token, refreshToken, role, username, sessionManager);
                     } else {
-                        navigateToMainActivity();
+                        sessionManager.saveLoginSession(token, refreshToken, role, username, userId);
+                        proceedAfterLogin(role);
                     }
                 } else {
                     ToastUtils.showError(LoginActivity.this, "Invalid credentials!");
@@ -170,6 +168,30 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
+    private void fetchUserIdAndSaveSession(String token, String refreshToken, String role, 
+            String username, SessionManager sessionManager) {
+        // Save session without userId first (will be updated once we fetch it)
+        sessionManager.saveLoginSession(token, refreshToken, role, username, null);
+        
+        // Note: We can't easily fetch userId without knowing it first
+        // The profile fragment will handle fetching userId when the profile is loaded
+        // This is a fallback for cases where backend hasn't been updated yet
+        // Once backend is updated, userId will be in login response
+        
+        proceedAfterLogin(role);
+    }
+    
+    private void proceedAfterLogin(String role) {
+        ToastUtils.showSuccess(LoginActivity.this, "Login Successful!");
+
+        // Check if provider needs to fill details
+        if ("Provider".equals(role)) {
+            checkProviderProfileComplete();
+        } else {
+            navigateToMainActivity();
+        }
+    }
+    
     private void navigateToMainActivity() {
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);

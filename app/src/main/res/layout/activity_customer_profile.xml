@@ -97,7 +97,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:background="@drawable/neubrutal_shadow"
-                            android:padding="4dp">
+                            android:padding="0dp">
 
                             <ImageView
                                 android:id="@+id/ivProfilePicture"
@@ -202,7 +202,8 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:layout_marginBottom="20dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -219,6 +220,32 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="email@example.com"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- Date of Birth -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DATE OF BIRTH"
+                        android:textColor="@color/login_orange"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.1"
+                        android:layout_marginBottom="6dp" />
+
+                    <TextView
+                        android:id="@+id/tvDateOfBirth"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="N/A"
                         android:textColor="@color/black"
                         android:textSize="18sp"
                         android:textStyle="bold" />
@@ -403,35 +430,6 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Change Password"
-                        android:textColor="@color/black"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/back"
-                        android:rotation="270"
-                        android:contentDescription="Arrow" />
-                </LinearLayout>
-
-                <!-- Connect Social -->
-                <LinearLayout
-                    android:id="@+id/btnConnectSocial"
-                    android:layout_width="match_parent"
-                    android:layout_height="64dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:background="@drawable/neubrutal_card"
-                    android:padding="16dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:layout_marginBottom="12dp">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Connect Social"
                         android:textColor="@color/black"
                         android:textSize="18sp"
                         android:textStyle="bold" />

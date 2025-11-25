@@ -156,7 +156,7 @@ public interface ApiInterface {
     Call<Image> uploadImage(
         @Path("imageType") String imageType,
         @Path("ownerId") Long ownerId,
-        @Part("file") MultipartBody.Part file
+        @Part MultipartBody.Part file
     );
     
     // Get image by ID
@@ -166,4 +166,16 @@ public interface ApiInterface {
     // Customer Address endpoints - using /api/users/{userId}/address
     @POST("/api/users/{userId}/address")
     Call<Address> saveOrUpdateCustomerAddress(@Path("userId") Long userId, @Body AddressRequest addressRequest);
+    
+    // Customer update endpoint for fullName and DOB
+    @PUT("/api/customers/{id}")
+    Call<CustomerUpdateResponse> updateCustomer(@Path("id") Long id, @Body CustomerUpdateRequest request);
+    
+    // Get customer by userId (we'll need to add this endpoint or use list and filter)
+    @GET("/api/customers")
+    Call<List<CustomerUpdateResponse>> getCustomers();
+    
+    // Get customer by userId - we'll add this endpoint to backend
+    @GET("/api/customers/user/{userId}")
+    Call<CustomerUpdateResponse> getCustomerByUserId(@Path("userId") Long userId);
 }

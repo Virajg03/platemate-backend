@@ -173,13 +173,15 @@ public class AddressDialog {
         }
         
         // Create AddressRequest matching backend format
+        // Backend AddressType enum accepts: OTHER, OFFICE, HOME, BUSINESS
+        // Using "HOME" for customer delivery addresses
         AddressRequest request = new AddressRequest(
             street,           // street1
             "",              // street2 (not used in Android)
             city,
             state,
             zipCode,         // pincode
-            "DELIVERY"       // address_type
+            "HOME"           // address_type (valid enum values: OTHER, OFFICE, HOME, BUSINESS)
         );
         
         progressBar.setVisibility(View.VISIBLE);
