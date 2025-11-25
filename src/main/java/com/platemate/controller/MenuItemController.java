@@ -19,9 +19,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
+import jakarta.validation.Valid;
 
 import com.platemate.dto.MenuItemDtos;
 import com.platemate.enums.ImageType;
+import com.platemate.exception.BadRequestException;
 import com.platemate.exception.ForbiddenException;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.Category;
@@ -73,11 +76,18 @@ public class MenuItemController {
         return provider;
     }
 
+    @Transactional
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MenuItemDtos.Response> create(
-            @RequestPart("data") MenuItemDtos.CreateRequest data,
+            @RequestPart("data") @Valid MenuItemDtos.CreateRequest data,
             @RequestPart(value = "image", required = false) MultipartFile image) throws Exception {
         TiffinProvider provider = currentProviderOrThrow();
+        
+        // Validate image if provided
+        if (image != null && !image.isEmpty()) {
+            validateImage(image);
+        }
+        
         Category category = categoryRepository.findById(data.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
         MenuItem item = new MenuItem();
@@ -108,17 +118,38 @@ public class MenuItemController {
         }
         return ResponseEntity.ok(toResponse(saved));
     }
+    
+    private void validateImage(MultipartFile image) {
+        if (image.isEmpty()) {
+            throw new BadRequestException("Image file is empty");
+        }
+        
+        // Check content type
+        String contentType = image.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new BadRequestException("File must be an image. Received content type: " + contentType);
+        }
+        
+        // Check file size (max 5MB)
+        long maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if (image.getSize() > maxSize) {
+            throw new BadRequestException("Image size must not exceed 5MB. Current size: " + (image.getSize() / 1024) + "KB");
+        }
+    }
 
+    @Transactional(readOnly = true)
     @GetMapping
     public ResponseEntity<List<MenuItemDtos.Response>> listMine() {
         TiffinProvider provider = currentProviderOrThrow();
         List<MenuItem> menuItems = menuItemRepository
                 .findAllByProvider_IdAndIsDeletedFalse(provider.getId());
         menuItems.forEach(menuItemService::loadMenuItemExtras);
+        // Access LOB data while still in transaction
         List<MenuItemDtos.Response> items = menuItems.stream().map(this::toResponse).toList();
         return ResponseEntity.ok(items);
     }
 
+    @Transactional(readOnly = true)
     @GetMapping("/{id}")
     public ResponseEntity<MenuItemDtos.Response> getMine(@PathVariable Long id) {
         TiffinProvider provider = currentProviderOrThrow();
@@ -128,9 +159,11 @@ public class MenuItemController {
             throw new ForbiddenException("Cannot access another provider's item");
         }
         menuItemService.loadMenuItemExtras(item);
+        // Access LOB data while still in transaction
         return ResponseEntity.ok(toResponse(item));
     }
 
+    @Transactional
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MenuItemDtos.Response> update(
             @PathVariable Long id,
@@ -169,9 +202,12 @@ public class MenuItemController {
         } else {
             menuItemService.loadMenuItemExtras(saved);
         }
+        menuItemService.loadMenuItemExtras(saved);
+        // Access LOB data while still in transaction
         return ResponseEntity.ok(toResponse(saved));
     }
 
+    @Transactional
     @PatchMapping("/{id}/availability")
     public ResponseEntity<MenuItemDtos.Response> toggleAvailability(@PathVariable Long id, @RequestBody java.util.Map<String, Boolean> req) {
         TiffinProvider provider = currentProviderOrThrow();
@@ -186,6 +222,7 @@ public class MenuItemController {
         }
         MenuItem saved = menuItemRepository.save(item);
         menuItemService.loadMenuItemExtras(saved);
+        // Access LOB data while still in transaction
         return ResponseEntity.ok(toResponse(saved));
     }
 
@@ -205,7 +242,10 @@ public class MenuItemController {
     private MenuItemDtos.Response toResponse(MenuItem item) {
         MenuItemDtos.Response res = new MenuItemDtos.Response();
         res.setId(item.getId());
-        res.setCategoryId(item.getCategory() != null ? item.getCategory().getId() : null);
+        if (item.getCategory() != null) {
+            res.setCategoryId(item.getCategory().getId());
+            res.setCategoryName(item.getCategory().getCategoryName());
+        }
         res.setItemName(item.getItemName());
         res.setDescription(item.getDescription());
         res.setPrice(item.getPrice());

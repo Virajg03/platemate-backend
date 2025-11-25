@@ -1,16 +1,34 @@
 package com.platemate.dto;
 
 import com.platemate.enums.MealType;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class MenuItemDtos {
 
     public static class CreateRequest {
+        @NotNull(message = "Category ID is required")
         private Long categoryId;
+        
+        @NotBlank(message = "Item name is required")
+        @Size(max = 255, message = "Item name must not exceed 255 characters")
         private String itemName;
+        
+        @Size(max = 1000, message = "Description must not exceed 1000 characters")
         private String description;
+        
+        @NotNull(message = "Price is required")
+        @Min(value = 0, message = "Price must be positive or zero")
         private Double price;
+        
+        @Size(max = 1000, message = "Ingredients must not exceed 1000 characters")
         private String ingredients;
+        
+        @NotNull(message = "Meal type is required")
         private MealType mealType;
+        
         private Boolean isAvailable;
         public Long getCategoryId() { return categoryId; }
         public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
@@ -55,6 +73,7 @@ public class MenuItemDtos {
     public static class Response {
         private Long id;
         private Long categoryId;
+        private String categoryName;
         private String itemName;
         private String description;
         private Double price;
@@ -67,6 +86,8 @@ public class MenuItemDtos {
         public void setId(Long id) { this.id = id; }
         public Long getCategoryId() { return categoryId; }
         public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+        public String getCategoryName() { return categoryName; }
+        public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
         public String getItemName() { return itemName; }
         public void setItemName(String itemName) { this.itemName = itemName; }
         public String getDescription() { return description; }
