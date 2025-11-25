@@ -90,22 +90,41 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             }
             tvQuantity.setText("Qty: " + quantity);
             
-            // Load image using Glide - handle null and construct full URL if needed
-            String imageUrl = product.getImageUrl();
-            if (imageUrl != null && !imageUrl.isEmpty()) {
-                // Construct full URL if it's a relative path
-                if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
-                    // Get base URL from RetrofitClient
-                    String baseUrl = "https://trypanosomal-annalise-stenographic.ngrok-free.dev";
-                    imageUrl = baseUrl + imageUrl;
+            // Load image - prioritize base64, fallback to URL
+            String imageBase64 = product.getImageBase64();
+            if (imageBase64 != null && !imageBase64.isEmpty()) {
+                try {
+                    // Decode base64 to byte array
+                    byte[] imageBytes = android.util.Base64.decode(imageBase64, android.util.Base64.DEFAULT);
+                    // Load using Glide
+                    Glide.with(itemView.getContext())
+                        .load(imageBytes)
+                        .placeholder(R.drawable.neubrutal_card)
+                        .error(R.drawable.neubrutal_card)
+                        .into(ivProduct);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    // Fallback to placeholder if base64 decode fails
+                    ivProduct.setImageResource(android.R.drawable.ic_menu_gallery);
                 }
-                Glide.with(itemView.getContext())
-                    .load(imageUrl)
-                    .placeholder(R.drawable.neubrutal_card)
-                    .error(R.drawable.neubrutal_card)
-                    .into(ivProduct);
             } else {
-                ivProduct.setImageResource(android.R.drawable.ic_menu_gallery);
+                // Fallback to URL if base64 not available
+                String imageUrl = product.getImageUrl();
+                if (imageUrl != null && !imageUrl.isEmpty()) {
+                    // Construct full URL if it's a relative path
+                    if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
+                        // Get base URL from RetrofitClient
+                        String baseUrl = "https://trypanosomal-annalise-stenographic.ngrok-free.dev";
+                        imageUrl = baseUrl + imageUrl;
+                    }
+                    Glide.with(itemView.getContext())
+                        .load(imageUrl)
+                        .placeholder(R.drawable.neubrutal_card)
+                        .error(R.drawable.neubrutal_card)
+                        .into(ivProduct);
+                } else {
+                    ivProduct.setImageResource(android.R.drawable.ic_menu_gallery);
+                }
             }
         }
     }

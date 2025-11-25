@@ -1,12 +1,24 @@
 package com.example.platemate;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.Toast;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import com.google.gson.Gson;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -15,6 +27,8 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,12 +38,18 @@ public class AddProductActivity extends AppCompatActivity {
     private EditText etProductName, etDescription, etPrice, etIngredients;
     private AutoCompleteTextView etCategory;
     private Spinner spMealType;
-    private Button btnSaveProduct;
+    private Button btnSaveProduct, btnSelectImage;
+    private ImageView ivProductImage;
     private ApiInterface apiInterface;
     
     private List<Category> categoriesList = new ArrayList<>();
     private Map<String, Long> categoryNameToIdMap = new HashMap<>();
     private String[] mealTypes = {"VEG", "NON_VEG", "JAIN"};
+    private Uri selectedImageUri;
+    private File selectedImageFile;
+    
+    private ActivityResultLauncher<Intent> imagePickerLauncher;
+    private ActivityResultLauncher<String> permissionLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,9 +65,11 @@ public class AddProductActivity extends AppCompatActivity {
         
         initializeViews();
         setupMealTypeSpinner();
+        setupImagePicker();
         loadCategories();
         
         btnSaveProduct.setOnClickListener(v -> saveProduct());
+        btnSelectImage.setOnClickListener(v -> requestImagePermissionAndPick());
     }
 
     private void initializeViews() {
@@ -58,6 +80,8 @@ public class AddProductActivity extends AppCompatActivity {
         etCategory = findViewById(R.id.etCategory);
         spMealType = findViewById(R.id.spMealType);
         btnSaveProduct = findViewById(R.id.btnSaveProduct);
+        btnSelectImage = findViewById(R.id.btnSelectImage);
+        ivProductImage = findViewById(R.id.ivProductImage);
         
         // Configure AutoCompleteTextView for dropdown
         etCategory.setFocusable(false);
@@ -86,6 +110,83 @@ public class AddProductActivity extends AppCompatActivity {
             this, android.R.layout.simple_spinner_item, mealTypes);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spMealType.setAdapter(adapter);
+    }
+    
+    private void setupImagePicker() {
+        imagePickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null) {
+                        selectedImageUri = uri;
+                        selectedImageFile = getImageFileFromUri(uri);
+                        if (selectedImageFile != null) {
+                            ivProductImage.setImageURI(uri);
+                            ivProductImage.setVisibility(android.view.View.VISIBLE);
+                        }
+                    }
+                }
+            }
+        );
+        
+        permissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    openImagePicker();
+                } else {
+                    Toast.makeText(this, "Permission denied. Cannot select image.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        );
+    }
+    
+    private void requestImagePermissionAndPick() {
+        String permission;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permission = Manifest.permission.READ_MEDIA_IMAGES;
+        } else {
+            permission = Manifest.permission.READ_EXTERNAL_STORAGE;
+        }
+        
+        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
+            openImagePicker();
+        } else {
+            permissionLauncher.launch(permission);
+        }
+    }
+    
+    private void openImagePicker() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        imagePickerLauncher.launch(intent);
+    }
+    
+    private File getImageFileFromUri(Uri uri) {
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            if (inputStream == null) {
+                return null;
+            }
+            
+            // Create a temporary file
+            File tempFile = new File(getCacheDir(), "temp_image_" + System.currentTimeMillis() + ".jpg");
+            FileOutputStream outputStream = new FileOutputStream(tempFile);
+            
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            
+            outputStream.close();
+            inputStream.close();
+            
+            return tempFile;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private void loadCategories() {
@@ -218,22 +319,19 @@ public class AddProductActivity extends AppCompatActivity {
                 jsonData
             );
 
-            // Handle image upload - for now, we'll skip image since it requires file handling
-            // You can add image picker later if needed
+            // Handle image upload
             MultipartBody.Part imagePart = null;
-            // TODO: Add image picker functionality if needed
-            // File imageFile = new File(imagePath);
-            // if (imageFile.exists()) {
-            //     RequestBody imageRequestBody = RequestBody.create(
-            //         MediaType.parse("image/*"), 
-            //         imageFile
-            //     );
-            //     imagePart = MultipartBody.Part.createFormData(
-            //         "image", 
-            //         imageFile.getName(), 
-            //         imageRequestBody
-            //     );
-            // }
+            if (selectedImageFile != null && selectedImageFile.exists()) {
+                RequestBody imageRequestBody = RequestBody.create(
+                    MediaType.parse("image/*"), 
+                    selectedImageFile
+                );
+                imagePart = MultipartBody.Part.createFormData(
+                    "image", 
+                    selectedImageFile.getName(), 
+                    imageRequestBody
+                );
+            }
 
             // Make API call
             Call<MenuItemResponse> call = apiInterface.createProviderMenuItem(dataPart, imagePart);
@@ -246,15 +344,51 @@ public class AddProductActivity extends AppCompatActivity {
                         finish();
                     } else {
                         String errorMessage = "Failed to add product";
-                        if (response.code() == 403) {
-                            errorMessage = "Provider not verified yet. Please wait for admin approval.";
-                        } else if (response.code() == 400) {
-                            errorMessage = "Invalid data. Please check all fields.";
-                        } else if (response.errorBody() != null) {
+                        if (response.errorBody() != null) {
                             try {
-                                errorMessage = response.errorBody().string();
+                                String errorBody = response.errorBody().string();
+                                Gson gson = new Gson();
+                                ErrorResponse errorResponse = gson.fromJson(errorBody, ErrorResponse.class);
+                                
+                                if (errorResponse != null) {
+                                    if (errorResponse.getFieldErrors() != null && !errorResponse.getFieldErrors().isEmpty()) {
+                                        // Build error message from field errors
+                                        StringBuilder sb = new StringBuilder();
+                                        for (Map.Entry<String, String> entry : errorResponse.getFieldErrors().entrySet()) {
+                                            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+                                        }
+                                        errorMessage = sb.toString().trim();
+                                    } else if (errorResponse.getMessage() != null) {
+                                        errorMessage = errorResponse.getMessage();
+                                    } else if (errorResponse.getError() != null) {
+                                        errorMessage = errorResponse.getError();
+                                    }
+                                } else {
+                                    errorMessage = errorBody;
+                                }
                             } catch (Exception e) {
                                 e.printStackTrace();
+                                // Fallback to status code based messages
+                                if (response.code() == 403) {
+                                    errorMessage = "Provider not verified yet. Please wait for admin approval.";
+                                } else if (response.code() == 400) {
+                                    errorMessage = "Invalid data. Please check all fields.";
+                                } else if (response.code() == 404) {
+                                    errorMessage = "Resource not found.";
+                                } else if (response.code() == 500) {
+                                    errorMessage = "Server error. Please try again later.";
+                                }
+                            }
+                        } else {
+                            // Fallback to status code based messages
+                            if (response.code() == 403) {
+                                errorMessage = "Provider not verified yet. Please wait for admin approval.";
+                            } else if (response.code() == 400) {
+                                errorMessage = "Invalid data. Please check all fields.";
+                            } else if (response.code() == 404) {
+                                errorMessage = "Resource not found.";
+                            } else if (response.code() == 500) {
+                                errorMessage = "Server error. Please try again later.";
                             }
                         }
                         ToastUtils.showError(AddProductActivity.this, errorMessage);

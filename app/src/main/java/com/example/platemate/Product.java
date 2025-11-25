@@ -6,6 +6,8 @@ public class Product {
     private String description = "";
     private Double price = 0.0;
     private String imageUrl = "";
+    private String imageBase64 = "";
+    private String imageFileType = "";
     private String category = "";
     private Boolean isAvailable = true;
     private Integer quantity = 0;
@@ -92,6 +94,22 @@ public class Product {
 
     public void setProviderId(String providerId) {
         this.providerId = providerId;
+    }
+
+    public String getImageBase64() {
+        return imageBase64;
+    }
+
+    public void setImageBase64(String imageBase64) {
+        this.imageBase64 = imageBase64;
+    }
+
+    public String getImageFileType() {
+        return imageFileType;
+    }
+
+    public void setImageFileType(String imageFileType) {
+        this.imageFileType = imageFileType;
     }
 }
 

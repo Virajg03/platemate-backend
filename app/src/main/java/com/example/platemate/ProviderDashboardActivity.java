@@ -386,16 +386,21 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     }
 
     private void loadProducts() {
-        Call<List<Product>> call = apiInterface.getProviderProducts();
-        call.enqueue(new Callback<List<Product>>() {
+        // Use the new menu-items endpoint which returns base64 images
+        Call<List<MenuItemResponse>> call = apiInterface.getProviderMenuItems();
+        call.enqueue(new Callback<List<MenuItemResponse>>() {
             @Override
-            public void onResponse(Call<List<Product>> call, Response<List<Product>> response) {
+            public void onResponse(Call<List<MenuItemResponse>> call, Response<List<MenuItemResponse>> response) {
                 try {
                     if (response.isSuccessful()) {
-                        List<Product> products = response.body();
-                        if (products != null) {
+                        List<MenuItemResponse> menuItems = response.body();
+                        if (menuItems != null) {
+                            // Convert MenuItemResponse to Product format
                             productList.clear();
-                            productList.addAll(products);
+                            for (MenuItemResponse menuItem : menuItems) {
+                                Product product = convertMenuItemToProduct(menuItem);
+                                productList.add(product);
+                            }
                             productAdapter.notifyDataSetChanged();
                             updateProductCount();
                             updateEmptyState();
@@ -412,7 +417,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
                         if (response.code() == 403) {
                             errorMessage = "Provider not verified yet. Please wait for admin approval.";
                         } else if (response.code() == 404) {
-                            errorMessage = "Products endpoint not found";
+                            errorMessage = "Menu items endpoint not found";
                         } else if (response.code() == 401) {
                             errorMessage = "Authentication required. Please login again.";
                         } else if (response.errorBody() != null) {
@@ -438,7 +443,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<List<Product>> call, Throwable t) {
+            public void onFailure(Call<List<MenuItemResponse>> call, Throwable t) {
                 // Network error or other failure - don't crash the app
                 String errorMessage = "Network error. Please check your connection.";
                 if (t.getMessage() != null && !t.getMessage().isEmpty()) {
@@ -448,6 +453,38 @@ public class ProviderDashboardActivity extends AppCompatActivity {
                 updateEmptyState();
             }
         });
+    }
+
+    /**
+     * Convert MenuItemResponse to Product format for compatibility with existing adapter
+     */
+    private Product convertMenuItemToProduct(MenuItemResponse menuItem) {
+        Product product = new Product();
+        
+        // Basic fields
+        product.setId(menuItem.getId());
+        product.setName(menuItem.getItemName() != null ? menuItem.getItemName() : "Unnamed Product");
+        product.setDescription(menuItem.getDescription() != null ? menuItem.getDescription() : "");
+        product.setPrice(menuItem.getPrice() != null ? menuItem.getPrice() : 0.0);
+        product.setIsAvailable(menuItem.getIsAvailable() != null ? menuItem.getIsAvailable() : true);
+        product.setQuantity(0); // Menu items don't have quantity in the same way
+        
+        // Handle images - get first image from base64 list
+        if (menuItem.getImageBase64List() != null && !menuItem.getImageBase64List().isEmpty()) {
+            product.setImageBase64(menuItem.getImageBase64List().get(0));
+            if (menuItem.getImageFileTypeList() != null && !menuItem.getImageFileTypeList().isEmpty()) {
+                product.setImageFileType(menuItem.getImageFileTypeList().get(0));
+            }
+        }
+        
+        // Set category name if available
+        if (menuItem.getCategoryName() != null && !menuItem.getCategoryName().isEmpty()) {
+            product.setCategory(menuItem.getCategoryName());
+        } else {
+            product.setCategory(""); // Will be set to "N/A" in adapter if empty
+        }
+        
+        return product;
     }
 
     private void updateProductCount() {

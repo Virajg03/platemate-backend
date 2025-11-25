@@ -57,6 +57,106 @@ public class MenuItemResponse {
 
     public Boolean getIsLast() { return isLast; }
     public void setIsLast(Boolean isLast) { this.isLast = isLast; }
+    private Long id;
+    private Long categoryId;
+    private String categoryName;
+    private String itemName;
+    private String description;
+    private Double price;
+    private String ingredients;
+    private String mealType;
+    private Boolean isAvailable;
+    private java.util.List<String> imageBase64List;
+    private java.util.List<String> imageFileTypeList;
+    
+    // Getters and setters
+    public Long getId() { 
+        return id; 
+    }
+    
+    public void setId(Long id) { 
+        this.id = id; 
+    }
+    
+    public Long getCategoryId() { 
+        return categoryId; 
+    }
+    
+    public void setCategoryId(Long categoryId) { 
+        this.categoryId = categoryId; 
+    }
+    
+    public String getCategoryName() {
+        return categoryName;
+    }
+    
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
+    }
+    
+    public String getItemName() { 
+        return itemName; 
+    }
+    
+    public void setItemName(String itemName) { 
+        this.itemName = itemName; 
+    }
+    
+    public String getDescription() { 
+        return description; 
+    }
+    
+    public void setDescription(String description) { 
+        this.description = description; 
+    }
+    
+    public Double getPrice() { 
+        return price; 
+    }
+    
+    public void setPrice(Double price) { 
+        this.price = price; 
+    }
+    
+    public String getIngredients() { 
+        return ingredients; 
+    }
+    
+    public void setIngredients(String ingredients) { 
+        this.ingredients = ingredients; 
+    }
+    
+    public String getMealType() { 
+        return mealType; 
+    }
+    
+    public void setMealType(String mealType) { 
+        this.mealType = mealType; 
+    }
+    
+    public Boolean getIsAvailable() { 
+        return isAvailable; 
+    }
+    
+    public void setIsAvailable(Boolean isAvailable) { 
+        this.isAvailable = isAvailable; 
+    }
+    
+    public java.util.List<String> getImageBase64List() {
+        return imageBase64List;
+    }
+    
+    public void setImageBase64List(java.util.List<String> imageBase64List) {
+        this.imageBase64List = imageBase64List;
+    }
+    
+    public java.util.List<String> getImageFileTypeList() {
+        return imageFileTypeList;
+    }
+    
+    public void setImageFileTypeList(java.util.List<String> imageFileTypeList) {
+        this.imageFileTypeList = imageFileTypeList;
+    }
 }
 
 
