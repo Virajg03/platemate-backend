@@ -63,6 +63,14 @@ public class CustomerController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN','PROVIDER','CUSTOMER')")
+    public ResponseEntity<CustomerDtos.Response> getByUserId(@PathVariable Long userId) {
+        return service.getByUserId(userId).map(this::toResponse)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

@@ -8,8 +8,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import com.platemate.enums.ImageType;
 import com.platemate.exception.ResourceNotFoundException;
+import com.platemate.model.Customer;
 import com.platemate.model.User;
+import com.platemate.repository.CustomerRepository;
+import com.platemate.repository.ImageRepository;
 import com.platemate.repository.UserRepository;
 
 @Service
@@ -21,12 +25,38 @@ public class UserService {
     @Autowired
     private AddressService addressService;
 
+    @Autowired
+    private CustomerRepository customerRepository;
+    
+    @Autowired
+    private ImageRepository imageRepository;
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
     public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // Load customer data if user is a customer
+            if (user.getRole() != null && user.getRole().name().equals("ROLE_CUSTOMER")) {
+                Optional<Customer> customerOpt = customerRepository.findByUser_IdAndIsDeletedFalse(id);
+                if (customerOpt.isPresent()) {
+                    Customer customer = customerOpt.get();
+                    // Set customer fullName as transient field on User
+                    user.setFullName(customer.getFullName());
+                    
+                    // Load profile image ID for customer
+                    // Use customerId as ownerId (same pattern as provider)
+                    Long profileImageId = imageRepository.findIdByImageTypeAndOwnerId(ImageType.CUSTOMER_PROFILE, customer.getId());
+                    if (profileImageId != null) {
+                        user.setProfileImageId(profileImageId);
+                    }
+                }
+            }
+        }
+        return userOpt;
     }
 
     public User createUser(User user) {

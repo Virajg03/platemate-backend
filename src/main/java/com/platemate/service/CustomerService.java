@@ -7,10 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.platemate.enums.ImageType;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.Customer;
+import com.platemate.model.Image;
 import com.platemate.model.User;
 import com.platemate.repository.CustomerRepository;
+import com.platemate.repository.ImageRepository;
 import com.platemate.repository.UserRepository;
 
 @Service
@@ -20,17 +23,38 @@ public class CustomerService {
     private CustomerRepository customerRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private ImageRepository imageRepository;
 
     public Customer create(Customer customer) {
         return customerRepository.save(customer);
     }
 
     public List<Customer> listActive() {
-        return customerRepository.findAllByIsDeletedFalse();
+        List<Customer> customers = customerRepository.findAllByIsDeletedFalse();
+        customers.forEach(this::loadExtras);
+        return customers;
     }
 
     public Optional<Customer> getById(Long id) {
-        return customerRepository.findById(id).filter(c -> !Boolean.TRUE.equals(c.getIsDeleted()));
+        Optional<Customer> customer = customerRepository.findById(id).filter(c -> !Boolean.TRUE.equals(c.getIsDeleted()));
+        customer.ifPresent(this::loadExtras);
+        return customer;
+    }
+    
+    public Optional<Customer> getByUserId(Long userId) {
+        Optional<Customer> customer = customerRepository.findByUser_IdAndIsDeletedFalse(userId);
+        customer.ifPresent(this::loadExtras);
+        return customer;
+    }
+    
+    // ---------------- Load profile image (similar to provider's loadExtras) ----------------
+    private void loadExtras(Customer customer) {
+        Long imageId = imageRepository.findIdByImageTypeAndOwnerId(ImageType.CUSTOMER_PROFILE, customer.getId());
+        if (imageId != null) {
+            Image profileImage = imageRepository.findById(imageId).orElse(null);
+            customer.setProfileImage(profileImage);
+        }
     }
 
     public Customer update(Long id, Customer update) {

@@ -74,7 +74,8 @@ public class AuthController {
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
         // Get role and format it for client (Android expects "Provider" not "ROLE_PROVIDER")
-        Role userRole = userService.getUserDetailsByUsername(username).getRole();
+        User user = userService.getUserDetailsByUsername(username);
+        Role userRole = user.getRole();
         String roleString = formatRoleForClient(userRole);
 
         Map<String, Object> response = new HashMap<>();
@@ -82,6 +83,7 @@ public class AuthController {
         response.put("refreshToken", refreshToken);
         response.put("username", username);
         response.put("role", roleString);
+        response.put("userId", user.getId()); // Include userId in login response
 
         return ResponseEntity.ok(response);
     }

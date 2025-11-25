@@ -17,6 +17,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -43,6 +44,14 @@ public class User extends BaseEntity implements UserDetails {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "address_id", referencedColumnName = "id")
     private Address address;
+    
+    // Transient field to hold customer's fullName (for customer users)
+    @Transient
+    private String fullName;
+    
+    // Transient field to hold customer's profileImageId (for customer users)
+    @Transient
+    private Long profileImageId;
     
     // Constructors
     public User() {}
@@ -129,5 +138,20 @@ public class User extends BaseEntity implements UserDetails {
 		this.address = address;
 	}
     
+    public String getFullName() {
+        return fullName;
+    }
+    
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+    
+    public Long getProfileImageId() {
+        return profileImageId;
+    }
+    
+    public void setProfileImageId(Long profileImageId) {
+        this.profileImageId = profileImageId;
+    }
     
 }
