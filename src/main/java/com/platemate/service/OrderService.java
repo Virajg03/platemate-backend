@@ -17,15 +17,20 @@ import com.platemate.enums.OrderStatus;
 import com.platemate.exception.BadRequestException;
 import com.platemate.exception.ForbiddenException;
 import com.platemate.exception.ResourceNotFoundException;
+import com.platemate.enums.PaymentMethod;
+import com.platemate.enums.PaymentStatus;
+import com.platemate.enums.PaymentType;
 import com.platemate.model.Cart;
 import com.platemate.model.Customer;
 import com.platemate.model.DeliveryPartner;
 import com.platemate.model.Order;
+import com.platemate.model.Payment;
 import com.platemate.model.TiffinProvider;
 import com.platemate.repository.CartRepository;
 import com.platemate.repository.CustomerRepository;
 import com.platemate.repository.DeliveryPartnerRepository;
 import com.platemate.repository.OrderRepository;
+import com.platemate.repository.PaymentRepository;
 import com.platemate.repository.TiffinProviderRepository;
 
 @Service
@@ -48,6 +53,9 @@ public class OrderService {
 
     @Autowired
     private CartService cartService;
+    
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -109,11 +117,37 @@ public class OrderService {
         // Calculate total amount (round to 2 decimal places)
         Double totalAmount = Math.round((subtotal + deliveryFee + platformCommission) * 100.0) / 100.0;
 
+        // Determine payment method and type
+        String paymentMethodStr = req.getPaymentMethod() != null ? req.getPaymentMethod().toUpperCase() : "CASH";
+        PaymentMethod paymentMethod;
+        PaymentType paymentType;
+        PaymentStatus paymentStatus;
+        OrderStatus initialOrderStatus;
+        
+        try {
+            paymentMethod = PaymentMethod.valueOf(paymentMethodStr);
+        } catch (IllegalArgumentException e) {
+            // Default to CASH if invalid payment method
+            paymentMethod = PaymentMethod.CASH;
+        }
+        
+        // If payment method is CASH, it's COD (Cash on Delivery)
+        if (paymentMethod == PaymentMethod.CASH) {
+            paymentType = PaymentType.COD;
+            paymentStatus = PaymentStatus.PENDING; // Will be marked as SUCCESS on delivery
+            initialOrderStatus = OrderStatus.CONFIRMED; // COD orders are confirmed immediately
+        } else {
+            // For online payments (UPI, Card, etc.), it's PREPAID
+            paymentType = PaymentType.PREPAID;
+            paymentStatus = PaymentStatus.PENDING; // Will be updated after Razorpay payment
+            initialOrderStatus = OrderStatus.PENDING; // Wait for payment confirmation
+        }
+
         // Create order
         Order order = new Order();
         order.setCustomer(customer);
         order.setProvider(provider);
-        order.setOrderStatus(OrderStatus.PENDING);
+        order.setOrderStatus(initialOrderStatus);
         order.setDeliveryFee(deliveryFee);
         order.setPlatformCommission(platformCommission);
         order.setTotalAmount(totalAmount);
@@ -133,6 +167,22 @@ public class OrderService {
 
         // Save order
         Order savedOrder = orderRepository.save(order);
+
+        // Create Payment record only for COD orders
+        // For Razorpay/prepaid orders, payment will be created in PaymentService.createRazorpayOrder()
+        if (paymentType == PaymentType.COD) {
+            Payment payment = new Payment();
+            payment.setOrder(savedOrder);
+            payment.setPaymentType(paymentType);
+            payment.setAmount(totalAmount);
+            payment.setPaymentStatus(paymentStatus);
+            payment.setPaymentMethod(paymentMethod);
+            payment.setTransactionId(null); // Will be set on COD delivery
+            payment.setPaymentTime(null); // Will be set when payment is completed
+            payment.setIsDeleted(false);
+            paymentRepository.save(payment);
+        }
+        // For PREPAID orders, payment will be created when createRazorpayOrder() is called
 
         // Soft delete cart items after order creation
         cartItems.forEach(cart -> cart.setIsDeleted(true));

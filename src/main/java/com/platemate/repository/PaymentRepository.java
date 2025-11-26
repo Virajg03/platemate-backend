@@ -10,6 +10,7 @@ import com.platemate.model.Payment;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findTopByOrderOrderByCreatedAtDesc(Order order);
     Optional<Payment> findByTransactionId(String transactionId);
+    Optional<Payment> findByOrder_IdAndIsDeletedFalse(Long orderId);
 }
 
 

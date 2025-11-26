@@ -11,6 +11,7 @@ public class OrderDtos {
         private List<Long> cartItemIds;
         private String deliveryAddress;
         private Double deliveryFee;
+        private String paymentMethod; // CASH for COD, UPI/CREDIT_CARD/etc for Razorpay
         
         public List<Long> getCartItemIds() {
             return cartItemIds;
@@ -34,6 +35,14 @@ public class OrderDtos {
         
         public void setDeliveryFee(Double deliveryFee) {
             this.deliveryFee = deliveryFee;
+        }
+        
+        public String getPaymentMethod() {
+            return paymentMethod;
+        }
+        
+        public void setPaymentMethod(String paymentMethod) {
+            this.paymentMethod = paymentMethod;
         }
     }
     
