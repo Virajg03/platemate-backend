@@ -166,6 +166,22 @@ public interface ApiInterface {
         @Part MultipartBody.Part file
     );
     
+    // User profile image upload endpoint
+    @Multipart
+    @POST("/api/users/{id}/profile-image")
+    Call<Image> uploadUserProfileImage(
+        @Path("id") Long userId,
+        @Part MultipartBody.Part file
+    );
+    
+    // Provider profile image upload endpoint
+    @Multipart
+    @POST("/api/tiffin-providers/{id}/profile-image")
+    Call<Image> uploadProviderProfileImage(
+        @Path("id") Long providerId,
+        @Part MultipartBody.Part file
+    );
+    
     // Get image by ID
     @GET("/images/view/{id}")
     Call<okhttp3.ResponseBody> getImage(@Path("id") Long id);
@@ -189,4 +205,23 @@ public interface ApiInterface {
     // Delivery Zone endpoints
     @GET("/api/delivery-zones")
     Call<List<DeliveryZone>> getDeliveryZones();
+    
+    // Provider Delivery Partners endpoints
+    @GET("/api/providers/delivery-partners")
+    Call<List<DeliveryPartner>> getProviderDeliveryPartners();
+    
+    @GET("/api/providers/delivery-partners/available")
+    Call<List<DeliveryPartner>> getAvailableDeliveryPartners();
+    
+    @GET("/api/providers/delivery-partners/{id}")
+    Call<DeliveryPartner> getProviderDeliveryPartnerById(@Path("id") Long id);
+    
+    @POST("/api/providers/delivery-partners")
+    Call<DeliveryPartner> createProviderDeliveryPartner(@Body DeliveryPartnerCreateRequest request);
+    
+    @PUT("/api/providers/delivery-partners/{id}")
+    Call<DeliveryPartner> updateProviderDeliveryPartner(@Path("id") Long id, @Body DeliveryPartnerUpdateRequest request);
+    
+    @DELETE("/api/providers/delivery-partners/{id}")
+    Call<Void> deleteProviderDeliveryPartner(@Path("id") Long id);
 }

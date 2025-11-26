@@ -1,12 +1,16 @@
 package com.example.platemate;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
@@ -28,9 +32,11 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import com.example.platemate.User;
 
 public class ProviderDashboardActivity extends AppCompatActivity {
     private RecyclerView productsRecyclerView;
@@ -42,6 +48,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     private boolean isProviderApproved = false; // Track approval status
     
     // Profile views
+    private ImageView ivProfilePicture;
     private TextView tvBusinessName;
     private TextView tvProviderEmail;
     private TextView tvTotalProducts;
@@ -99,8 +106,9 @@ public class ProviderDashboardActivity extends AppCompatActivity {
             }, 500);
         }
         
-        // Load provider details and products
+        // Load provider details, profile image, and products
         loadProviderDetails();
+        loadUserProfileImage();
         loadProducts();
     }
 
@@ -109,6 +117,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         fabAddProduct = findViewById(R.id.fabAddProduct);
         // Initially hide FAB until we check approval status
         fabAddProduct.setVisibility(View.GONE);
+        ivProfilePicture = findViewById(R.id.ivProfilePicture);
         tvBusinessName = findViewById(R.id.tvBusinessName);
         tvProviderEmail = findViewById(R.id.tvProviderEmail);
         tvTotalProducts = findViewById(R.id.tvTotalProducts);
@@ -221,6 +230,9 @@ public class ProviderDashboardActivity extends AppCompatActivity {
             } else if (itemId == R.id.nav_products) {
                 showProductsFragment();
                 return true;
+            } else if (itemId == R.id.nav_profile) {
+                showProfileFragment();
+                return true;
             }
             return false;
         });
@@ -275,6 +287,27 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         // Always replace to ensure correct fragment is shown when switching tabs
         FragmentTransaction transaction = fragmentManager.beginTransaction();
         transaction.replace(R.id.fragmentContainer, new ProductsFragment(), "products");
+        transaction.commit();
+    }
+
+    private void showProfileFragment() {
+        isDashboardVisible = false;
+        dashboardScrollView.setVisibility(View.GONE);
+        fragmentContainer.setVisibility(View.VISIBLE);
+        fabAddProduct.setVisibility(View.GONE);
+        
+        // Update fragment container margin when showing fragment
+        ViewCompat.setOnApplyWindowInsetsListener(fragmentContainer, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            updateFragmentContainerMargin(systemBars.bottom);
+            return insets;
+        });
+        
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        
+        // Always replace to ensure correct fragment is shown when switching tabs
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.fragmentContainer, new ProviderProfileFragment(), "profile");
         transaction.commit();
     }
 
@@ -358,6 +391,106 @@ public class ProviderDashboardActivity extends AppCompatActivity {
             }
         });
     }
+    
+    /**
+     * Load and display user profile image in the dashboard header
+     */
+    private void loadUserProfileImage() {
+        Long userId = sessionManager.getUserId();
+        if (userId == null || ivProfilePicture == null) {
+            return;
+        }
+        
+        // Load user profile to get profileImageId
+        Call<User> userCall = apiInterface.getCustomerProfile(userId);
+        userCall.enqueue(new Callback<User>() {
+            @Override
+            public void onResponse(Call<User> call, Response<User> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    User user = response.body();
+                    Long profileImageId = user.getProfileImageId();
+                    
+                    if (profileImageId != null) {
+                        loadProfileImageFromId(profileImageId);
+                    } else {
+                        // Set default icon if no profile image
+                        ivProfilePicture.setImageResource(R.drawable.ic_profile);
+                        ivProfilePicture.setColorFilter(getResources().getColor(R.color.login_orange, null));
+                    }
+                } else {
+                    // Set default icon on error
+                    if (ivProfilePicture != null) {
+                        ivProfilePicture.setImageResource(R.drawable.ic_profile);
+                        ivProfilePicture.setColorFilter(getResources().getColor(R.color.login_orange, null));
+                    }
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<User> call, Throwable t) {
+                Log.e("ProviderDashboard", "Failed to load user profile", t);
+                // Set default icon on failure
+                if (ivProfilePicture != null) {
+                    ivProfilePicture.setImageResource(R.drawable.ic_profile);
+                    ivProfilePicture.setColorFilter(getResources().getColor(R.color.login_orange, null));
+                }
+            }
+        });
+    }
+    
+    /**
+     * Load profile image from image ID and display it
+     */
+    private void loadProfileImageFromId(Long imageId) {
+        if (imageId == null || ivProfilePicture == null) {
+            return;
+        }
+        
+        Call<okhttp3.ResponseBody> call = apiInterface.getImage(imageId);
+        call.enqueue(new Callback<okhttp3.ResponseBody>() {
+            @Override
+            public void onResponse(Call<okhttp3.ResponseBody> call, Response<okhttp3.ResponseBody> response) {
+                if (response.isSuccessful() && response.body() != null && ivProfilePicture != null) {
+                    try {
+                        byte[] imageBytes = response.body().bytes();
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                        if (bitmap != null) {
+                            ivProfilePicture.setImageBitmap(bitmap);
+                            ivProfilePicture.clearColorFilter(); // Remove tint when showing actual image
+                            Log.d("ProviderDashboard", "Profile image loaded successfully");
+                        } else {
+                            // Fallback to default icon
+                            ivProfilePicture.setImageResource(R.drawable.ic_profile);
+                            ivProfilePicture.setColorFilter(getResources().getColor(R.color.login_orange, null));
+                        }
+                    } catch (Exception e) {
+                        Log.e("ProviderDashboard", "Error processing image bytes", e);
+                        // Fallback to default icon
+                        if (ivProfilePicture != null) {
+                            ivProfilePicture.setImageResource(R.drawable.ic_profile);
+                            ivProfilePicture.setColorFilter(getResources().getColor(R.color.login_orange, null));
+                        }
+                    }
+                } else {
+                    // Fallback to default icon
+                    if (ivProfilePicture != null) {
+                        ivProfilePicture.setImageResource(R.drawable.ic_profile);
+                        ivProfilePicture.setColorFilter(getResources().getColor(R.color.login_orange, null));
+                    }
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<okhttp3.ResponseBody> call, Throwable t) {
+                Log.e("ProviderDashboard", "Failed to load profile image", t);
+                // Fallback to default icon
+                if (ivProfilePicture != null) {
+                    ivProfilePicture.setImageResource(R.drawable.ic_profile);
+                    ivProfilePicture.setColorFilter(getResources().getColor(R.color.login_orange, null));
+                }
+            }
+        });
+    }
 
     /**
      * Show notification when provider gets approved
@@ -399,6 +532,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         // Check onboarding status on resume
         checkOnboardingStatus();
         loadProviderDetails(); // Refresh provider details
+        loadUserProfileImage(); // Refresh profile image (in case it was updated)
         loadProducts(); // Refresh when returning from Add/Edit screen
     }
 
@@ -408,6 +542,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         if (requestCode == REQUEST_CODE_EDIT_PROFILE && resultCode == RESULT_OK) {
             // Profile was updated, refresh data immediately
             loadProviderDetails();
+            loadUserProfileImage(); // Refresh profile image in case it was updated
             loadProducts();
             // Show success message (optional, since ProviderDetailsActivity already shows it)
             // Toast.makeText(this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();

@@ -14,5 +14,10 @@
         android:id="@+id/nav_products"
         android:icon="@drawable/ic_restaurant"
         android:title="Products" />
+    
+    <item
+        android:id="@+id/nav_profile"
+        android:icon="@drawable/ic_profile"
+        android:title="Profile" />
 </menu>
 

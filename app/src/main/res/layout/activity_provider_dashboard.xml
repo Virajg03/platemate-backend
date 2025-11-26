@@ -46,7 +46,7 @@
                         android:gravity="center_vertical"
                         android:layout_marginBottom="20dp">
 
-                        <!-- Profile Icon -->
+                        <!-- Profile Picture -->
                         <androidx.cardview.widget.CardView
                             android:layout_width="70dp"
                             android:layout_height="70dp"
@@ -61,12 +61,14 @@
                                 android:background="@color/black" />
 
                             <ImageView
+                                android:id="@+id/ivProfilePicture"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:src="@drawable/ic_profile"
-                                android:padding="18dp"
-                                android:scaleType="fitCenter"
-                                app:tint="@color/login_orange" />
+                                android:padding="0dp"
+                                android:scaleType="centerCrop"
+                                android:adjustViewBounds="true"
+                                android:contentDescription="Profile Picture" />
                         </androidx.cardview.widget.CardView>
 
                         <!-- Business Name and Info -->
