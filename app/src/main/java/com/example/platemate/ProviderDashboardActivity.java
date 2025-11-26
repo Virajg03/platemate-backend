@@ -39,6 +39,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     private FloatingActionButton fabAddProduct;
     private ApiInterface apiInterface;
     private SessionManager sessionManager;
+    private boolean isProviderApproved = false; // Track approval status
     
     // Profile views
     private TextView tvBusinessName;
@@ -106,6 +107,8 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     private void initializeViews() {
         productsRecyclerView = findViewById(R.id.productsRecyclerView);
         fabAddProduct = findViewById(R.id.fabAddProduct);
+        // Initially hide FAB until we check approval status
+        fabAddProduct.setVisibility(View.GONE);
         tvBusinessName = findViewById(R.id.tvBusinessName);
         tvProviderEmail = findViewById(R.id.tvProviderEmail);
         tvTotalProducts = findViewById(R.id.tvTotalProducts);
@@ -230,7 +233,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         isDashboardVisible = true;
         dashboardScrollView.setVisibility(View.VISIBLE);
         fragmentContainer.setVisibility(View.GONE);
-        fabAddProduct.setVisibility(View.VISIBLE);
+        updateFabVisibility();
     }
 
     private void showOrdersFragment() {
@@ -258,7 +261,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         isDashboardVisible = false;
         dashboardScrollView.setVisibility(View.GONE);
         fragmentContainer.setVisibility(View.VISIBLE);
-        fabAddProduct.setVisibility(View.VISIBLE);
+        updateFabVisibility();
         
         // Update fragment container margin when showing fragment
         ViewCompat.setOnApplyWindowInsetsListener(fragmentContainer, (v, insets) -> {
@@ -302,12 +305,44 @@ public class ProviderDashboardActivity extends AppCompatActivity {
                     } else {
                         tvBusinessName.setText("My Tiffin Service");
                     }
+                    
+                    // Check if provider is approved/verified
+                    boolean previousApprovalStatus = sessionManager.getProviderApproved();
+                    isProviderApproved = false;
+                    if (details.get("isApproved") != null) {
+                        Object approvedObj = details.get("isApproved");
+                        if (approvedObj instanceof Boolean) {
+                            isProviderApproved = (Boolean) approvedObj;
+                        } else if (approvedObj instanceof String) {
+                            isProviderApproved = Boolean.parseBoolean((String) approvedObj);
+                        }
+                    } else if (details.get("isVerified") != null) {
+                        Object verifiedObj = details.get("isVerified");
+                        if (verifiedObj instanceof Boolean) {
+                            isProviderApproved = (Boolean) verifiedObj;
+                        } else if (verifiedObj instanceof String) {
+                            isProviderApproved = Boolean.parseBoolean((String) verifiedObj);
+                        }
+                    }
+                    
+                    // Check if approval status changed and show notification
+                    if (sessionManager.hasApprovalStatusChanged(isProviderApproved)) {
+                        // Status changed - check if it's an approval (false -> true)
+                        if (isProviderApproved && !previousApprovalStatus) {
+                            showApprovalNotification();
+                        }
+                    }
+                    
+                    // Update FAB visibility based on approval status
+                    updateFabVisibility();
                 } else {
                     // Use default or username if API fails
                     String username = sessionManager.getUsername();
                     if (username != null) {
                         tvBusinessName.setText(username);
                     }
+                    // On API failure, hide FAB to be safe
+                    fabAddProduct.setVisibility(View.GONE);
                 }
             }
 
@@ -318,10 +353,46 @@ public class ProviderDashboardActivity extends AppCompatActivity {
                 if (username != null) {
                     tvBusinessName.setText(username);
                 }
+                // On failure, hide FAB to be safe
+                fabAddProduct.setVisibility(View.GONE);
             }
         });
     }
 
+    /**
+     * Show notification when provider gets approved
+     */
+    private void showApprovalNotification() {
+        new AlertDialog.Builder(this)
+            .setTitle("🎉 Congratulations!")
+            .setMessage("Your provider account has been approved by the admin. You can now add products and start receiving orders!")
+            .setPositiveButton("Got it!", (dialog, which) -> {
+                dialog.dismiss();
+                // Update FAB visibility to show the add button
+                updateFabVisibility();
+            })
+            .setCancelable(false)
+            .show();
+    }
+    
+    /**
+     * Update FAB visibility based on provider approval status and current tab
+     */
+    private void updateFabVisibility() {
+        // Check if we're on dashboard or products tab
+        boolean isOnDashboard = isDashboardVisible && dashboardScrollView.getVisibility() == View.VISIBLE;
+        boolean isOnProducts = !isDashboardVisible && 
+                               fragmentContainer.getVisibility() == View.VISIBLE &&
+                               getSupportFragmentManager().findFragmentByTag("products") != null;
+        
+        // Only show FAB if provider is approved and on dashboard/products tab
+        if (isProviderApproved && (isOnDashboard || isOnProducts)) {
+            fabAddProduct.setVisibility(View.VISIBLE);
+        } else {
+            fabAddProduct.setVisibility(View.GONE);
+        }
+    }
+    
     @Override
     protected void onResume() {
         super.onResume();

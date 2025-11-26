@@ -133,43 +133,150 @@ public class CartActivity extends AppCompatActivity {
             return;
         }
         
+        // Find the position of the item in the list to preserve order
+        int itemPosition = -1;
+        for (int i = 0; i < cartItems.size(); i++) {
+            if (cartItems.get(i).getId().equals(item.getId())) {
+                itemPosition = i;
+                break;
+            }
+        }
+        
+        if (itemPosition == -1) {
+            // Item not found, reload cart
+            loadCart();
+            return;
+        }
+        
+        // Make final copy for use in inner class
+        final int finalItemPosition = itemPosition;
+        final Long itemId = item.getId();
+        
+        // Optimistically update the item locally to preserve position
+        CartItem localItem = cartItems.get(finalItemPosition);
+        localItem.setQuantity(newQuantity);
+        // Update item total (price * quantity)
+        if (localItem.getItemPrice() != null) {
+            localItem.setItemTotal(localItem.getItemPrice() * newQuantity);
+        }
+        
+        // Update the specific item in the adapter without reloading entire list
+        cartAdapter.notifyItemChanged(finalItemPosition);
+        
+        // Recalculate summary with local data
+        double subtotal = cartItems.stream()
+            .mapToDouble(cartItem -> cartItem.getItemTotal() != null ? cartItem.getItemTotal() : 0.0)
+            .sum();
+        updateOrderSummary(subtotal);
+        
+        // Update on server
         UpdateCartRequest request = new UpdateCartRequest(newQuantity, item.getSpecialInstructions());
         Call<CartItem> call = apiInterface.updateCartItem(item.getId(), request);
         call.enqueue(new Callback<CartItem>() {
             @Override
             public void onResponse(Call<CartItem> call, Response<CartItem> response) {
-                if (response.isSuccessful()) {
-                    loadCart(); // Reload cart to get updated totals
+                if (response.isSuccessful() && response.body() != null) {
+                    // Update the item with server response (to get any server-side calculations)
+                    CartItem updatedItem = response.body();
+                    if (finalItemPosition < cartItems.size() && 
+                        cartItems.get(finalItemPosition).getId().equals(updatedItem.getId())) {
+                        // Update the item in place
+                        cartItems.set(finalItemPosition, updatedItem);
+                        cartAdapter.notifyItemChanged(finalItemPosition);
+                        
+                        // Recalculate summary with server data
+                        loadCartSummary();
+                    }
                 } else {
                     ToastUtils.showError(CartActivity.this, "Failed to update cart");
-                    loadCart(); // Reload to revert changes
+                    // Reload to get correct state from server
+                    loadCart();
                 }
             }
             
             @Override
             public void onFailure(Call<CartItem> call, Throwable t) {
                 ToastUtils.showError(CartActivity.this, "Error: " + t.getMessage());
-                loadCart(); // Reload to revert changes
+                // Reload to get correct state from server
+                loadCart();
+            }
+        });
+    }
+    
+    /**
+     * Load only cart summary (subtotal) without reloading the entire cart list
+     * This preserves the order of items
+     */
+    private void loadCartSummary() {
+        Call<CartSummary> call = apiInterface.getCart();
+        call.enqueue(new Callback<CartSummary>() {
+            @Override
+            public void onResponse(Call<CartSummary> call, Response<CartSummary> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    CartSummary cartSummary = response.body();
+                    updateOrderSummary(cartSummary.getSubtotal());
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<CartSummary> call, Throwable t) {
+                // Silently fail - we already have local data
             }
         });
     }
     
     private void removeCartItem(CartItem item) {
-        Call<Void> call = apiInterface.removeCartItem(item.getId());
+        // Find the position of the item in the list
+        int itemPosition = -1;
+        for (int i = 0; i < cartItems.size(); i++) {
+            if (cartItems.get(i).getId().equals(item.getId())) {
+                itemPosition = i;
+                break;
+            }
+        }
+        
+        if (itemPosition == -1) {
+            // Item not found, reload cart
+            loadCart();
+            return;
+        }
+        
+        // Make final copy for use in inner class
+        final int finalItemPosition = itemPosition;
+        final Long itemId = item.getId();
+        
+        // Optimistically remove the item locally to preserve order of remaining items
+        cartItems.remove(finalItemPosition);
+        cartAdapter.notifyItemRemoved(finalItemPosition);
+        
+        // Update summary with local data
+        double subtotal = cartItems.stream()
+            .mapToDouble(cartItem -> cartItem.getItemTotal() != null ? cartItem.getItemTotal() : 0.0)
+            .sum();
+        updateOrderSummary(subtotal);
+        showEmptyState(cartItems.isEmpty());
+        
+        // Remove from server
+        Call<Void> call = apiInterface.removeCartItem(itemId);
         call.enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
                     ToastUtils.showSuccess(CartActivity.this, "Item removed from cart");
-                    loadCart();
+                    // Reload summary to ensure accuracy
+                    loadCartSummary();
                 } else {
                     ToastUtils.showError(CartActivity.this, "Failed to remove item");
+                    // Reload to get correct state from server
+                    loadCart();
                 }
             }
             
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
                 ToastUtils.showError(CartActivity.this, "Error: " + t.getMessage());
+                // Reload to get correct state from server
+                loadCart();
             }
         });
     }
@@ -211,87 +318,9 @@ public class CartActivity extends AppCompatActivity {
     }
     
     private void proceedToCheckout() {
-        // Check if user has delivery address
-        String deliveryAddress = sessionManager.getFullDeliveryAddress();
-        
-        if (deliveryAddress == null || deliveryAddress.isEmpty()) {
-            // Show address dialog
-            showAddressDialog();
-        } else {
-            // Proceed with order creation
-            createOrder(deliveryAddress);
-        }
-    }
-    
-    private void showAddressDialog() {
-        // Get address from session manager (address is loaded with user profile)
-        Address existingAddress = null;
-        SessionManager sm = new SessionManager(this);
-        if (sm.hasDeliveryAddress()) {
-            existingAddress = new Address();
-            existingAddress.setStreet(sm.getDeliveryStreet());
-            existingAddress.setCity(sm.getDeliveryCity());
-            existingAddress.setState(sm.getDeliveryState());
-            existingAddress.setZipCode(sm.getDeliveryZipCode());
-        }
-        
-        // Show dialog with existing address if available
-        AddressDialog.show(CartActivity.this, existingAddress, new AddressDialog.AddressDialogListener() {
-            @Override
-            public void onAddressSaved(String street, String city, String state, String zipCode) {
-                // Address is already saved to backend by AddressDialog
-                // Create full address string
-                String fullAddress = street + ", " + city + ", " + state + " " + zipCode;
-                
-                // Proceed with order creation
-                createOrder(fullAddress);
-            }
-            
-            @Override
-            public void onCancel() {
-                ToastUtils.showInfo(CartActivity.this, "Order cancelled. Please add address to proceed.");
-            }
-        });
-    }
-    
-    private void createOrder(String deliveryAddress) {
-        // Get all cart item IDs
-        List<Long> cartItemIds = new ArrayList<>();
-        for (CartItem item : cartItems) {
-            cartItemIds.add(item.getId());
-        }
-        
-        // Calculate delivery fee and total
-        double subtotal = cartItems.isEmpty() ? 0.0 : 
-            cartItems.stream().mapToDouble(CartItem::getItemTotal).sum();
-        double tax = subtotal * TAX_RATE;
-        double total = subtotal + DELIVERY_FEE + tax;
-        
-        CreateOrderRequest request = new CreateOrderRequest(cartItemIds, deliveryAddress, DELIVERY_FEE);
-        
-        Call<Order> call = apiInterface.createOrder(request);
-        call.enqueue(new Callback<Order>() {
-            @Override
-            public void onResponse(Call<Order> call, Response<Order> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Order order = response.body();
-                    ToastUtils.showSuccess(CartActivity.this, "Order placed successfully!");
-                    
-                    // Navigate to order details or order history
-                    Intent intent = new Intent(CartActivity.this, CustomerHomeActivity.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    startActivity(intent);
-                    finish();
-                } else {
-                    ToastUtils.showError(CartActivity.this, "Failed to place order");
-                }
-            }
-            
-            @Override
-            public void onFailure(Call<Order> call, Throwable t) {
-                ToastUtils.showError(CartActivity.this, "Error: " + t.getMessage());
-            }
-        });
+        // Navigate to checkout activity
+        Intent intent = new Intent(CartActivity.this, CheckoutActivity.class);
+        startActivity(intent);
     }
     
     @Override

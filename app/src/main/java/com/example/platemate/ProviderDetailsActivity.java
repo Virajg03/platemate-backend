@@ -14,12 +14,15 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ProviderDetailsActivity extends AppCompatActivity {
     private EditText etBusinessName, etDescription, etCommissionRate, 
-                     etDeliveryRadius, etZone;
+                     etDeliveryRadius;
+    private AutoCompleteTextView etZone;
     private EditText etStreet, etCity, etState, etZipCode;
     private CheckBox cbProvidesDelivery;
     private Button btnSaveDetails;
@@ -27,6 +30,9 @@ public class ProviderDetailsActivity extends AppCompatActivity {
     private SessionManager sessionManager;
 
     private boolean isEditing = false;
+    private List<DeliveryZone> zonesList = new ArrayList<>();
+    private Long selectedZoneId = null;
+    private ArrayAdapter<String> zoneAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,11 +45,12 @@ public class ProviderDetailsActivity extends AppCompatActivity {
         initializeViews();
         setupDeliveryToggle();
         setupBackButton();
+        setupZoneDropdown();
 
         btnSaveDetails.setOnClickListener(v -> saveProviderDetails());
         
-        // Check onboarding status from API and load provider details
-        checkOnboardingStatusAndLoadData();
+        // Load zones first, then check onboarding status and load provider details
+        loadDeliveryZones();
     }
 
     private void initializeViews() {
@@ -193,12 +200,46 @@ public class ProviderDetailsActivity extends AppCompatActivity {
             etCommissionRate.setText("");
         }
         
-        // Zone
+        // Zone - set selected zone based on zone ID from provider details
         if (details.get("zone") != null) {
-            Object zone = details.get("zone");
-            etZone.setText(zone != null ? String.valueOf(zone) : "");
+            Object zoneObj = details.get("zone");
+            if (zoneObj != null) {
+                Long zoneId = null;
+                if (zoneObj instanceof Number) {
+                    zoneId = ((Number) zoneObj).longValue();
+                } else {
+                    try {
+                        zoneId = Long.parseLong(zoneObj.toString());
+                    } catch (NumberFormatException e) {
+                        // Ignore
+                    }
+                }
+                
+                if (zoneId != null) {
+                    selectedZoneId = zoneId;
+                    // Find the zone in the list and set the display text
+                    for (DeliveryZone zone : zonesList) {
+                        if (zone.getId().equals(zoneId)) {
+                            etZone.setText(zone.getDisplayText());
+                            // Ensure the field remains editable and clickable
+                            etZone.setEnabled(true);
+                            etZone.setClickable(true);
+                            etZone.setFocusable(true);
+                            etZone.setFocusableInTouchMode(true);
+                            break;
+                        }
+                    }
+                } else {
+                    etZone.setText("");
+                    selectedZoneId = null;
+                }
+            } else {
+                etZone.setText("");
+                selectedZoneId = null;
+            }
         } else {
             etZone.setText("");
+            selectedZoneId = null;
         }
         
         // Provides Delivery
@@ -263,12 +304,120 @@ public class ProviderDetailsActivity extends AppCompatActivity {
         });
     }
 
+    private void setupZoneDropdown() {
+        // Initialize adapter with empty list, will be populated when zones are loaded
+        zoneAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, new ArrayList<>());
+        etZone.setAdapter(zoneAdapter);
+        etZone.setThreshold(1); // Show dropdown after typing 1 character
+        
+        // Make sure the field is enabled and clickable
+        etZone.setEnabled(true);
+        etZone.setClickable(true);
+        etZone.setFocusable(true);
+        etZone.setFocusableInTouchMode(true);
+        
+        // Show dropdown when field is clicked (even if it has text)
+        etZone.setOnClickListener(v -> {
+            if (etZone.getAdapter() != null && etZone.getAdapter().getCount() > 0) {
+                etZone.showDropDown();
+            }
+        });
+        
+        // Show dropdown when field gets focus
+        etZone.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus && etZone.getAdapter() != null && etZone.getAdapter().getCount() > 0) {
+                etZone.showDropDown();
+            }
+        });
+        
+        // Handle zone selection - auto-populate address fields
+        etZone.setOnItemClickListener((parent, view, position, id) -> {
+            String selectedText = (String) parent.getItemAtPosition(position);
+            // Find the zone that matches the selected text
+            for (DeliveryZone zone : zonesList) {
+                if (zone.getDisplayText().equals(selectedText)) {
+                    selectedZoneId = zone.getId();
+                    // Auto-populate address fields from selected zone
+                    autoPopulateAddressFromZone(zone);
+                    break;
+                }
+            }
+        });
+    }
+
+    /**
+     * Auto-populate address fields (city, state, zipCode) from selected zone
+     */
+    private void autoPopulateAddressFromZone(DeliveryZone zone) {
+        if (zone == null) {
+            return;
+        }
+        
+        // Auto-populate city
+        if (zone.getCity() != null && !zone.getCity().trim().isEmpty()) {
+            etCity.setText(zone.getCity().trim());
+            
+            // Auto-populate state using CityStateHelper (like customer address form)
+            String state = CityStateHelper.getStateForCity(zone.getCity().trim());
+            if (state != null && !state.isEmpty()) {
+                etState.setText(state);
+            }
+        }
+        
+        // Auto-populate pincode (extract first pincode from pincodeRanges)
+        String pincode = zone.getFirstPincode();
+        if (pincode != null && !pincode.isEmpty()) {
+            etZipCode.setText(pincode);
+        }
+    }
+
+    private void loadDeliveryZones() {
+        Call<List<DeliveryZone>> call = apiInterface.getDeliveryZones();
+        call.enqueue(new Callback<List<DeliveryZone>>() {
+            @Override
+            public void onResponse(Call<List<DeliveryZone>> call, Response<List<DeliveryZone>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    zonesList = response.body();
+                    // Populate adapter with formatted zone names
+                    List<String> zoneDisplayNames = new ArrayList<>();
+                    for (DeliveryZone zone : zonesList) {
+                        zoneDisplayNames.add(zone.getDisplayText());
+                    }
+                    zoneAdapter.clear();
+                    zoneAdapter.addAll(zoneDisplayNames);
+                    zoneAdapter.notifyDataSetChanged();
+                    
+                    // Ensure the dropdown is properly configured
+                    if (etZone != null) {
+                        etZone.setAdapter(zoneAdapter);
+                        etZone.setEnabled(true);
+                    }
+                    
+                    // Now load provider details (which will set the selected zone)
+                    checkOnboardingStatusAndLoadData();
+                } else {
+                    ToastUtils.showError(ProviderDetailsActivity.this, 
+                        "Failed to load delivery zones");
+                    // Still try to load provider details even if zones fail
+                    checkOnboardingStatusAndLoadData();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<DeliveryZone>> call, Throwable t) {
+                ToastUtils.showError(ProviderDetailsActivity.this, 
+                    "Error loading zones: " + t.getMessage());
+                // Still try to load provider details even if zones fail
+                checkOnboardingStatusAndLoadData();
+            }
+        });
+    }
+
     private void saveProviderDetails() {
         String businessName = etBusinessName.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
         String commissionRateStr = etCommissionRate.getText().toString().trim();
         String deliveryRadiusStr = etDeliveryRadius.getText().toString().trim();
-        String zoneStr = etZone.getText().toString().trim();
         boolean providesDelivery = cbProvidesDelivery.isChecked();
 
         // Address fields
@@ -279,10 +428,10 @@ public class ProviderDetailsActivity extends AppCompatActivity {
 
         // Validation
         if (businessName.isEmpty() || description.isEmpty() || 
-            commissionRateStr.isEmpty() || zoneStr.isEmpty() ||
+            commissionRateStr.isEmpty() || selectedZoneId == null ||
             street.isEmpty() || city.isEmpty() || state.isEmpty() || 
             zipCode.isEmpty()) {
-            ToastUtils.showInfo(this, "Please fill all required fields");
+            ToastUtils.showInfo(this, "Please fill all required fields including zone");
             return;
         }
 
@@ -299,7 +448,7 @@ public class ProviderDetailsActivity extends AppCompatActivity {
             request.put("description", description);
             request.put("commissionRate", Double.parseDouble(commissionRateStr));
             request.put("providesDelivery", providesDelivery);
-            request.put("zone", Long.parseLong(zoneStr));
+            request.put("zone", selectedZoneId);
 
             if (providesDelivery) {
                 request.put("deliveryRadius", Double.parseDouble(deliveryRadiusStr));

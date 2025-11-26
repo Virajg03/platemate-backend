@@ -125,29 +125,33 @@
                     android:textColor="@color/black"
                     android:textColorHint="#666666" />
 
-                <!-- Zone ID -->
+                <!-- Zone -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Zone ID"
+                    android:text="Zone"
                     android:textColor="@color/black"
                     android:textSize="14sp"
                     android:layout_marginBottom="6dp"
                     android:textStyle="normal" />
 
-                <EditText
+                <AutoCompleteTextView
                     android:id="@+id/etZone"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:layout_marginBottom="20dp"
                     android:background="@drawable/neubrutal_input_field"
-                    android:hint="Enter zone ID"
-                    android:inputType="number"
+                    android:hint="Select zone"
+                    android:inputType="text"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:textSize="16sp"
                     android:textColor="@color/black"
-                    android:textColorHint="#666666" />
+                    android:textColorHint="#666666"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:clickable="true"
+                    android:editable="true" />
 
                 <!-- Commission Rate -->
                 <TextView

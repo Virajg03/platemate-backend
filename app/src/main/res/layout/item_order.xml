@@ -73,6 +73,16 @@
             <!-- Product images will be added dynamically -->
         </LinearLayout>
 
+        <!-- Provider Name -->
+        <TextView
+            android:id="@+id/tvProviderName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Provider Name"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
         <!-- Order Total -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -99,20 +109,6 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
         </LinearLayout>
-
-        <!-- View Details Button -->
-        <Button
-            android:id="@+id/btnViewDetails"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="VIEW DETAILS"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black"
-            android:background="@drawable/neubrutal_button"
-            android:stateListAnimator="@null"
-            android:backgroundTint="@null"
-            app:backgroundTint="@null" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>
 

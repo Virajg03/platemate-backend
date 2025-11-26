@@ -56,20 +56,28 @@ public class AddProductActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_product);
         
+        // Hide default action bar
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Add Product");
+            getSupportActionBar().hide();
         }
         
         apiInterface = RetrofitClient.getInstance(this).getApi();
         
         initializeViews();
+        setupBackButton();
         setupMealTypeSpinner();
         setupImagePicker();
         loadCategories();
         
         btnSaveProduct.setOnClickListener(v -> saveProduct());
         btnSelectImage.setOnClickListener(v -> requestImagePermissionAndPick());
+    }
+    
+    private void setupBackButton() {
+        ImageView backButton = findViewById(R.id.backButton);
+        if (backButton != null) {
+            backButton.setOnClickListener(v -> onBackPressed());
+        }
     }
 
     private void initializeViews() {
@@ -407,9 +415,8 @@ public class AddProductActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onSupportNavigateUp() {
-        onBackPressed();
-        return true;
+    public void onBackPressed() {
+        super.onBackPressed();
     }
 }
 

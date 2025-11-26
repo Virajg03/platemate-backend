@@ -17,4 +17,6 @@
     <color name="brutalYellow">#FFD43B</color>
     <color name="brutalYellowDark">#F2BE00</color>
     <color name="brutalCoral">#FFB59E</color>
+    <color name="green">#4CAF50</color>
+    <color name="blue">#2196F3</color>
 </resources>

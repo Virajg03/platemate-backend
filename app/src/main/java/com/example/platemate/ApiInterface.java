@@ -142,6 +142,13 @@ public interface ApiInterface {
 
     @POST("/api/customers/orders/{id}/cancel")
     Call<Order> cancelOrder(@Path("id") Long id);
+    
+    // Payment endpoints
+    @POST("/api/customers/payments/orders/{orderId}")
+    Call<PaymentOrderResponse> createPaymentOrder(@Path("orderId") Long orderId);
+    
+    @POST("/api/payments/verify/{orderId}")
+    Call<Order> verifyPayment(@Path("orderId") Long orderId, @Body VerifyPaymentRequest paymentData);
 
     // Customer Profile endpoints - using /api/users/{id} instead of /api/customers/profile
     @GET("/api/users/{id}")
@@ -178,4 +185,8 @@ public interface ApiInterface {
     // Get customer by userId - we'll add this endpoint to backend
     @GET("/api/customers/user/{userId}")
     Call<CustomerUpdateResponse> getCustomerByUserId(@Path("userId") Long userId);
+    
+    // Delivery Zone endpoints
+    @GET("/api/delivery-zones")
+    Call<List<DeliveryZone>> getDeliveryZones();
 }

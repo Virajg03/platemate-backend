@@ -13,10 +13,21 @@ public class CreateOrderRequest {
     @SerializedName("deliveryFee")
     private Double deliveryFee;
     
+    @SerializedName("paymentMethod")
+    private String paymentMethod;
+    
     public CreateOrderRequest(List<Long> cartItemIds, String deliveryAddress, Double deliveryFee) {
         this.cartItemIds = cartItemIds;
         this.deliveryAddress = deliveryAddress;
         this.deliveryFee = deliveryFee;
+        this.paymentMethod = "CASH"; // Default to COD
+    }
+    
+    public CreateOrderRequest(List<Long> cartItemIds, String deliveryAddress, Double deliveryFee, String paymentMethod) {
+        this.cartItemIds = cartItemIds;
+        this.deliveryAddress = deliveryAddress;
+        this.deliveryFee = deliveryFee;
+        this.paymentMethod = paymentMethod;
     }
     
     public List<Long> getCartItemIds() { return cartItemIds; }
@@ -27,7 +38,11 @@ public class CreateOrderRequest {
     
     public Double getDeliveryFee() { return deliveryFee; }
     public void setDeliveryFee(Double deliveryFee) { this.deliveryFee = deliveryFee; }
+    
+    public String getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
 }
+
 
 
 

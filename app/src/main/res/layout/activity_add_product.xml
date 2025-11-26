@@ -9,7 +9,37 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="20dp">
+
+        <!-- Header Section with Back Button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="24dp">
+
+            <ImageView
+                android:id="@+id/backButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/back"
+                android:background="@drawable/neubrutal_header_back"
+                android:padding="8dp"
+                android:contentDescription="Back"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Add New Product"
+                android:textColor="@color/black"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:layout_marginStart="16dp" />
+        </LinearLayout>
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
@@ -17,30 +47,28 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="0dp"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="@color/white">
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="4dp"
-                android:background="@color/black" />
+            app:cardBackgroundColor="@android:color/transparent">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:background="@drawable/neubrutal_shadow"
+                android:padding="24dp">
 
+                <!-- Section Header -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="ADD NEW PRODUCT"
+                    android:text="PRODUCT INFORMATION"
                     android:textColor="@color/login_orange"
-                    android:textSize="24sp"
+                    android:textSize="20sp"
                     android:textStyle="bold"
-                    android:gravity="center"
+                    android:letterSpacing="0.05"
                     android:layout_marginBottom="24dp"
-                    android:background="@color/black"
-                    android:padding="12dp" />
+                    android:background="@color/brutalMuted"
+                    android:padding="12dp"
+                    android:textAlignment="center" />
 
                 <EditText
                     android:id="@+id/etProductName"

@@ -21,6 +21,7 @@ public class SessionManager {
     private static final String KEY_DELIVERY_CITY = "delivery_city";
     private static final String KEY_DELIVERY_STATE = "delivery_state";
     private static final String KEY_DELIVERY_ZIPCODE = "delivery_zipcode";
+    private static final String KEY_PROVIDER_APPROVED = "provider_approved";
 
     private final SharedPreferences prefs;
     private final SharedPreferences.Editor editor;
@@ -213,5 +214,35 @@ public class SessionManager {
                getDeliveryCity() != null && 
                getDeliveryState() != null && 
                getDeliveryZipCode() != null;
+    }
+    
+    /**
+     * Store provider approval status
+     */
+    public void setProviderApproved(boolean isApproved) {
+        editor.putBoolean(KEY_PROVIDER_APPROVED, isApproved);
+        editor.apply();
+    }
+    
+    /**
+     * Get stored provider approval status
+     * Returns false if not set (default)
+     */
+    public boolean getProviderApproved() {
+        return prefs.getBoolean(KEY_PROVIDER_APPROVED, false);
+    }
+    
+    /**
+     * Check if approval status has changed (for notification purposes)
+     * This compares current status with stored status
+     */
+    public boolean hasApprovalStatusChanged(boolean currentStatus) {
+        boolean previousStatus = getProviderApproved();
+        if (previousStatus != currentStatus) {
+            // Update stored status
+            setProviderApproved(currentStatus);
+            return true;
+        }
+        return false;
     }
 }

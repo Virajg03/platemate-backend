@@ -79,19 +79,40 @@
                     android:id="@+id/addressLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
+                    android:orientation="horizontal"
                     android:layout_marginBottom="16dp"
-                    android:visibility="gone">
+                    android:visibility="gone"
+                    android:gravity="center_vertical">
 
-                    <TextView
-                        android:id="@+id/tvFullAddress"
-                        android:layout_width="match_parent"
+                    <LinearLayout
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="123 Street, City, State - 123456"
-                        android:textColor="@color/black"
-                        android:textSize="16sp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvFullAddress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="123 Street, City, State - 123456"
+                            android:textColor="@color/black"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:lineSpacingExtra="4dp" />
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btnEditAddress"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Edit"
+                        android:textSize="14sp"
                         android:textStyle="bold"
-                        android:lineSpacingExtra="4dp" />
+                        android:textColor="@color/login_orange"
+                        android:background="@android:color/transparent"
+                        android:padding="8dp"
+                        android:minWidth="0dp"
+                        android:minHeight="0dp" />
                 </LinearLayout>
 
                 <!-- No Address State -->
@@ -324,10 +345,10 @@
                     android:orientation="vertical">
 
                     <RadioButton
-                        android:id="@+id/rbCash"
+                        android:id="@+id/rbCOD"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Cash on Delivery"
+                        android:text="Cash on Delivery (COD)"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/black"
@@ -336,21 +357,10 @@
                         android:checked="true" />
 
                     <RadioButton
-                        android:id="@+id/rbUPI"
+                        android:id="@+id/rbRazorpay"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="UPI"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/black"
-                        android:buttonTint="@color/login_orange"
-                        android:padding="12dp" />
-
-                    <RadioButton
-                        android:id="@+id/rbCard"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Credit/Debit Card"
+                        android:text="Pay Online (Razorpay)"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         android:textColor="@color/black"
