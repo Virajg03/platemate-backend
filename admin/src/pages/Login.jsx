@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { loginApi } from "../api/authApi";
 import { useAuthStore } from "../store/authStore";
+import logoImage from "../assets/images/1.png";
 
 export default function Login() {
   const { login } = useAuthStore();
@@ -44,12 +45,20 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100">
       <div className="bg-white w-full max-w-sm p-8 rounded-2xl shadow-md border border-slate-200">
-        <h1 className="text-2xl font-semibold text-slate-900 mb-1">
-          PlateMate Admin
-        </h1>
-        <p className="text-sm text-slate-500 mb-6">
-          Sign in to manage users, providers, orders & payouts.
-        </p>
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-6">
+          <img
+            src={logoImage}
+            alt="PlateMate Logo"
+            className="h-16 w-auto object-contain mb-4"
+          />
+          <h1 className="text-2xl font-semibold text-slate-900 mb-1">
+            PlateMate Admin
+          </h1>
+          <p className="text-sm text-slate-500">
+            Sign in to manage users, providers, orders & payouts.
+          </p>
+        </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div>
@@ -80,9 +89,7 @@ export default function Login() {
             />
           </div>
 
-          {errorMsg && (
-            <p className="text-xs text-red-600 mt-1">{errorMsg}</p>
-          )}
+          {errorMsg && <p className="text-xs text-red-600 mt-1">{errorMsg}</p>}
 
           <button
             type="submit"

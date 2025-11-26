@@ -139,15 +139,12 @@
 
 // src/pages/users/UsersPage.jsx
 import React, { useEffect, useState } from "react";
-import {
-  getUsers,
-  deleteUser,
-  getUserById,
-} from "../../api/usersApi";
+import { getUsers, deleteUser, getUserById } from "../../api/usersApi";
 
 import CreateUserModal from "./CreateUserModal";
 import EditUserModal from "./EditUserModal";
 import DeleteConfirmModal from "./DeleteConfirmModal";
+import UserDetailsModal from "../../components/users/UserDetailsModal";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -157,6 +154,7 @@ export default function UsersPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editUserId, setEditUserId] = useState(null);
   const [deleteUserId, setDeleteUserId] = useState(null);
+  const [viewDetailsUserId, setViewDetailsUserId] = useState(null);
 
   const fetchUsers = async () => {
     try {
@@ -176,7 +174,6 @@ export default function UsersPage() {
 
   return (
     <div className="p-4 md:p-6">
-
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 mb-6">
         <div>
@@ -196,7 +193,6 @@ export default function UsersPage() {
 
       {/* TABLE CONTAINER */}
       <div className="bg-white border rounded-xl shadow-sm overflow-hidden transition-all">
-
         {/* Desktop Table */}
         <div className="hidden md:block overflow-x-auto">
           <table className="min-w-full">
@@ -206,7 +202,9 @@ export default function UsersPage() {
                 <th className="p-3 text-sm font-semibold">Username</th>
                 <th className="p-3 text-sm font-semibold">Email</th>
                 <th className="p-3 text-sm font-semibold">Role</th>
-                <th className="p-3 text-right text-sm font-semibold">Actions</th>
+                <th className="p-3 text-right text-sm font-semibold">
+                  Actions
+                </th>
               </tr>
             </thead>
 
@@ -234,7 +232,13 @@ export default function UsersPage() {
                     <td className="p-3 text-sm">{user.email}</td>
                     <td className="p-3 text-sm">{user.role}</td>
 
-                    <td className="p-3 text-right">
+                    <td className="p-3 text-right space-x-2">
+                      <button
+                        onClick={() => setViewDetailsUserId(user.id)}
+                        className="px-3 py-1 text-blue-600 hover:text-blue-800 text-sm transition"
+                      >
+                        View Details
+                      </button>
                       <button
                         onClick={() => setEditUserId(user.id)}
                         className="px-3 py-1 text-sky-600 hover:text-sky-800 text-sm transition"
@@ -281,6 +285,12 @@ export default function UsersPage() {
 
                 <div className="flex justify-end gap-3 mt-3">
                   <button
+                    onClick={() => setViewDetailsUserId(user.id)}
+                    className="text-blue-600 text-sm hover:underline"
+                  >
+                    View Details
+                  </button>
+                  <button
                     onClick={() => setEditUserId(user.id)}
                     className="text-sky-600 text-sm hover:underline"
                   >
@@ -320,6 +330,13 @@ export default function UsersPage() {
           id={deleteUserId}
           close={() => setDeleteUserId(null)}
           refresh={fetchUsers}
+        />
+      )}
+
+      {viewDetailsUserId && (
+        <UserDetailsModal
+          userId={viewDetailsUserId}
+          close={() => setViewDetailsUserId(null)}
         />
       )}
     </div>

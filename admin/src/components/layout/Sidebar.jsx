@@ -46,6 +46,7 @@
 // src/components/layout/Sidebar.jsx
 import React from "react";
 import { Menu, X } from "lucide-react";
+import logoImage from "../../assets/images/1.png";
 
 const menuItems = [
   { key: "dashboard", label: "Dashboard" },
@@ -90,8 +91,18 @@ export default function Sidebar({ activeKey, onChange }) {
         `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-slate-800">
-          <div className="text-lg font-semibold">PlateMate Admin</div>
+        <div className="flex items-center justify-between px-4 py-5 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <img
+              src={logoImage}
+              alt="PlateMate Logo"
+              className="h-10 w-auto object-contain"
+            />
+            <div className="flex flex-col">
+              <div className="text-lg font-bold text-white">PlateMate</div>
+              <div className="text-xs text-slate-400">Admin Panel</div>
+            </div>
+          </div>
 
           {/* Close Icon Mobile */}
           <button
