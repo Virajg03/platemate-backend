@@ -276,11 +276,23 @@ public class OrderService {
 
     @Transactional
     public Order assignDeliveryPartner(Long orderId, Long deliveryPartnerId) {
+        return assignDeliveryPartner(orderId, deliveryPartnerId, null);
+    }
+
+    @Transactional
+    public Order assignDeliveryPartner(Long orderId, Long deliveryPartnerId, Long providerId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id " + orderId));
 
         if (Boolean.TRUE.equals(order.getIsDeleted())) {
             throw new ResourceNotFoundException("Order not found with id " + orderId);
+        }
+
+        // If providerId is provided (provider assigning): Validate order belongs to provider
+        if (providerId != null) {
+            if (!order.getProvider().getId().equals(providerId)) {
+                throw new BadRequestException("Order does not belong to this provider");
+            }
         }
 
         // Validate order is ready for delivery
@@ -298,6 +310,14 @@ public class OrderService {
 
         if (!Boolean.TRUE.equals(deliveryPartner.getIsAvailable())) {
             throw new BadRequestException("Delivery partner is not available");
+        }
+
+        // If providerId is provided (provider assigning): Validate delivery partner belongs to provider OR is global
+        if (providerId != null) {
+            if (deliveryPartner.getProviderId() != null && !deliveryPartner.getProviderId().equals(providerId)) {
+                throw new BadRequestException("Provider cannot assign another provider's delivery partner");
+            }
+            // Global delivery partners (providerId = null) are allowed
         }
 
         // Optional: Validate delivery partner zone matches provider zone (if zone-based delivery)

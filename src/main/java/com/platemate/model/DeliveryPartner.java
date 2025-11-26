@@ -10,9 +10,12 @@ import java.util.List;
 @AttributeOverride(name = "id", column = @Column(name = "delivery_partner_id"))
 public class DeliveryPartner extends BaseEntity {
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private User user; // One user can have multiple delivery partner records (for different providers)
+
+    @Column(name = "provider_id", nullable = true)
+    private Long providerId; 
 
     @Column(name = "full_name", nullable = false, length = 255)
     private String fullName;
@@ -41,6 +44,9 @@ public class DeliveryPartner extends BaseEntity {
     // Getters and setters
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+
+    public Long getProviderId() { return providerId; }
+    public void setProviderId(Long providerId) { this.providerId = providerId; }
 
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }

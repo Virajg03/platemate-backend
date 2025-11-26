@@ -88,6 +88,7 @@ public class ProviderController {
         }
 
         Map<String, Object> response = new HashMap<>();
+        response.put("id", provider.getId()); // Provider ID needed for image upload
         response.put("user", provider.getUser().getId());
         response.put("businessName", provider.getBusinessName());
         response.put("description", provider.getDescription());

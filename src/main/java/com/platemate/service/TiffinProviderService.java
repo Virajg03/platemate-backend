@@ -52,6 +52,15 @@ public class TiffinProviderService {
         return provider;
     }
 
+    public Optional<TiffinProvider> getByUserId(Long userId) {
+        TiffinProvider provider = repository.findByUser_Id(userId);
+        if (provider != null) {
+            loadExtras(provider);
+            return Optional.of(provider);
+        }
+        return Optional.empty();
+    }
+
     public TiffinProvider createProvider(TiffinProviderRequest request) {
         TiffinProvider provider = new TiffinProvider();
 
