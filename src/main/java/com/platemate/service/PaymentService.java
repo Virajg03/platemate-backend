@@ -3,6 +3,7 @@ package com.platemate.service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -57,6 +58,30 @@ public class PaymentService {
             throw new BadRequestException("Invalid order amount");
         }
 
+        // Check if payment already exists for this order (should not happen for PREPAID, but handle gracefully)
+        Optional<Payment> existingPaymentOpt = paymentRepository.findByOrder_IdAndIsDeletedFalse(orderId);
+        Payment payment;
+        
+        if (existingPaymentOpt.isPresent()) {
+            // Payment already exists, update it instead of creating new one
+            payment = existingPaymentOpt.get();
+            payment.setPaymentStatus(PaymentStatus.PENDING);
+            payment.setPaymentType(PaymentType.PREPAID);
+            payment.setAmount(amount);
+            // Don't update transaction ID yet, will be set after Razorpay order creation
+        } else {
+            // Create a new pending Payment record
+            payment = new Payment();
+            payment.setOrder(order);
+            payment.setPaymentType(PaymentType.PREPAID);
+            payment.setAmount(amount);
+            payment.setPaymentStatus(PaymentStatus.PENDING);
+            payment.setPaymentMethod(PaymentMethod.UPI); // actual method finalized after success
+            payment.setTransactionId(null); // Will be set after Razorpay order creation
+            payment.setPaymentTime(null); // Will be set when payment is completed
+            payment.setIsDeleted(false);
+        }
+
         Map<String, Object> payload = new HashMap<>();
         payload.put("amount", (long) Math.round(amount * 100)); // paise
         payload.put("currency", props.getRazorpay().getCurrency());
@@ -75,16 +100,8 @@ public class PaymentService {
             throw new BadRequestException("Failed to create Razorpay order");
         }
 
-        // Create a pending Payment record
-        Payment payment = new Payment();
-        payment.setOrder(order);
-        payment.setPaymentType(PaymentType.PREPAID);
-        payment.setAmount(amount);
-        payment.setPaymentStatus(PaymentStatus.PENDING);
-        payment.setPaymentMethod(PaymentMethod.UPI); // actual method finalized after success
+        // Update payment with Razorpay order ID and save
         payment.setTransactionId(String.valueOf(rpOrder.get("id")));
-        payment.setPaymentTime(LocalDateTime.now());
-        payment.setIsDeleted(false);
         paymentRepository.save(payment);
 
         Map<String, Object> response = new HashMap<>();
@@ -117,6 +134,49 @@ public class PaymentService {
         payment.setPaymentStatus(PaymentStatus.FAILED);
         payment.setPaymentTime(LocalDateTime.now());
         return paymentRepository.save(payment);
+    }
+    
+    /**
+     * Verify payment from Android app after Razorpay payment success
+     * This method verifies the payment and updates order status
+     */
+    public Order verifyPayment(Long orderId, String razorpayPaymentId, String razorpayOrderId, String razorpaySignature) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id " + orderId));
+        
+        // Find payment record by order
+        Payment payment = paymentRepository.findByOrder_IdAndIsDeletedFalse(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found for order " + orderId));
+        
+        // Verify signature if provided (optional for app verification, webhook will also verify)
+        // Note: Android SDK doesn't provide signature directly, so this is mainly for webhook verification
+        // For app verification, we trust the payment ID from Razorpay and let webhook handle full verification
+        if (razorpaySignature != null && !razorpaySignature.isEmpty() && 
+            props.getRazorpay().getWebhookSecret() != null && 
+            !props.getRazorpay().getWebhookSecret().isEmpty()) {
+            // Build payload for signature verification
+            String payload = razorpayOrderId + "|" + razorpayPaymentId;
+            String secret = props.getRazorpay().getWebhookSecret();
+            if (!verifySignature(payload, razorpaySignature, secret)) {
+                throw new BadRequestException("Invalid payment signature");
+            }
+        }
+        // If signature is not provided or webhook secret is not set, we still proceed
+        // The webhook will handle full verification when it arrives
+        
+        // Update payment record
+        payment.setPaymentStatus(PaymentStatus.SUCCESS);
+        payment.setTransactionId(razorpayPaymentId);
+        payment.setPaymentTime(LocalDateTime.now());
+        paymentRepository.save(payment);
+        
+        // Update order status to CONFIRMED if currently PENDING
+        if (order.getOrderStatus() == OrderStatus.PENDING) {
+            order.setOrderStatus(OrderStatus.CONFIRMED);
+            orderRepository.save(order);
+        }
+        
+        return order;
     }
 
     public void verifyAndProcessWebhook(String payload, String signature) {

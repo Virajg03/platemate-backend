@@ -48,6 +48,14 @@ public class TiffinProviderController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROVIDER')")
+    public ResponseEntity<TiffinProvider> getProviderByUserId(@PathVariable Long userId) {
+        return service.getByUserId(userId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @GetMapping("/{id}/PROVIDER_PROFILE")
     public ResponseEntity<byte[]> getProviderProfileImage(@PathVariable Long id) {
         

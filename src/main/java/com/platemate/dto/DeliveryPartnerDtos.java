@@ -7,12 +7,15 @@ import com.platemate.enums.VehicleType;
 public class DeliveryPartnerDtos {
     public static class CreateRequest {
         private Long userId;
+        private Long providerId; // Optional - auto-set from auth context if provider creates
         private String fullName;
         private VehicleType vehicleType;
         private BigDecimal commissionRate;
         private String serviceArea;
         public Long getUserId() { return userId; }
         public void setUserId(Long userId) { this.userId = userId; }
+        public Long getProviderId() { return providerId; }
+        public void setProviderId(Long providerId) { this.providerId = providerId; }
         public String getFullName() { return fullName; }
         public void setFullName(String fullName) { this.fullName = fullName; }
         public VehicleType getVehicleType() { return vehicleType; }
@@ -44,6 +47,7 @@ public class DeliveryPartnerDtos {
     public static class Response {
         private Long id;
         private Long userId;
+        private Long providerId; // null for global delivery partners
         private String fullName;
         private VehicleType vehicleType;
         private BigDecimal commissionRate;
@@ -53,6 +57,8 @@ public class DeliveryPartnerDtos {
         public void setId(Long id) { this.id = id; }
         public Long getUserId() { return userId; }
         public void setUserId(Long userId) { this.userId = userId; }
+        public Long getProviderId() { return providerId; }
+        public void setProviderId(Long providerId) { this.providerId = providerId; }
         public String getFullName() { return fullName; }
         public void setFullName(String fullName) { this.fullName = fullName; }
         public VehicleType getVehicleType() { return vehicleType; }

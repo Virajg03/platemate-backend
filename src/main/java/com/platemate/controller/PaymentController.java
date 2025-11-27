@@ -10,9 +10,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.platemate.dto.OrderDtos;
 import com.platemate.dto.PaymentDtos;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.Customer;
@@ -64,6 +66,43 @@ public class PaymentController {
     public ResponseEntity<PaymentDtos.CreateOrderResponse> getPaymentOrder(@PathVariable Long orderId) {
         // For simplicity, reissue the data by creating/fetching the Razorpay order again
         return createPaymentOrder(orderId);
+    }
+    
+    @PostMapping("/payments/verify/{orderId}")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<OrderDtos.Response> verifyPayment(
+            @PathVariable Long orderId,
+            @RequestBody PaymentDtos.VerifyPaymentRequest verifyRequest) {
+        Customer customer = getCurrentCustomer();
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id " + orderId));
+        if (!order.getCustomer().getId().equals(customer.getId())) {
+            throw new ResourceNotFoundException("Order not found with id " + orderId);
+        }
+        
+        // Verify payment with Razorpay
+        Order verifiedOrder = paymentService.verifyPayment(
+            orderId, 
+            verifyRequest.getRazorpayPaymentId(),
+            verifyRequest.getRazorpayOrderId(),
+            verifyRequest.getRazorpaySignature()
+        );
+        
+        // Use OrderService to convert to response DTO (reuse existing logic)
+        // For now, return a simple response - you can enhance this later
+        OrderDtos.Response response = new OrderDtos.Response();
+        response.setId(verifiedOrder.getId());
+        response.setOrderStatus(verifiedOrder.getOrderStatus());
+        response.setCustomerId(verifiedOrder.getCustomer().getId());
+        response.setProviderId(verifiedOrder.getProvider().getId());
+        response.setProviderName(verifiedOrder.getProvider().getBusinessName());
+        response.setTotalAmount(verifiedOrder.getTotalAmount());
+        response.setDeliveryFee(verifiedOrder.getDeliveryFee());
+        response.setPlatformCommission(verifiedOrder.getPlatformCommission());
+        response.setDeliveryAddress(verifiedOrder.getDeliveryAddress());
+        response.setOrderTime(verifiedOrder.getOrderTime());
+        
+        return ResponseEntity.ok(response);
     }
 
     private User getCurrentUser() {

@@ -189,6 +189,16 @@ public class OrderController {
         return ResponseEntity.ok(toResponse(order));
     }
 
+    @PostMapping("/providers/orders/{orderId}/assign-delivery/{deliveryPartnerId}")
+    @PreAuthorize("hasRole('PROVIDER')")
+    public ResponseEntity<OrderDtos.Response> assignDeliveryPartnerByProvider(
+            @PathVariable Long orderId,
+            @PathVariable Long deliveryPartnerId) {
+        TiffinProvider provider = getCurrentProvider();
+        Order order = orderService.assignDeliveryPartner(orderId, deliveryPartnerId, provider.getId());
+        return ResponseEntity.ok(toResponse(order));
+    }
+
     // ==================== Helper Methods ====================
 
     private User getCurrentUser() {
@@ -215,8 +225,12 @@ public class OrderController {
 
     private DeliveryPartner getCurrentDeliveryPartner() {
         User user = getCurrentUser();
-        return deliveryPartnerRepository.findByUser_IdAndIsDeletedFalse(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Delivery partner profile not found for user"));
+        List<DeliveryPartner> partners = deliveryPartnerRepository.findByUser_IdAndIsDeletedFalse(user.getId());
+        if (partners.isEmpty()) {
+            throw new ResourceNotFoundException("Delivery partner profile not found for user");
+        }
+        // Return the first delivery partner (or you can add logic to select specific one)
+        return partners.get(0);
     }
 
     private OrderDtos.Response toResponse(Order order) {

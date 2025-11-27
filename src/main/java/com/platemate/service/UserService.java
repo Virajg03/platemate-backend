@@ -11,9 +11,11 @@ import org.springframework.stereotype.Service;
 import com.platemate.enums.ImageType;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.Customer;
+import com.platemate.model.TiffinProvider;
 import com.platemate.model.User;
 import com.platemate.repository.CustomerRepository;
 import com.platemate.repository.ImageRepository;
+import com.platemate.repository.TiffinProviderRepository;
 import com.platemate.repository.UserRepository;
 
 @Service
@@ -27,6 +29,9 @@ public class UserService {
 
     @Autowired
     private CustomerRepository customerRepository;
+    
+    @Autowired
+    private TiffinProviderRepository tiffinProviderRepository;
     
     @Autowired
     private ImageRepository imageRepository;
@@ -50,6 +55,18 @@ public class UserService {
                     // Load profile image ID for customer
                     // Use customerId as ownerId (same pattern as provider)
                     Long profileImageId = imageRepository.findIdByImageTypeAndOwnerId(ImageType.CUSTOMER_PROFILE, customer.getId());
+                    if (profileImageId != null) {
+                        user.setProfileImageId(profileImageId);
+                    }
+                }
+            }
+            // Load provider data if user is a provider
+            else if (user.getRole() != null && user.getRole().name().equals("ROLE_PROVIDER")) {
+                TiffinProvider provider = tiffinProviderRepository.findByUser_Id(id);
+                if (provider != null) {
+                    // Load profile image ID for provider
+                    // Use providerId as ownerId (matches TiffinProviderService.loadExtras pattern)
+                    Long profileImageId = imageRepository.findIdByImageTypeAndOwnerId(ImageType.PROVIDER_PROFILE, provider.getId());
                     if (profileImageId != null) {
                         user.setProfileImageId(profileImageId);
                     }
