@@ -1,9 +1,12 @@
 package com.example.platemate;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -24,6 +27,7 @@ public class DeliveryPartnersActivity extends AppCompatActivity {
     private ApiInterface apiInterface;
     private SessionManager sessionManager;
     private List<DeliveryPartner> deliveryPartnersList;
+    private ActivityResultLauncher<Intent> deliveryPartnerFormLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,10 +44,34 @@ public class DeliveryPartnersActivity extends AppCompatActivity {
         deliveryPartnersList = new ArrayList<>();
 
         initializeViews();
+        setupBackButton();
         setupRecyclerView();
+        setupActivityResultLauncher();
         loadDeliveryPartners();
 
-        fabAdd.setOnClickListener(v -> showAddDeliveryPartnerDialog());
+        fabAdd.setOnClickListener(v -> showAddDeliveryPartnerForm());
+    }
+    
+    private void setupBackButton() {
+        android.widget.ImageView backButton = findViewById(R.id.backButton);
+        if (backButton != null) {
+            backButton.setOnClickListener(v -> {
+                // Handle back button click - finish activity to go back to previous screen
+                finish();
+            });
+        }
+    }
+    
+    private void setupActivityResultLauncher() {
+        deliveryPartnerFormLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    // Refresh the list when partner is created/updated
+                    loadDeliveryPartners();
+                }
+            }
+        );
     }
 
     private void initializeViews() {
@@ -98,78 +126,23 @@ public class DeliveryPartnersActivity extends AppCompatActivity {
         }
     }
 
-    public void showAddDeliveryPartnerDialog() {
-        // Get logged-in user ID from session
-        Long userId = sessionManager.getUserId();
-        if (userId == null) {
-            ToastUtils.showError(this, "User ID not found. Please login again.");
-            return;
-        }
-        
-        DeliveryPartnerDialog dialog = new DeliveryPartnerDialog(this, null, userId, (partner, isEdit) -> {
-            if (isEdit) {
-                updateDeliveryPartner(partner);
-            } else {
-                createDeliveryPartner(partner);
-            }
-        });
-        dialog.show();
+    public void showAddDeliveryPartnerForm() {
+        Intent intent = new Intent(this, DeliveryPartnerFormActivity.class);
+        intent.putExtra(DeliveryPartnerFormActivity.EXTRA_IS_EDIT, false);
+        deliveryPartnerFormLauncher.launch(intent);
     }
 
-    public void showEditDeliveryPartnerDialog(DeliveryPartner partner) {
-        // Get logged-in user ID from session (for consistency, though not used in edit mode)
-        Long userId = sessionManager.getUserId();
-        if (userId == null) {
-            ToastUtils.showError(this, "User ID not found. Please login again.");
-            return;
-        }
-        
-        DeliveryPartnerDialog dialog = new DeliveryPartnerDialog(this, partner, userId, (updatedPartner, isEdit) -> {
-            updateDeliveryPartner(updatedPartner);
-        });
-        dialog.show();
+    public void showEditDeliveryPartnerForm(DeliveryPartner partner) {
+        Intent intent = new Intent(this, DeliveryPartnerFormActivity.class);
+        intent.putExtra(DeliveryPartnerFormActivity.EXTRA_DELIVERY_PARTNER, partner);
+        intent.putExtra(DeliveryPartnerFormActivity.EXTRA_IS_EDIT, true);
+        deliveryPartnerFormLauncher.launch(intent);
     }
 
-    private void createDeliveryPartner(DeliveryPartner partner) {
-        progressBar.setVisibility(View.VISIBLE);
-
-        DeliveryPartnerCreateRequest request = new DeliveryPartnerCreateRequest(
-            partner.getUserId(),
-            partner.getFullName(),
-            partner.getVehicleType(),
-            partner.getCommissionRate(),
-            partner.getServiceArea()
-        );
-
-        Call<DeliveryPartner> call = apiInterface.createProviderDeliveryPartner(request);
-        call.enqueue(new Callback<DeliveryPartner>() {
-            @Override
-            public void onResponse(Call<DeliveryPartner> call, Response<DeliveryPartner> response) {
-                progressBar.setVisibility(View.GONE);
-                if (response.isSuccessful()) {
-                    ToastUtils.showSuccess(DeliveryPartnersActivity.this, "Delivery partner created successfully");
-                    loadDeliveryPartners();
-                } else {
-                    String errorMessage = "Failed to create delivery partner";
-                    if (response.errorBody() != null) {
-                        try {
-                            errorMessage = response.errorBody().string();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    ToastUtils.showError(DeliveryPartnersActivity.this, errorMessage);
-                }
-            }
-
-            @Override
-            public void onFailure(Call<DeliveryPartner> call, Throwable t) {
-                progressBar.setVisibility(View.GONE);
-                ToastUtils.showError(DeliveryPartnersActivity.this, "Error: " + t.getMessage());
-            }
-        });
-    }
-
+    /**
+     * Updates delivery partner - used by toggle switch for quick availability updates
+     * For full edits, use showEditDeliveryPartnerForm() which opens the Activity
+     */
     public void updateDeliveryPartner(DeliveryPartner partner) {
         progressBar.setVisibility(View.VISIBLE);
 
@@ -186,8 +159,8 @@ public class DeliveryPartnersActivity extends AppCompatActivity {
             public void onResponse(Call<DeliveryPartner> call, Response<DeliveryPartner> response) {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful()) {
-                    ToastUtils.showSuccess(DeliveryPartnersActivity.this, "Delivery partner updated successfully");
-                    loadDeliveryPartners();
+                    // Don't show toast for toggle updates - it's too frequent
+                    loadDeliveryPartners(); // Refresh to get updated data
                 } else {
                     String errorMessage = "Failed to update delivery partner";
                     if (response.errorBody() != null) {

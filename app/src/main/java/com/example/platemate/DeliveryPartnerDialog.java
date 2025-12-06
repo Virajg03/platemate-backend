@@ -16,9 +16,15 @@ import java.util.List;
 
 public class DeliveryPartnerDialog extends Dialog {
     private DeliveryPartner partner;
-    private Long userId; // Store userId from constructor
+    private Long userId; // Keep for edit mode compatibility
     private OnSaveListener listener;
-    private EditText etFullName, etCommissionRate, etServiceArea; // Removed etUserId
+    
+    // User credential fields (for create mode only)
+    private EditText etUsername, etEmail, etPassword;
+    private android.widget.TextView tvUsernameLabel, tvEmailLabel, tvPasswordLabel;
+    
+    // Delivery partner fields
+    private EditText etFullName, etCommissionRate, etServiceArea;
     private Spinner spVehicleType;
     private Button btnSave, btnCancel;
     private String[] vehicleTypes = {"BIKE", "SCOOTER", "BICYCLE", "CAR"};
@@ -44,7 +50,15 @@ public class DeliveryPartnerDialog extends Dialog {
         setupSpinner();
         
         if (partner != null) {
-            // Edit mode - populate fields (no userId field to populate)
+            // Edit mode - hide user credential fields (can't change username/email/password after creation)
+            etUsername.setVisibility(View.GONE);
+            etEmail.setVisibility(View.GONE);
+            etPassword.setVisibility(View.GONE);
+            tvUsernameLabel.setVisibility(View.GONE);
+            tvEmailLabel.setVisibility(View.GONE);
+            tvPasswordLabel.setVisibility(View.GONE);
+            
+            // Populate existing fields
             etFullName.setText(partner.getFullName() != null ? partner.getFullName() : "");
             etCommissionRate.setText(partner.getCommissionRate() != null ? partner.getCommissionRate().toString() : "");
             etServiceArea.setText(partner.getServiceArea() != null ? partner.getServiceArea() : "");
@@ -56,6 +70,14 @@ public class DeliveryPartnerDialog extends Dialog {
                     spVehicleType.setSelection(position);
                 }
             }
+        } else {
+            // Create mode - show user credential fields
+            etUsername.setVisibility(View.VISIBLE);
+            etEmail.setVisibility(View.VISIBLE);
+            etPassword.setVisibility(View.VISIBLE);
+            tvUsernameLabel.setVisibility(View.VISIBLE);
+            tvEmailLabel.setVisibility(View.VISIBLE);
+            tvPasswordLabel.setVisibility(View.VISIBLE);
         }
 
         btnSave.setOnClickListener(v -> saveDeliveryPartner());
@@ -63,7 +85,15 @@ public class DeliveryPartnerDialog extends Dialog {
     }
 
     private void initializeViews() {
-        // Removed etUserId - no longer needed
+        // User credential fields
+        etUsername = findViewById(R.id.etUsername);
+        etEmail = findViewById(R.id.etEmail);
+        etPassword = findViewById(R.id.etPassword);
+        tvUsernameLabel = findViewById(R.id.tvUsernameLabel);
+        tvEmailLabel = findViewById(R.id.tvEmailLabel);
+        tvPasswordLabel = findViewById(R.id.tvPasswordLabel);
+        
+        // Delivery partner fields
         etFullName = findViewById(R.id.etFullName);
         etCommissionRate = findViewById(R.id.etCommissionRate);
         etServiceArea = findViewById(R.id.etServiceArea);
@@ -84,12 +114,50 @@ public class DeliveryPartnerDialog extends Dialog {
     }
 
     private void saveDeliveryPartner() {
-        // Validate fields (removed userId validation - it's automatically set)
         String fullName = etFullName.getText().toString().trim();
         String commissionRateStr = etCommissionRate.getText().toString().trim();
         String serviceArea = etServiceArea.getText().toString().trim();
         String vehicleType = spVehicleType.getSelectedItem().toString();
 
+        // Validate user credentials (only for create mode)
+        String username = "";
+        String email = "";
+        String password = "";
+        
+        if (partner == null) {
+            // CREATE MODE: Validate user credentials
+            username = etUsername.getText().toString().trim();
+            email = etEmail.getText().toString().trim();
+            password = etPassword.getText().toString().trim();
+            
+            if (username.isEmpty()) {
+                Toast.makeText(getContext(), "Username is required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            if (email.isEmpty()) {
+                Toast.makeText(getContext(), "Email is required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // Basic email validation
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                Toast.makeText(getContext(), "Invalid email format", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            if (password.isEmpty()) {
+                Toast.makeText(getContext(), "Password is required", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            if (password.length() < 6) {
+                Toast.makeText(getContext(), "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        // Validate delivery partner fields
         if (fullName.isEmpty()) {
             Toast.makeText(getContext(), "Full name is required", Toast.LENGTH_SHORT).show();
             return;
@@ -105,28 +173,26 @@ public class DeliveryPartnerDialog extends Dialog {
             return;
         }
 
-        // Validate userId is available for new delivery partners
-        if (partner == null && userId == null) {
-            Toast.makeText(getContext(), "User ID not found. Please login again.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         try {
-            // Use stored userId instead of reading from EditText
             Double commissionRate = Double.parseDouble(commissionRateStr);
 
             DeliveryPartner deliveryPartner;
             if (partner != null) {
-                // Edit mode - use existing partner
+                // EDIT MODE: Update existing partner (user credentials unchanged)
                 deliveryPartner = partner;
                 deliveryPartner.setFullName(fullName);
                 deliveryPartner.setVehicleType(vehicleType);
                 deliveryPartner.setCommissionRate(commissionRate);
                 deliveryPartner.setServiceArea(serviceArea);
             } else {
-                // Add mode - create new partner with stored userId
+                // CREATE MODE: Create new partner with user credentials
                 deliveryPartner = new DeliveryPartner();
-                deliveryPartner.setUserId(userId); // Use stored userId from constructor
+                
+                // Set user credentials (will be used to create User account on backend)
+                deliveryPartner.setUsername(username);
+                deliveryPartner.setEmail(email);
+                deliveryPartner.setPassword(password);
+                
                 deliveryPartner.setFullName(fullName);
                 deliveryPartner.setVehicleType(vehicleType);
                 deliveryPartner.setCommissionRate(commissionRate);

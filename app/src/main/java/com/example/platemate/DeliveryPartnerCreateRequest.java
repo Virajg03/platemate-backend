@@ -3,8 +3,14 @@ package com.example.platemate;
 import com.google.gson.annotations.SerializedName;
 
 public class DeliveryPartnerCreateRequest {
-    @SerializedName("userId")
-    private Long userId;
+    @SerializedName("username")
+    private String username;
+
+    @SerializedName("email")
+    private String email;
+
+    @SerializedName("password")
+    private String password;
 
     @SerializedName("fullName")
     private String fullName;
@@ -20,20 +26,38 @@ public class DeliveryPartnerCreateRequest {
 
     public DeliveryPartnerCreateRequest() {}
 
-    public DeliveryPartnerCreateRequest(Long userId, String fullName, String vehicleType, Double commissionRate, String serviceArea) {
-        this.userId = userId;
+    public DeliveryPartnerCreateRequest(String username, String email, String password, String fullName, String vehicleType, Double commissionRate, String serviceArea) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
         this.fullName = fullName;
         this.vehicleType = vehicleType;
         this.commissionRate = commissionRate;
         this.serviceArea = serviceArea;
     }
 
-    public Long getUserId() {
-        return userId;
+    public String getUsername() {
+        return username;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getFullName() {

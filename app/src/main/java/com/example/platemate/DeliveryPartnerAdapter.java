@@ -90,7 +90,7 @@ public class DeliveryPartnerAdapter extends RecyclerView.Adapter<DeliveryPartner
             });
             
             // Edit button
-            btnEdit.setOnClickListener(v -> activity.showEditDeliveryPartnerDialog(partner));
+            btnEdit.setOnClickListener(v -> activity.showEditDeliveryPartnerForm(partner));
             
             // Delete button
             btnDelete.setOnClickListener(v -> activity.deleteDeliveryPartner(partner));
