@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.platemate.dto.DeliveryPartnerDtos;
 import com.platemate.enums.Role;
 import com.platemate.exception.ForbiddenException;
+import com.platemate.exception.ResourceAlreadyExistsException;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.DeliveryPartner;
 import com.platemate.model.TiffinProvider;
@@ -28,6 +29,8 @@ import com.platemate.repository.DeliveryPartnerRepository;
 import com.platemate.repository.TiffinProviderRepository;
 import com.platemate.repository.UserRepository;
 import com.platemate.service.DeliveryPartnerService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 @RestController
 @RequestMapping("/api/delivery-partners")
@@ -44,20 +47,29 @@ public class DeliveryPartnerCrudController {
     
     @Autowired
     private DeliveryPartnerRepository deliveryPartnerRepository;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','DELIVERY_PARTNER','PROVIDER')")
+    @Transactional
     public ResponseEntity<DeliveryPartnerDtos.Response> create(@RequestBody DeliveryPartnerDtos.CreateRequest req) {
-        User user = service.requireUser(req.getUserId());
         User currentUser = getCurrentUser();
         Role currentRole = currentUser.getRole();
         
+        // Step 1: Validate and create User account for delivery partner
+        validateUserCredentials(req.getUsername(), req.getEmail());
+        User user = createDeliveryPartnerUser(req.getUsername(), req.getEmail(), req.getPassword());
+        
+        // Step 2: Create DeliveryPartner
         DeliveryPartner p = new DeliveryPartner();
         p.setUser(user);
         p.setFullName(req.getFullName());
         p.setVehicleType(req.getVehicleType());
         p.setCommissionRate(req.getCommissionRate());
         p.setServiceArea(req.getServiceArea());
+        p.setIsAvailable(false); // Default to unavailable
         
         Long providerId = null;
         
@@ -77,6 +89,34 @@ public class DeliveryPartnerCrudController {
         
         DeliveryPartner saved = service.create(p, providerId);
         return ResponseEntity.ok(toResponse(saved));
+    }
+    
+    /**
+     * Validates username and email uniqueness
+     */
+    private void validateUserCredentials(String username, String email) {
+        // Check if username already exists
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new ResourceAlreadyExistsException("Username already exists");
+        }
+        
+        // Check if email already exists
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new ResourceAlreadyExistsException("Email already exists");
+        }
+    }
+    
+    /**
+     * Creates a User account for delivery partner with DELIVERY_PARTNER role
+     */
+    private User createDeliveryPartnerUser(String username, String email, String password) {
+        User user = new User();
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password)); // Encrypt password
+        user.setRole(Role.DELIVERY_PARTNER); // Set role to DELIVERY_PARTNER
+        
+        return userRepository.save(user);
     }
 
     @PutMapping("/{id}")
