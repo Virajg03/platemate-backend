@@ -1,10 +1,23 @@
 package com.example.platemate;
 
+import com.google.gson.annotations.SerializedName;
+
 public class Address {
-    private String street;
+    @SerializedName("street1")
+    private String street1;
+    
+    @SerializedName("street2")
+    private String street2;
+    
+    @SerializedName("city")
     private String city;
+    
+    @SerializedName("state")
     private String state;
-    private String zipCode;
+    
+    @SerializedName("pincode")
+    private String pincode;
+    
     private String country;
     private Double latitude;
     private Double longitude;
@@ -12,12 +25,29 @@ public class Address {
     public Address() {
     }
 
+    // For backward compatibility, provide getStreet() that returns street1
     public String getStreet() {
-        return street;
+        return street1;
     }
 
     public void setStreet(String street) {
-        this.street = street;
+        this.street1 = street;
+    }
+
+    public String getStreet1() {
+        return street1;
+    }
+
+    public void setStreet1(String street1) {
+        this.street1 = street1;
+    }
+
+    public String getStreet2() {
+        return street2;
+    }
+
+    public void setStreet2(String street2) {
+        this.street2 = street2;
     }
 
     public String getCity() {
@@ -36,12 +66,21 @@ public class Address {
         this.state = state;
     }
 
+    // For backward compatibility, provide getZipCode() that returns pincode
     public String getZipCode() {
-        return zipCode;
+        return pincode;
     }
 
     public void setZipCode(String zipCode) {
-        this.zipCode = zipCode;
+        this.pincode = zipCode;
+    }
+
+    public String getPincode() {
+        return pincode;
+    }
+
+    public void setPincode(String pincode) {
+        this.pincode = pincode;
     }
 
     public String getCountry() {

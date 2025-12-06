@@ -50,18 +50,37 @@
                 android:padding="8dp"
                 android:textColorHighlight="@color/cardview_dark_background" />
 
-            <EditText
-                android:id="@+id/password"
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
                 android:layout_marginTop="20dp"
-                android:background="@drawable/custom_edittext"
-                android:drawableLeft="@drawable/baseline_lock_24"
-                android:drawablePadding="3dp"
-                android:hint="Password"
-                android:inputType="textPassword"
-                android:padding="8dp"
-                android:textColorHighlight="@color/cardview_dark_background" />
+                android:background="@drawable/custom_edittext">
+
+                <EditText
+                    android:id="@+id/password"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@android:color/transparent"
+                    android:drawableLeft="@drawable/baseline_lock_24"
+                    android:drawablePadding="3dp"
+                    android:hint="Password"
+                    android:inputType="textPassword"
+                    android:padding="8dp"
+                    android:paddingEnd="50dp"
+                    android:textColorHighlight="@color/cardview_dark_background" />
+
+                <ImageButton
+                    android:id="@+id/passwordToggle"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Toggle password visibility"
+                    android:src="@drawable/ic_visibility_off"
+                    android:tint="@color/login_orange" />
+            </RelativeLayout>
 
             <Button
                 android:id="@+id/loginButton"

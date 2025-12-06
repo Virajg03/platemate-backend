@@ -3,8 +3,14 @@ package com.example.platemate;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.os.Bundle;
 import android.util.Log;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -27,6 +33,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.util.ArrayList;
@@ -62,6 +69,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     private BottomNavigationView bottomNavigationView;
     private FrameLayout fragmentContainer;
     private NestedScrollView dashboardScrollView;
+    private SwipeRefreshLayout swipeRefreshLayout;
     private boolean isDashboardVisible = true;
     
     // Request code for activity result
@@ -131,16 +139,72 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
         fragmentContainer = findViewById(R.id.fragmentContainer);
         dashboardScrollView = findViewById(R.id.dashboardScrollView);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        
+        // Setup SwipeRefreshLayout
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setColorSchemeColors(
+                getResources().getColor(R.color.login_orange, null)
+            );
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshDashboard();
+            });
+        }
         
         productList = new ArrayList<>();
         productAdapter = new ProductAdapter(productList, this);
         productsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         productsRecyclerView.setAdapter(productAdapter);
         
+        // Setup scroll listener for dashboard scroll view
+        setupScrollListener();
+        
         // Set initial email from session
         String username = sessionManager.getUsername();
         if (username != null) {
             tvProviderEmail.setText(username);
+        }
+    }
+    
+    private int lastScrollY = 0;
+    private boolean isScrollingDown = false;
+    
+    private void setupScrollListener() {
+        // Scroll listener for dashboard scroll view
+        dashboardScrollView.setOnScrollChangeListener(new NestedScrollView.OnScrollChangeListener() {
+            @Override
+            public void onScrollChange(NestedScrollView v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+                if (scrollY > oldScrollY) {
+                    // Scrolling down
+                    if (!isScrollingDown) {
+                        isScrollingDown = true;
+                        hideFab();
+                    }
+                } else if (scrollY < oldScrollY) {
+                    // Scrolling up
+                    if (isScrollingDown) {
+                        isScrollingDown = false;
+                        showFab();
+                    }
+                }
+                lastScrollY = scrollY;
+            }
+        });
+    }
+    
+    public void showFab() {
+        if (fabAddProduct != null && isProviderApproved && 
+            (isDashboardVisible || getSupportFragmentManager().findFragmentByTag("products") != null)) {
+            // Only show if on dashboard or products tab
+            if (fabAddProduct.getVisibility() != View.VISIBLE) {
+                fabAddProduct.show();
+            }
+        }
+    }
+    
+    public void hideFab() {
+        if (fabAddProduct != null && fabAddProduct.getVisibility() == View.VISIBLE) {
+            fabAddProduct.hide();
         }
     }
 
@@ -150,6 +214,19 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         if (coordinatorLayout != null) {
             ViewCompat.setOnApplyWindowInsetsListener(coordinatorLayout, (v, insets) -> {
                 Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                
+                // Handle status bar padding for dashboard scroll view only
+                if (dashboardScrollView != null) {
+                    dashboardScrollView.setPadding(
+                        systemBars.left,
+                        systemBars.top,
+                        systemBars.right,
+                        0
+                    );
+                }
+                
+                // Don't add padding to fragment container - fragments handle their own spacing
+                // This prevents double padding and odd spacing
                 
                 // Handle bottom navigation margin for system navigation bar
                 if (bottomNavigationView != null && bottomNavigationView.getParent() instanceof ViewGroup) {
@@ -245,54 +322,84 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         isDashboardVisible = true;
         dashboardScrollView.setVisibility(View.VISIBLE);
         fragmentContainer.setVisibility(View.GONE);
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setVisibility(View.VISIBLE);
+        }
         updateFabVisibility();
+        // Show FAB when returning to dashboard if scrolling up
+        if (!isScrollingDown) {
+            showFab();
+        }
     }
 
     private void showOrdersFragment() {
         isDashboardVisible = false;
         dashboardScrollView.setVisibility(View.GONE);
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setVisibility(View.GONE);
+        }
         fragmentContainer.setVisibility(View.VISIBLE);
         fabAddProduct.setVisibility(View.GONE);
         
-        // Update fragment container margin when showing fragment
-        ViewCompat.setOnApplyWindowInsetsListener(fragmentContainer, (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            updateFragmentContainerMargin(systemBars.bottom);
-            return insets;
-        });
-        
         FragmentManager fragmentManager = getSupportFragmentManager();
+        Fragment ordersFragment = fragmentManager.findFragmentByTag("orders");
+        Fragment productsFragment = fragmentManager.findFragmentByTag("products");
         
-        // Always replace to ensure correct fragment is shown when switching tabs
         FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.fragmentContainer, new OrdersFragment(), "orders");
+        
+        // Hide products fragment if it exists
+        if (productsFragment != null) {
+            transaction.hide(productsFragment);
+        }
+        
+        // Show or create orders fragment
+        if (ordersFragment != null) {
+            transaction.show(ordersFragment);
+        } else {
+            ordersFragment = new OrdersFragment();
+            transaction.add(R.id.fragmentContainer, ordersFragment, "orders");
+        }
+        
         transaction.commit();
     }
 
     private void showProductsFragment() {
         isDashboardVisible = false;
         dashboardScrollView.setVisibility(View.GONE);
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setVisibility(View.GONE);
+        }
         fragmentContainer.setVisibility(View.VISIBLE);
         updateFabVisibility();
         
-        // Update fragment container margin when showing fragment
-        ViewCompat.setOnApplyWindowInsetsListener(fragmentContainer, (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            updateFragmentContainerMargin(systemBars.bottom);
-            return insets;
-        });
-        
         FragmentManager fragmentManager = getSupportFragmentManager();
+        Fragment ordersFragment = fragmentManager.findFragmentByTag("orders");
+        Fragment productsFragment = fragmentManager.findFragmentByTag("products");
         
-        // Always replace to ensure correct fragment is shown when switching tabs
         FragmentTransaction transaction = fragmentManager.beginTransaction();
-        transaction.replace(R.id.fragmentContainer, new ProductsFragment(), "products");
+        
+        // Hide orders fragment if it exists
+        if (ordersFragment != null) {
+            transaction.hide(ordersFragment);
+        }
+        
+        // Show or create products fragment
+        if (productsFragment != null) {
+            transaction.show(productsFragment);
+        } else {
+            productsFragment = new ProductsFragment();
+            transaction.add(R.id.fragmentContainer, productsFragment, "products");
+        }
+        
         transaction.commit();
     }
 
     private void showProfileFragment() {
         isDashboardVisible = false;
         dashboardScrollView.setVisibility(View.GONE);
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setVisibility(View.GONE);
+        }
         fragmentContainer.setVisibility(View.VISIBLE);
         fabAddProduct.setVisibility(View.GONE);
         
@@ -331,6 +438,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         call.enqueue(new Callback<Map<String, Object>>() {
             @Override
             public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                onRefreshComplete();
                 if (response.isSuccessful() && response.body() != null) {
                     Map<String, Object> details = response.body();
                     if (details.get("businessName") != null && !details.get("businessName").toString().isEmpty()) {
@@ -381,6 +489,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                onRefreshComplete();
                 // Use default or username if API fails
                 String username = sessionManager.getUsername();
                 if (username != null) {
@@ -398,6 +507,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     private void loadUserProfileImage() {
         Long userId = sessionManager.getUserId();
         if (userId == null || ivProfilePicture == null) {
+            onRefreshComplete(); // Complete refresh even if we can't load
             return;
         }
         
@@ -450,14 +560,45 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         call.enqueue(new Callback<okhttp3.ResponseBody>() {
             @Override
             public void onResponse(Call<okhttp3.ResponseBody> call, Response<okhttp3.ResponseBody> response) {
+                onRefreshComplete();
                 if (response.isSuccessful() && response.body() != null && ivProfilePicture != null) {
                     try {
                         byte[] imageBytes = response.body().bytes();
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                        
+                        // Decode with downsampling
+                        BitmapFactory.Options options = new BitmapFactory.Options();
+                        options.inJustDecodeBounds = true;
+                        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, options);
+                        
+                        // Calculate sample size
+                        int reqSize = 800;
+                        int inSampleSize = 1;
+                        int maxDim = Math.max(options.outWidth, options.outHeight);
+                        if (maxDim > reqSize) {
+                            inSampleSize = (int) Math.ceil((double) maxDim / reqSize);
+                            inSampleSize = (int) Math.pow(2, Math.ceil(Math.log(inSampleSize) / Math.log(2)));
+                        }
+                        if (maxDim > 2000) inSampleSize = Math.max(inSampleSize, 4);
+                        if (maxDim > 4000) inSampleSize = Math.max(inSampleSize, 8);
+                        
+                        // Decode with sample size
+                        options.inJustDecodeBounds = false;
+                        options.inSampleSize = inSampleSize;
+                        options.inPreferredConfig = Bitmap.Config.RGB_565;
+                        
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, options);
                         if (bitmap != null) {
-                            ivProfilePicture.setImageBitmap(bitmap);
-                            ivProfilePicture.clearColorFilter(); // Remove tint when showing actual image
-                            Log.d("ProviderDashboard", "Profile image loaded successfully");
+                            // Scale down further if needed
+                            bitmap = scaleDownBitmap(bitmap, 800);
+                            if (bitmap != null) {
+                                ivProfilePicture.setImageBitmap(bitmap);
+                                ivProfilePicture.clearColorFilter(); // Remove tint when showing actual image
+                                Log.d("ProviderDashboard", "Profile image loaded successfully");
+                            } else {
+                                // Fallback to default icon
+                                ivProfilePicture.setImageResource(R.drawable.ic_profile);
+                                ivProfilePicture.setColorFilter(getResources().getColor(R.color.login_orange, null));
+                            }
                         } else {
                             // Fallback to default icon
                             ivProfilePicture.setImageResource(R.drawable.ic_profile);
@@ -482,6 +623,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
             
             @Override
             public void onFailure(Call<okhttp3.ResponseBody> call, Throwable t) {
+                onRefreshComplete();
                 Log.e("ProviderDashboard", "Failed to load profile image", t);
                 // Fallback to default icon
                 if (ivProfilePicture != null) {
@@ -490,6 +632,52 @@ public class ProviderDashboardActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+    
+    /**
+     * Scale down bitmap to prevent memory issues
+     */
+    private Bitmap scaleDownBitmap(Bitmap bitmap, int maxSize) {
+        if (bitmap == null) return null;
+        
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int maxDim = Math.max(width, height);
+        
+        // Always scale if larger than maxSize, or if bitmap is extremely large (>2000px)
+        if (maxDim <= maxSize && maxDim <= 2000) {
+            return bitmap; // Already small enough
+        }
+        
+        // Use the smaller of maxSize or 2000 to prevent huge bitmaps
+        int targetSize = Math.min(maxSize, 2000);
+        if (maxDim > targetSize) {
+            float scale = (float) targetSize / maxDim;
+            int newWidth = (int) (width * scale);
+            int newHeight = (int) (height * scale);
+            
+            try {
+                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+                if (scaled != bitmap && !bitmap.isRecycled()) {
+                    bitmap.recycle();
+                }
+                Log.d("ProviderDashboard", "Scaled bitmap from " + width + "x" + height + " to " + newWidth + "x" + newHeight);
+                return scaled;
+            } catch (Exception e) {
+                Log.e("ProviderDashboard", "Error scaling bitmap", e);
+                return null; // Return null on error to prevent crash
+            }
+        }
+        
+        return bitmap;
+    }
+    
+    /**
+     * Fix image orientation from byte array (handles EXIF data) - REMOVED to prevent memory issues
+     */
+    private Bitmap fixImageOrientationFromBytes(byte[] imageBytes, Bitmap bitmap) {
+        // Return bitmap as-is to prevent memory issues
+        return bitmap;
     }
 
     /**
@@ -506,6 +694,37 @@ public class ProviderDashboardActivity extends AppCompatActivity {
             })
             .setCancelable(false)
             .show();
+    }
+    
+    private int refreshCounter = 0;
+    private static final int TOTAL_REFRESH_CALLS = 3; // provider details, profile image, products
+    
+    /**
+     * Refresh dashboard data
+     */
+    private void refreshDashboard() {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setRefreshing(true);
+        }
+        refreshCounter = 0;
+        
+        // Refresh all data
+        loadProviderDetails();
+        loadUserProfileImage();
+        loadProducts();
+    }
+    
+    /**
+     * Called when a refresh operation completes
+     */
+    private void onRefreshComplete() {
+        refreshCounter++;
+        if (refreshCounter >= TOTAL_REFRESH_CALLS) {
+            if (swipeRefreshLayout != null) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
+            refreshCounter = 0;
+        }
     }
     
     /**
@@ -597,6 +816,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         call.enqueue(new Callback<List<MenuItemResponse>>() {
             @Override
             public void onResponse(Call<List<MenuItemResponse>> call, Response<List<MenuItemResponse>> response) {
+                onRefreshComplete();
                 try {
                     if (response.isSuccessful()) {
                         List<MenuItemResponse> menuItems = response.body();
@@ -650,6 +870,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<List<MenuItemResponse>> call, Throwable t) {
+                onRefreshComplete();
                 // Network error or other failure - don't crash the app
                 String errorMessage = "Network error. Please check your connection.";
                 if (t.getMessage() != null && !t.getMessage().isEmpty()) {

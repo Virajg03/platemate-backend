@@ -19,6 +19,7 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
@@ -41,6 +42,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
     private BottomNavigationView bottomNavigationView;
     private ScrollView homeScrollView;
     private FrameLayout fragmentContainer;
+    private SwipeRefreshLayout swipeRefreshLayout;
     
     private SessionManager sessionManager;
     private ApiInterface apiInterface;
@@ -49,6 +51,8 @@ public class CustomerHomeActivity extends AppCompatActivity {
     private CategoryAdapter categoryAdapter;
     
     private boolean isHomeVisible = true;
+    private int refreshCounter = 0;
+    private int maxRefreshCount = 2;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +96,19 @@ public class CustomerHomeActivity extends AppCompatActivity {
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
         homeScrollView = findViewById(R.id.homeScrollView);
         fragmentContainer = findViewById(R.id.fragmentContainer);
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout);
+        
+        // Setup SwipeRefreshLayout
+        swipeRefreshLayout.setOnRefreshListener(() -> {
+            refreshAllData();
+        });
+        
+        // Configure refresh colors
+        swipeRefreshLayout.setColorSchemeResources(
+            R.color.login_orange,
+            android.R.color.holo_orange_dark,
+            android.R.color.holo_orange_light
+        );
     }
     
     private void setupClickListeners() {
@@ -126,9 +143,16 @@ public class CustomerHomeActivity extends AppCompatActivity {
     
     private void setupRecyclerViews() {
         // Setup best food RecyclerView
-        bestFoodRecyclerView.setLayoutManager(
-            new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        );
+        LinearLayoutManager bestFoodLayoutManager = 
+            new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
+        bestFoodRecyclerView.setLayoutManager(bestFoodLayoutManager);
+        
+        // Optimize RecyclerView performance
+        bestFoodRecyclerView.setHasFixedSize(true);
+        bestFoodRecyclerView.setItemViewCacheSize(20);
+        bestFoodRecyclerView.setDrawingCacheEnabled(true);
+        bestFoodRecyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        
         bestFoodAdapter = new BestFoodAdapter(new ArrayList<>());
         bestFoodAdapter.setOnItemClickListener(new BestFoodAdapter.OnItemClickListener() {
             @Override
@@ -154,6 +178,13 @@ public class CustomerHomeActivity extends AppCompatActivity {
         androidx.recyclerview.widget.GridLayoutManager gridLayoutManager = 
             new androidx.recyclerview.widget.GridLayoutManager(this, 2);
         categoryRecyclerView.setLayoutManager(gridLayoutManager);
+        
+        // Optimize RecyclerView performance
+        categoryRecyclerView.setHasFixedSize(true);
+        categoryRecyclerView.setItemViewCacheSize(20);
+        categoryRecyclerView.setDrawingCacheEnabled(true);
+        categoryRecyclerView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        
         categoryAdapter = new CategoryAdapter(new ArrayList<>());
         categoryAdapter.setOnItemClickListener(category -> {
             // Navigate to AllProductsActivity with category filter
@@ -181,6 +212,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
             public void onResponse(Call<MenuItemResponse> call, Response<MenuItemResponse> response) {
                 progressBarBestFood.setVisibility(View.GONE);
                 bestFoodRecyclerView.setVisibility(View.VISIBLE);
+                checkAndStopRefresh();
                 
                 if (response.isSuccessful() && response.body() != null) {
                     MenuItemResponse menuItemResponse = response.body();
@@ -200,6 +232,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
             public void onFailure(Call<MenuItemResponse> call, Throwable t) {
                 progressBarBestFood.setVisibility(View.GONE);
                 bestFoodRecyclerView.setVisibility(View.VISIBLE);
+                checkAndStopRefresh();
                 ToastUtils.showError(CustomerHomeActivity.this, 
                     "Error: " + t.getMessage());
                 showEmptyMenuItems();
@@ -250,6 +283,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
             public void onResponse(Call<List<Category>> call, Response<List<Category>> response) {
                 progressBarCategory.setVisibility(View.GONE);
                 categoryRecyclerView.setVisibility(View.VISIBLE);
+                checkAndStopRefresh();
                 
                 if (response.isSuccessful() && response.body() != null) {
                     List<Category> categories = response.body();
@@ -270,11 +304,28 @@ public class CustomerHomeActivity extends AppCompatActivity {
             public void onFailure(Call<List<Category>> call, Throwable t) {
                 progressBarCategory.setVisibility(View.GONE);
                 categoryRecyclerView.setVisibility(View.VISIBLE);
+                checkAndStopRefresh();
                 ToastUtils.showError(CustomerHomeActivity.this, 
                     "Error: " + t.getMessage());
                 showEmptyCategories();
             }
         });
+    }
+    
+    private void refreshAllData() {
+        // Load both best foods and categories
+        refreshCounter = 0;
+        maxRefreshCount = 2;
+        loadBestFoods();
+        loadCategories();
+    }
+    
+    private void checkAndStopRefresh() {
+        refreshCounter++;
+        if (refreshCounter >= maxRefreshCount && swipeRefreshLayout != null) {
+            swipeRefreshLayout.setRefreshing(false);
+            refreshCounter = 0;
+        }
     }
     
     private void showEmptyCategories() {
@@ -299,17 +350,6 @@ public class CustomerHomeActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
-    }
-    
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Add menu items if needed
-        return super.onCreateOptionsMenu(menu);
-    }
-    
-    @Override
-    public boolean onOptionsItemSelected(android.view.MenuItem item) {
-        return super.onOptionsItemSelected(item);
     }
     
     private void setupBottomNavigation() {
@@ -337,12 +377,14 @@ public class CustomerHomeActivity extends AppCompatActivity {
         isHomeVisible = true;
         homeScrollView.setVisibility(View.VISIBLE);
         fragmentContainer.setVisibility(View.GONE);
+        swipeRefreshLayout.setVisibility(View.VISIBLE);
     }
     
     private void showOrdersFragment() {
         isHomeVisible = false;
         homeScrollView.setVisibility(View.GONE);
         fragmentContainer.setVisibility(View.VISIBLE);
+        swipeRefreshLayout.setVisibility(View.GONE);
         
         // Update fragment container margin when showing fragment
         ViewCompat.setOnApplyWindowInsetsListener(fragmentContainer, (v, insets) -> {
@@ -363,6 +405,7 @@ public class CustomerHomeActivity extends AppCompatActivity {
         isHomeVisible = false;
         homeScrollView.setVisibility(View.GONE);
         fragmentContainer.setVisibility(View.VISIBLE);
+        swipeRefreshLayout.setVisibility(View.GONE);
         
         // Update fragment container margin when showing fragment
         ViewCompat.setOnApplyWindowInsetsListener(fragmentContainer, (v, insets) -> {

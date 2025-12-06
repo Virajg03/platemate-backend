@@ -2,6 +2,7 @@ package com.example.platemate;
 
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -133,7 +134,20 @@ public class OrderDetailActivity extends AppCompatActivity {
     private void loadOrderDetails() {
         showLoading(true);
         
-        Call<Order> call = apiInterface.getCustomerOrder(orderId);
+        // Check if user is provider or customer
+        SessionManager sessionManager = new SessionManager(this);
+        String role = sessionManager.getRole();
+        boolean isProvider = "Provider".equals(role);
+        
+        Call<Order> call;
+        if (isProvider) {
+            // Use provider endpoint
+            call = apiInterface.getProviderOrder(orderId);
+        } else {
+            // Use customer endpoint
+            call = apiInterface.getCustomerOrder(orderId);
+        }
+        
         call.enqueue(new Callback<Order>() {
             @Override
             public void onResponse(Call<Order> call, Response<Order> response) {
@@ -141,10 +155,20 @@ public class OrderDetailActivity extends AppCompatActivity {
                 
                 if (response.isSuccessful() && response.body() != null) {
                     currentOrder = response.body();
-                    displayOrderDetails(currentOrder);
+                    displayOrderDetails(currentOrder, isProvider);
                     loadPaymentDetails(); // Load payment details separately
                 } else {
-                    ToastUtils.showError(OrderDetailActivity.this, "Failed to load order details");
+                    String errorMsg = "Failed to load order details";
+                    if (response.code() == 404) {
+                        errorMsg = "Order not found";
+                    } else if (response.errorBody() != null) {
+                        try {
+                            errorMsg = response.errorBody().string();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    ToastUtils.showError(OrderDetailActivity.this, errorMsg);
                     showEmptyState();
                 }
             }
@@ -164,7 +188,7 @@ public class OrderDetailActivity extends AppCompatActivity {
         // In the future, you can add: @GET("/api/customers/orders/{id}/payment")
     }
     
-    private void displayOrderDetails(Order order) {
+    private void displayOrderDetails(Order order, boolean isProvider) {
         contentLayout.setVisibility(View.VISIBLE);
         emptyLayout.setVisibility(View.GONE);
         
@@ -181,6 +205,9 @@ public class OrderDetailActivity extends AppCompatActivity {
             tvOrderStatus.setText(order.getOrderStatus());
             tvOrderStatus.setTextColor(getStatusColor(order.getOrderStatus()));
         }
+        
+        // Remove existing status buttons before adding new ones
+        removeStatusButtons();
         
         // Provider Info
         if (order.getProviderName() != null) {
@@ -235,15 +262,161 @@ public class OrderDetailActivity extends AppCompatActivity {
             tvTotalAmount.setText("₹" + String.format("%.2f", order.getTotalAmount()));
         }
         
-        // Cancel Button - only show for PENDING or CONFIRMED orders
+        // Cancel Button - only show for customers with PENDING or CONFIRMED orders
         if (btnCancelOrder != null) {
-            String status = order.getOrderStatus();
-            if (status != null && (status.equals("PENDING") || status.equals("CONFIRMED"))) {
-                btnCancelOrder.setVisibility(View.VISIBLE);
+            if (!isProvider) {
+                String status = order.getOrderStatus();
+                if (status != null && (status.equals("PENDING") || status.equals("CONFIRMED"))) {
+                    btnCancelOrder.setVisibility(View.VISIBLE);
+                } else {
+                    btnCancelOrder.setVisibility(View.GONE);
+                }
             } else {
+                // Hide cancel button for providers
                 btnCancelOrder.setVisibility(View.GONE);
             }
         }
+        
+        // Show status update buttons for providers
+        if (isProvider) {
+            setupProviderStatusButtons(order);
+        }
+    }
+    
+    private void setupProviderStatusButtons(Order order) {
+        // Remove existing status buttons
+        removeStatusButtons();
+        
+        String currentStatus = order.getOrderStatus();
+        if (currentStatus == null) return;
+        
+        // Find the order info card to add buttons
+        ViewGroup orderInfoCard = findOrderInfoCard();
+        if (orderInfoCard == null) return;
+        
+        // Create buttons layout
+        LinearLayout statusButtonsLayout = new LinearLayout(this);
+        statusButtonsLayout.setTag("statusButtons");
+        statusButtonsLayout.setOrientation(LinearLayout.VERTICAL);
+        statusButtonsLayout.setPadding(0, 16, 0, 0);
+        
+        // Add buttons based on current status
+        switch (currentStatus.toUpperCase()) {
+            case "PENDING":
+                addStatusButton(statusButtonsLayout, "CONFIRMED", "Confirm Order");
+                break;
+            case "CONFIRMED":
+                addStatusButton(statusButtonsLayout, "PREPARING", "Start Preparing");
+                break;
+            case "PREPARING":
+                addStatusButton(statusButtonsLayout, "READY", "Mark as Ready");
+                break;
+            case "READY":
+            case "OUT_FOR_DELIVERY":
+            case "DELIVERED":
+            case "CANCELLED":
+                // Final states, no status changes allowed
+                break;
+        }
+        
+        // Add layout to order info card if buttons were added
+        if (statusButtonsLayout.getChildCount() > 0) {
+            orderInfoCard.addView(statusButtonsLayout);
+        }
+    }
+    
+    private ViewGroup findOrderInfoCard() {
+        // Find the card containing tvOrderStatus
+        android.view.ViewParent parent = tvOrderStatus.getParent();
+        while (parent != null && !(parent instanceof androidx.cardview.widget.CardView)) {
+            parent = parent.getParent();
+        }
+        if (parent != null && parent instanceof ViewGroup) {
+            // Find the LinearLayout inside the CardView
+            ViewGroup cardView = (ViewGroup) parent;
+            for (int i = 0; i < cardView.getChildCount(); i++) {
+                View child = cardView.getChildAt(i);
+                if (child instanceof LinearLayout) {
+                    return (LinearLayout) child;
+                }
+            }
+        }
+        return null;
+    }
+    
+    private void removeStatusButtons() {
+        ViewGroup orderInfoCard = findOrderInfoCard();
+        if (orderInfoCard != null) {
+            View statusButtons = orderInfoCard.findViewWithTag("statusButtons");
+            if (statusButtons != null) {
+                orderInfoCard.removeView(statusButtons);
+            }
+        }
+    }
+    
+    private void addStatusButton(LinearLayout layout, String newStatus, String buttonText) {
+        Button button = new Button(this);
+        button.setText(buttonText);
+        button.setTextColor(getColor(android.R.color.white));
+        button.setBackgroundResource(R.drawable.neubrutal_button);
+        button.setPadding(16, 16, 16, 16);
+        button.setTextSize(14);
+        button.setTypeface(button.getTypeface(), android.graphics.Typeface.BOLD);
+        
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(0, 8, 0, 0);
+        button.setLayoutParams(params);
+        
+        button.setOnClickListener(v -> updateOrderStatus(newStatus));
+        layout.addView(button);
+    }
+    
+    private void updateOrderStatus(String newStatus) {
+        if (orderId == null || currentOrder == null) return;
+        
+        // Show progress
+        showLoading(true);
+        
+        // Create status update request - use "orderStatus" to match backend field name
+        java.util.Map<String, String> statusRequest = new java.util.HashMap<>();
+        statusRequest.put("orderStatus", newStatus);
+        
+        Call<Order> call = apiInterface.updateOrderStatus(orderId, statusRequest);
+        call.enqueue(new Callback<Order>() {
+            @Override
+            public void onResponse(Call<Order> call, Response<Order> response) {
+                showLoading(false);
+                
+                if (response.isSuccessful() && response.body() != null) {
+                    currentOrder = response.body();
+                    ToastUtils.showSuccess(OrderDetailActivity.this, "Order status updated to " + newStatus);
+                    // Refresh display
+                    SessionManager sessionManager = new SessionManager(OrderDetailActivity.this);
+                    String role = sessionManager.getRole();
+                    boolean isProvider = "Provider".equals(role);
+                    displayOrderDetails(currentOrder, isProvider);
+                } else {
+                    String errorMsg = "Failed to update order status";
+                    if (response.errorBody() != null) {
+                        try {
+                            errorMsg = response.errorBody().string();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    ToastUtils.showError(OrderDetailActivity.this, errorMsg);
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<Order> call, Throwable t) {
+                showLoading(false);
+                ToastUtils.showError(OrderDetailActivity.this, "Error: " + t.getMessage());
+            }
+        });
     }
     
     private void cancelOrder() {
@@ -256,7 +429,10 @@ public class OrderDetailActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     ToastUtils.showSuccess(OrderDetailActivity.this, "Order cancelled successfully");
                     currentOrder = response.body();
-                    displayOrderDetails(currentOrder); // Refresh display
+                    SessionManager sessionManager = new SessionManager(OrderDetailActivity.this);
+                    String role = sessionManager.getRole();
+                    boolean isProvider = "Provider".equals(role);
+                    displayOrderDetails(currentOrder, isProvider); // Refresh display
                 } else {
                     String errorMsg = "Failed to cancel order";
                     if (response.errorBody() != null) {

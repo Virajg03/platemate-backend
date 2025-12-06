@@ -11,6 +11,7 @@ import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -84,6 +85,28 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         loginButton.setOnClickListener(v -> loginToBackend());
+        
+        // Setup password visibility toggle
+        setupPasswordToggle();
+    }
+    
+    private void setupPasswordToggle() {
+        ImageButton passwordToggle = findViewById(R.id.passwordToggle);
+        if (passwordToggle != null && passwordEditText != null) {
+            passwordToggle.setOnClickListener(v -> {
+                if (passwordEditText.getInputType() == (android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD)) {
+                    // Show password
+                    passwordEditText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                    passwordToggle.setImageResource(R.drawable.ic_visibility);
+                } else {
+                    // Hide password
+                    passwordEditText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                    passwordToggle.setImageResource(R.drawable.ic_visibility_off);
+                }
+                // Move cursor to end
+                passwordEditText.setSelection(passwordEditText.getText().length());
+            });
+        }
     }
 
     protected void loginToBackend() {

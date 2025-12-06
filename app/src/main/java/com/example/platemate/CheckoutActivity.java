@@ -71,6 +71,13 @@ public class CheckoutActivity extends AppCompatActivity implements PaymentResult
         setupDeliveryTimeSpinner();
     }
     
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Reload address when activity resumes (in case it was updated in profile)
+        setupAddressDisplay();
+    }
+    
     private void initializeViews() {
         backButton = findViewById(R.id.backButton);
         rvOrderItems = findViewById(R.id.rvOrderItems);
@@ -115,6 +122,66 @@ public class CheckoutActivity extends AppCompatActivity implements PaymentResult
     }
     
     private void setupAddressDisplay() {
+        // First try to load from backend to get latest address
+        loadAddressFromBackend();
+    }
+    
+    private void loadAddressFromBackend() {
+        Long userId = sessionManager.getUserId();
+        if (userId == null) {
+            // Fallback to session manager if no userId
+            displayAddressFromSession();
+            return;
+        }
+        
+        // Load user profile to get latest address
+        Call<User> call = apiInterface.getCustomerProfile(userId);
+        call.enqueue(new Callback<User>() {
+            @Override
+            public void onResponse(Call<User> call, Response<User> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    User user = response.body();
+                    Address address = user.getAddress();
+                    
+                    // Try both field names for backward compatibility
+                    String street = address.getStreet1() != null ? address.getStreet1() : address.getStreet();
+                    String city = address.getCity();
+                    String state = address.getState();
+                    String zipCode = address.getPincode() != null ? address.getPincode() : address.getZipCode();
+                    
+                    if (street != null && !street.isEmpty() && 
+                        city != null && !city.isEmpty() && 
+                        state != null && !state.isEmpty() && 
+                        zipCode != null && !zipCode.isEmpty()) {
+                        
+                        // Update SessionManager with latest address from backend
+                        sessionManager.saveDeliveryAddress(street, city, state, zipCode);
+                        
+                        // Display address
+                        String fullAddress = street + ", " + city + ", " + state + " - " + zipCode;
+                        tvFullAddress.setText(fullAddress);
+                        addressLayout.setVisibility(View.VISIBLE);
+                        noAddressLayout.setVisibility(View.GONE);
+                        btnAddEditAddress.setText("CHANGE ADDRESS");
+                    } else {
+                        // No address in backend, check session manager
+                        displayAddressFromSession();
+                    }
+                } else {
+                    // API call failed, fallback to session manager
+                    displayAddressFromSession();
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<User> call, Throwable t) {
+                // API call failed, fallback to session manager
+                displayAddressFromSession();
+            }
+        });
+    }
+    
+    private void displayAddressFromSession() {
         if (sessionManager.hasDeliveryAddress()) {
             String fullAddress = sessionManager.getFullDeliveryAddress();
             tvFullAddress.setText(fullAddress);
@@ -142,8 +209,19 @@ public class CheckoutActivity extends AppCompatActivity implements PaymentResult
             @Override
             public void onAddressSaved(String street, String city, String state, String zipCode) {
                 // Address is saved to backend by AddressDialog
-                // Update display
-                setupAddressDisplay();
+                // Immediately update UI with saved address (optimistic update)
+                runOnUiThread(() -> {
+                    String fullAddress = street + ", " + city + ", " + state + " - " + zipCode;
+                    tvFullAddress.setText(fullAddress);
+                    addressLayout.setVisibility(View.VISIBLE);
+                    noAddressLayout.setVisibility(View.GONE);
+                    btnAddEditAddress.setText("CHANGE ADDRESS");
+                });
+                
+                // Also reload from backend after a short delay to ensure consistency
+                tvFullAddress.postDelayed(() -> {
+                    loadAddressFromBackend();
+                }, 500); // 500ms delay to ensure backend has processed
             }
             
             @Override

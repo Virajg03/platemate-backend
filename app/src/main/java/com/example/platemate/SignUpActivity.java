@@ -16,6 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -73,6 +74,9 @@ public class SignUpActivity extends AppCompatActivity {
         
         // Setup error clearing on text change
         setupErrorClearing();
+        
+        // Setup password visibility toggles
+        setupPasswordToggles();
         
         TextView signUpText = findViewById(R.id.textView7);
         String text = getString(R.string.splash_activity_signin_text);
@@ -340,6 +344,43 @@ public class SignUpActivity extends AppCompatActivity {
         });
     }
 
+    private void setupPasswordToggles() {
+        ImageButton passwordToggle = findViewById(R.id.passwordToggle);
+        ImageButton confirmPasswordToggle = findViewById(R.id.confirmPasswordToggle);
+        
+        if (passwordToggle != null && passwordEditText != null) {
+            passwordToggle.setOnClickListener(v -> {
+                if (passwordEditText.getInputType() == (android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD)) {
+                    // Show password
+                    passwordEditText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                    passwordToggle.setImageResource(R.drawable.ic_visibility);
+                } else {
+                    // Hide password
+                    passwordEditText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                    passwordToggle.setImageResource(R.drawable.ic_visibility_off);
+                }
+                // Move cursor to end
+                passwordEditText.setSelection(passwordEditText.getText().length());
+            });
+        }
+        
+        if (confirmPasswordToggle != null && confirmPasswordEditText != null) {
+            confirmPasswordToggle.setOnClickListener(v -> {
+                if (confirmPasswordEditText.getInputType() == (android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD)) {
+                    // Show password
+                    confirmPasswordEditText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+                    confirmPasswordToggle.setImageResource(R.drawable.ic_visibility);
+                } else {
+                    // Hide password
+                    confirmPasswordEditText.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                    confirmPasswordToggle.setImageResource(R.drawable.ic_visibility_off);
+                }
+                // Move cursor to end
+                confirmPasswordEditText.setSelection(confirmPasswordEditText.getText().length());
+            });
+        }
+    }
+    
     /**
      * Maps user-friendly dropdown values to backend Role enum format
      * 

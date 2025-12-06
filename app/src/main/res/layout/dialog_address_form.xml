@@ -26,11 +26,11 @@
             android:padding="16dp"
             android:textAlignment="center" />
 
-        <!-- Street Address -->
+        <!-- Street Address 1 -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Street Address *"
+            android:text="Street Address 1 *"
             android:textColor="@color/black"
             android:textSize="16sp"
             android:textStyle="bold"
@@ -40,7 +40,30 @@
             android:id="@+id/etStreet"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Enter street address"
+            android:hint="Enter street address (e.g., building name, house number)"
+            android:inputType="textPostalAddress|textMultiLine"
+            android:minLines="2"
+            android:maxLines="3"
+            android:background="@drawable/neubrutal_input_field"
+            android:padding="16dp"
+            android:textSize="16sp"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Street Address 2 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Street Address 2 (Optional)"
+            android:textColor="@color/black"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <EditText
+            android:id="@+id/etStreet2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter additional address details (e.g., apartment, floor, landmark)"
             android:inputType="textPostalAddress|textMultiLine"
             android:minLines="2"
             android:maxLines="3"

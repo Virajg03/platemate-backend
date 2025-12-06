@@ -37,6 +37,7 @@ public class AddressDialog {
         
         // Get views
         EditText etStreet = dialog.findViewById(R.id.etStreet);
+        EditText etStreet2 = dialog.findViewById(R.id.etStreet2);
         Spinner spinnerCity = dialog.findViewById(R.id.spinnerCity);
         EditText etState = dialog.findViewById(R.id.etState);
         EditText etZipCode = dialog.findViewById(R.id.etZipCode);
@@ -77,9 +78,17 @@ public class AddressDialog {
         
         // Pre-fill if editing existing address
         if (existingAddress != null) {
-            if (existingAddress.getStreet() != null) {
-                etStreet.setText(existingAddress.getStreet());
+            // Try both field names for backward compatibility
+            String street1 = existingAddress.getStreet1() != null ? existingAddress.getStreet1() : existingAddress.getStreet();
+            if (street1 != null && !street1.isEmpty()) {
+                etStreet.setText(street1);
             }
+            
+            // Pre-fill street2 if available
+            if (existingAddress.getStreet2() != null && !existingAddress.getStreet2().isEmpty()) {
+                etStreet2.setText(existingAddress.getStreet2());
+            }
+            
             if (existingAddress.getCity() != null) {
                 String city = existingAddress.getCity();
                 int cityPosition = cities.indexOf(city);
@@ -90,8 +99,10 @@ public class AddressDialog {
             if (existingAddress.getState() != null) {
                 etState.setText(existingAddress.getState());
             }
-            if (existingAddress.getZipCode() != null) {
-                etZipCode.setText(existingAddress.getZipCode());
+            // Try both field names for zip code
+            String zipCode = existingAddress.getPincode() != null ? existingAddress.getPincode() : existingAddress.getZipCode();
+            if (zipCode != null && !zipCode.isEmpty()) {
+                etZipCode.setText(zipCode);
             }
         }
         
@@ -105,15 +116,16 @@ public class AddressDialog {
         
         // Save button
         btnSaveAddress.setOnClickListener(v -> {
-            String street = etStreet.getText().toString().trim();
+            String street1 = etStreet.getText().toString().trim();
+            String street2 = etStreet2.getText().toString().trim(); // Optional field
             String city = spinnerCity.getSelectedItemPosition() > 0 ? 
                 spinnerCity.getSelectedItem().toString() : "";
             String state = etState.getText().toString().trim();
             String zipCode = etZipCode.getText().toString().trim();
             
             // Validation
-            if (street.isEmpty()) {
-                etStreet.setError("Street address is required");
+            if (street1.isEmpty()) {
+                etStreet.setError("Street address 1 is required");
                 etStreet.requestFocus();
                 return;
             }
@@ -141,8 +153,8 @@ public class AddressDialog {
                 return;
             }
             
-            // Save to backend
-            saveAddressToBackend(context, street, city, state, zipCode, existingAddress != null, 
+            // Save to backend (street2 can be empty)
+            saveAddressToBackend(context, street1, street2, city, state, zipCode, existingAddress != null, 
                 dialog, progressBar, btnSaveAddress, listener);
         });
         
@@ -157,8 +169,8 @@ public class AddressDialog {
         }
     }
     
-    private static void saveAddressToBackend(Context context, String street, String city, 
-            String state, String zipCode, boolean isUpdate, Dialog dialog, ProgressBar progressBar,
+    private static void saveAddressToBackend(Context context, String street1, String street2, 
+            String city, String state, String zipCode, boolean isUpdate, Dialog dialog, ProgressBar progressBar,
             Button btnSaveAddress, AddressDialogListener listener) {
         
         ApiInterface apiInterface = RetrofitClient.getInstance(context).getApi();
@@ -176,8 +188,8 @@ public class AddressDialog {
         // Backend AddressType enum accepts: OTHER, OFFICE, HOME, BUSINESS
         // Using "HOME" for customer delivery addresses
         AddressRequest request = new AddressRequest(
-            street,           // street1
-            "",              // street2 (not used in Android)
+            street1,         // street1 (required)
+            street2 != null ? street2 : "",  // street2 (optional)
             city,
             state,
             zipCode,         // pincode
@@ -197,16 +209,31 @@ public class AddressDialog {
                 btnSaveAddress.setEnabled(true);
                 
                 if (response.isSuccessful() && response.body() != null) {
+                    Address savedAddress = response.body();
+                    android.util.Log.d("AddressDialog", "Address saved successfully: " +
+                        "street1=" + savedAddress.getStreet1() + ", " +
+                        "street2=" + savedAddress.getStreet2() + ", " +
+                        "city=" + savedAddress.getCity() + ", " +
+                        "state=" + savedAddress.getState() + ", " +
+                        "pincode=" + savedAddress.getPincode());
+                    
                     // Also save to SessionManager for quick access
+                    // Combine street1 and street2 for display in SessionManager
+                    String fullStreet = street1;
+                    if (street2 != null && !street2.isEmpty()) {
+                        fullStreet = street1 + ", " + street2;
+                    }
                     SessionManager sessionManager = new SessionManager(context);
-                    sessionManager.saveDeliveryAddress(street, city, state, zipCode);
+                    sessionManager.saveDeliveryAddress(fullStreet, city, state, zipCode);
                     
                     dialog.dismiss();
                     if (listener != null) {
-                        listener.onAddressSaved(street, city, state, zipCode);
+                        // Pass combined street address for backward compatibility
+                        listener.onAddressSaved(fullStreet, city, state, zipCode);
                     }
                     ToastUtils.showSuccess(context, "Address saved successfully!");
                 } else {
+                    android.util.Log.e("AddressDialog", "Failed to save address: " + response.code());
                     ToastUtils.showError(context, "Failed to save address");
                 }
             }

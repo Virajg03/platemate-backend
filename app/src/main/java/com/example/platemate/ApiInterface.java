@@ -143,6 +143,16 @@ public interface ApiInterface {
     @POST("/api/customers/orders/{id}/cancel")
     Call<Order> cancelOrder(@Path("id") Long id);
     
+    // Provider Order endpoints
+    @GET("/api/providers/orders")
+    Call<List<Order>> getProviderOrders();
+    
+    @GET("/api/providers/orders/{id}")
+    Call<Order> getProviderOrder(@Path("id") Long id);
+    
+    @PUT("/api/providers/orders/{id}/status")
+    Call<Order> updateOrderStatus(@Path("id") Long id, @Body java.util.Map<String, String> statusRequest);
+    
     // Payment endpoints
     @POST("/api/customers/payments/orders/{orderId}")
     Call<PaymentOrderResponse> createPaymentOrder(@Path("orderId") Long orderId);

@@ -9,12 +9,17 @@
     android:background="#FFF5EE"
     tools:context=".CustomerHomeActivity">
 
-    <ScrollView
-        android:id="@+id/homeScrollView"
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true"
-        android:paddingBottom="80dp">
+        android:layout_height="match_parent">
+
+        <ScrollView
+            android:id="@+id/homeScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:paddingBottom="80dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -370,6 +375,8 @@
 
         </LinearLayout>
     </ScrollView>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Fragment Container for Orders and Profile -->
     <FrameLayout

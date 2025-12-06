@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -13,6 +14,7 @@ import android.widget.TextView;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -27,6 +29,7 @@ public class CustomerOrdersFragment extends Fragment {
     private ProgressBar progressBar;
     private Button btnFilterAll, btnFilterPending, btnFilterDelivered, btnFilterCancelled;
     private ImageView backButton;
+    private SwipeRefreshLayout swipeRefreshLayout;
     
     private ApiInterface apiInterface;
     private OrderAdapter orderAdapter;
@@ -59,11 +62,26 @@ public class CustomerOrdersFragment extends Fragment {
         btnFilterPending = view.findViewById(R.id.btnFilterPending);
         btnFilterDelivered = view.findViewById(R.id.btnFilterDelivered);
         btnFilterCancelled = view.findViewById(R.id.btnFilterCancelled);
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
         
         // Create progress bar if not in layout
         progressBar = view.findViewById(android.R.id.progress);
         if (progressBar == null) {
             // Add progress bar programmatically if needed
+        }
+        
+        // Setup SwipeRefreshLayout
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                loadOrders();
+            });
+            
+            // Configure refresh colors
+            swipeRefreshLayout.setColorSchemeResources(
+                R.color.login_orange,
+                android.R.color.holo_orange_dark,
+                android.R.color.holo_orange_light
+            );
         }
     }
     
@@ -88,7 +106,15 @@ public class CustomerOrdersFragment extends Fragment {
     }
     
     private void setupRecyclerView() {
-        rvOrders.setLayoutManager(new LinearLayoutManager(requireContext()));
+        LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
+        rvOrders.setLayoutManager(layoutManager);
+        
+        // Optimize RecyclerView performance
+        rvOrders.setHasFixedSize(true);
+        rvOrders.setItemViewCacheSize(20);
+        rvOrders.setDrawingCacheEnabled(true);
+        rvOrders.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_HIGH);
+        
         orderAdapter = new OrderAdapter(new ArrayList<>(), order -> {
             // Navigate to order detail activity
             Intent intent = new Intent(requireContext(), OrderDetailActivity.class);
@@ -99,13 +125,19 @@ public class CustomerOrdersFragment extends Fragment {
     }
     
     private void loadOrders() {
-        showLoading(true);
+        // Don't show progress bar if refreshing (swipe refresh has its own indicator)
+        if (swipeRefreshLayout == null || !swipeRefreshLayout.isRefreshing()) {
+            showLoading(true);
+        }
         
         Call<List<Order>> call = apiInterface.getCustomerOrders();
         call.enqueue(new Callback<List<Order>>() {
             @Override
             public void onResponse(Call<List<Order>> call, Response<List<Order>> response) {
                 showLoading(false);
+                if (swipeRefreshLayout != null) {
+                    swipeRefreshLayout.setRefreshing(false);
+                }
                 
                 if (response.isSuccessful() && response.body() != null) {
                     allOrders = response.body();
@@ -119,6 +151,9 @@ public class CustomerOrdersFragment extends Fragment {
             @Override
             public void onFailure(Call<List<Order>> call, Throwable t) {
                 showLoading(false);
+                if (swipeRefreshLayout != null) {
+                    swipeRefreshLayout.setRefreshing(false);
+                }
                 ToastUtils.showError(requireContext(), "Error: " + t.getMessage());
                 showEmptyState();
             }

@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -144,11 +146,36 @@ public class EditProfileDialog {
             } else if (customer.getProfileImageBase64() != null && !customer.getProfileImageBase64().isEmpty()) {
                 try {
                     byte[] decodedBytes = Base64.decode(customer.getProfileImageBase64(), Base64.DEFAULT);
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+                    
+                    // Decode with downsampling
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inJustDecodeBounds = true;
+                    BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length, options);
+                    
+                    // Calculate sample size
+                    int reqSize = 800;
+                    int inSampleSize = 1;
+                    int maxDim = Math.max(options.outWidth, options.outHeight);
+                    if (maxDim > reqSize) {
+                        inSampleSize = (int) Math.ceil((double) maxDim / reqSize);
+                        inSampleSize = (int) Math.pow(2, Math.ceil(Math.log(inSampleSize) / Math.log(2)));
+                    }
+                    if (maxDim > 2000) inSampleSize = Math.max(inSampleSize, 4);
+                    if (maxDim > 4000) inSampleSize = Math.max(inSampleSize, 8);
+                    
+                    // Decode with sample size
+                    options.inJustDecodeBounds = false;
+                    options.inSampleSize = inSampleSize;
+                    options.inPreferredConfig = Bitmap.Config.RGB_565;
+                    
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length, options);
                     if (bitmap != null) {
+                        // Scale down further if needed
+                        bitmap = scaleDownBitmap(bitmap, 800);
                         ivProfilePreview.setImageBitmap(bitmap);
                     }
                 } catch (Exception e) {
+                    android.util.Log.e("EditProfileDialog", "Error loading base64 image", e);
                     // Keep default image
                 }
             }
@@ -353,9 +380,47 @@ public class EditProfileDialog {
             Uri imageUri = data.getData();
             android.util.Log.d("EditProfileDialog", "Loading image from gallery - URI: " + imageUri);
             try {
-                InputStream inputStream = activity.getContentResolver().openInputStream(imageUri);
-                bitmap = BitmapFactory.decodeStream(inputStream);
-                android.util.Log.d("EditProfileDialog", "Bitmap loaded from gallery, size: " + (bitmap != null ? bitmap.getWidth() + "x" + bitmap.getHeight() : "null"));
+                // Simple approach: decode with downsampling to prevent memory issues
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inJustDecodeBounds = true;
+                
+                InputStream inputStream1 = activity.getContentResolver().openInputStream(imageUri);
+                BitmapFactory.decodeStream(inputStream1, null, options);
+                inputStream1.close();
+                
+                // Calculate sample size
+                int reqWidth = 800;
+                int reqHeight = 800;
+                int inSampleSize = 1;
+                if (options.outHeight > reqHeight || options.outWidth > reqWidth) {
+                    int halfHeight = options.outHeight / 2;
+                    int halfWidth = options.outWidth / 2;
+                    while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                        inSampleSize *= 2;
+                    }
+                }
+                
+                // Ensure minimum downsampling for very large images
+                if (options.outWidth > 2000 || options.outHeight > 2000) {
+                    inSampleSize = Math.max(inSampleSize, 4);
+                }
+                if (options.outWidth > 4000 || options.outHeight > 4000) {
+                    inSampleSize = Math.max(inSampleSize, 8);
+                }
+                
+                // Decode with downsampling
+                options.inJustDecodeBounds = false;
+                options.inSampleSize = inSampleSize;
+                options.inPreferredConfig = Bitmap.Config.RGB_565;
+                
+                InputStream inputStream2 = activity.getContentResolver().openInputStream(imageUri);
+                bitmap = BitmapFactory.decodeStream(inputStream2, null, options);
+                inputStream2.close();
+                
+                // Final safety check - ALWAYS scale down to prevent memory issues
+                if (bitmap != null) {
+                    bitmap = scaleDownBitmap(bitmap, 800); // Max 800px
+                }
             } catch (Exception e) {
                 android.util.Log.e("EditProfileDialog", "Failed to load image from gallery", e);
                 ToastUtils.showError(activity, "Failed to load image: " + e.getMessage());
@@ -364,14 +429,24 @@ public class EditProfileDialog {
         } else if (requestCode == REQUEST_CODE_CAMERA && data != null) {
             bitmap = (Bitmap) data.getExtras().get("data");
             android.util.Log.d("EditProfileDialog", "Bitmap loaded from camera, size: " + (bitmap != null ? bitmap.getWidth() + "x" + bitmap.getHeight() : "null"));
+            // Camera images from thumbnail are usually already rotated correctly
         }
         
         if (bitmap != null) {
-            instance.selectedImageBitmap = bitmap;
+            // ALWAYS scale down before storing or displaying to prevent crashes
+            Bitmap scaledBitmap = scaleDownBitmap(bitmap, 800);
+            if (scaledBitmap == null) {
+                android.util.Log.e("EditProfileDialog", "Failed to scale bitmap, using original");
+                scaledBitmap = bitmap;
+            } else if (scaledBitmap != bitmap && !bitmap.isRecycled()) {
+                bitmap.recycle(); // Recycle original if we created a scaled version
+            }
+            
+            instance.selectedImageBitmap = scaledBitmap;
             android.util.Log.d("EditProfileDialog", "Image selected and stored in instance. Preview view: " + (instance.currentProfilePreview != null ? "exists" : "null"));
             // Update preview if dialog is still open
             if (instance.currentProfilePreview != null) {
-                instance.currentProfilePreview.setImageBitmap(bitmap);
+                instance.currentProfilePreview.setImageBitmap(scaledBitmap);
                 android.util.Log.d("EditProfileDialog", "Preview updated successfully");
             } else {
                 android.util.Log.w("EditProfileDialog", "Preview ImageView is null, cannot update");
@@ -379,6 +454,195 @@ public class EditProfileDialog {
         } else {
             android.util.Log.w("EditProfileDialog", "Bitmap is null after processing");
         }
+    }
+    
+    /**
+     * Get image orientation from EXIF data
+     */
+    private int getImageOrientation(Activity activity, Uri imageUri) {
+        if (imageUri == null) {
+            return ExifInterface.ORIENTATION_NORMAL;
+        }
+        
+        try {
+            // Try using FileDescriptor first (for API 24+)
+            android.os.ParcelFileDescriptor parcelFileDescriptor = null;
+            try {
+                parcelFileDescriptor = activity.getContentResolver().openFileDescriptor(imageUri, "r");
+                if (parcelFileDescriptor != null) {
+                    java.io.FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+                    ExifInterface exif = new ExifInterface(fileDescriptor);
+                    int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                    parcelFileDescriptor.close();
+                    return orientation;
+                }
+            } catch (Exception e) {
+                android.util.Log.w("EditProfileDialog", "Failed to read EXIF from FileDescriptor, trying InputStream", e);
+                if (parcelFileDescriptor != null) {
+                    try {
+                        parcelFileDescriptor.close();
+                    } catch (Exception ignored) {}
+                }
+            }
+            
+            // Fallback: Try using InputStream
+            try (InputStream inputStream = activity.getContentResolver().openInputStream(imageUri)) {
+                if (inputStream != null) {
+                    ExifInterface exif = new ExifInterface(inputStream);
+                    return exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+                }
+            }
+        } catch (Exception e) {
+            android.util.Log.e("EditProfileDialog", "Error reading EXIF orientation", e);
+        }
+        return ExifInterface.ORIENTATION_NORMAL;
+    }
+    
+    /**
+     * Calculate inSampleSize for bitmap decoding to avoid memory issues
+     */
+    private int calculateInSampleSize(Activity activity, Uri imageUri, int reqWidth, int reqHeight) {
+        try {
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            
+            InputStream inputStream = activity.getContentResolver().openInputStream(imageUri);
+            BitmapFactory.decodeStream(inputStream, null, options);
+            inputStream.close();
+            
+            int height = options.outHeight;
+            int width = options.outWidth;
+            int inSampleSize = 1;
+            
+            // Calculate the maximum dimension
+            int maxDimension = Math.max(height, width);
+            int maxRequired = Math.max(reqWidth, reqHeight);
+            
+            // Calculate inSampleSize to ensure image is not too large
+            if (maxDimension > maxRequired) {
+                // Calculate the ratio and round up
+                inSampleSize = (int) Math.ceil((double) maxDimension / maxRequired);
+                
+                // Round up to nearest power of 2 for better performance
+                inSampleSize = (int) Math.pow(2, Math.ceil(Math.log(inSampleSize) / Math.log(2)));
+            }
+            
+            // Ensure minimum sample size to prevent huge bitmaps
+            // For very large images, use at least 4x downsampling
+            if (maxDimension > 2000) {
+                inSampleSize = Math.max(inSampleSize, 4);
+            }
+            if (maxDimension > 4000) {
+                inSampleSize = Math.max(inSampleSize, 8);
+            }
+            
+            android.util.Log.d("EditProfileDialog", "Image dimensions: " + width + "x" + height + ", inSampleSize: " + inSampleSize);
+            
+            return inSampleSize;
+        } catch (Exception e) {
+            android.util.Log.e("EditProfileDialog", "Error calculating inSampleSize", e);
+            return 4; // Return safe default instead of 1
+        }
+    }
+    
+    /**
+     * Rotate bitmap based on EXIF orientation
+     */
+    private Bitmap rotateBitmap(Bitmap bitmap, int orientation) {
+        if (bitmap == null) {
+            return null;
+        }
+        
+        if (orientation == ExifInterface.ORIENTATION_NORMAL || orientation == ExifInterface.ORIENTATION_UNDEFINED) {
+            return bitmap; // No rotation needed
+        }
+        
+        Matrix matrix = new Matrix();
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        
+        switch (orientation) {
+            case ExifInterface.ORIENTATION_ROTATE_90:
+                matrix.postRotate(90);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_180:
+                matrix.postRotate(180);
+                break;
+            case ExifInterface.ORIENTATION_ROTATE_270:
+                matrix.postRotate(270);
+                break;
+            case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:
+                matrix.postScale(-1, 1, width / 2f, height / 2f);
+                break;
+            case ExifInterface.ORIENTATION_FLIP_VERTICAL:
+                matrix.postScale(1, -1, width / 2f, height / 2f);
+                break;
+            case ExifInterface.ORIENTATION_TRANSPOSE:
+                matrix.postRotate(90);
+                matrix.postScale(-1, 1);
+                break;
+            case ExifInterface.ORIENTATION_TRANSVERSE:
+                matrix.postRotate(270);
+                matrix.postScale(-1, 1);
+                break;
+            default:
+                return bitmap; // No rotation needed
+        }
+        
+        try {
+            Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height, matrix, true);
+            if (rotatedBitmap != bitmap && !bitmap.isRecycled()) {
+                bitmap.recycle(); // Recycle original if we created a new one
+            }
+            return rotatedBitmap;
+        } catch (Exception e) {
+            android.util.Log.e("EditProfileDialog", "Error creating rotated bitmap", e);
+            return bitmap; // Return original on error
+        }
+    }
+    
+    /**
+     * Scale down bitmap to prevent memory issues - ALWAYS scales to ensure safe size
+     */
+    private static Bitmap scaleDownBitmap(Bitmap bitmap, int maxSize) {
+        if (bitmap == null) return null;
+        
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int maxDim = Math.max(width, height);
+        
+        // Always scale if larger than maxSize, or if bitmap is extremely large (>2000px)
+        if (maxDim <= maxSize && maxDim <= 2000) {
+            return bitmap; // Already small enough
+        }
+        
+        // Use the smaller of maxSize or 2000 to prevent huge bitmaps
+        int targetSize = Math.min(maxSize, 2000);
+        if (maxDim > targetSize) {
+            float scale = (float) targetSize / maxDim;
+            int newWidth = (int) (width * scale);
+            int newHeight = (int) (height * scale);
+            
+            try {
+                Bitmap scaled = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true);
+                if (scaled != bitmap && !bitmap.isRecycled()) {
+                    bitmap.recycle();
+                }
+                android.util.Log.d("EditProfileDialog", "Scaled bitmap from " + width + "x" + height + " to " + newWidth + "x" + newHeight);
+                return scaled;
+            } catch (Exception e) {
+                android.util.Log.e("EditProfileDialog", "Error scaling bitmap", e);
+                // If scaling fails, try to create a smaller bitmap
+                try {
+                    return Bitmap.createScaledBitmap(bitmap, targetSize, targetSize, true);
+                } catch (Exception e2) {
+                    android.util.Log.e("EditProfileDialog", "Failed to create scaled bitmap", e2);
+                    return null; // Return null on error to prevent crash
+                }
+            }
+        }
+        
+        return bitmap;
     }
     
     private void loadProfileImage(Context context, Long imageId, ImageView imageView) {
@@ -392,11 +656,37 @@ public class EditProfileDialog {
                 if (response.isSuccessful() && response.body() != null && imageView != null) {
                     try {
                         byte[] imageBytes = response.body().bytes();
-                        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                        
+                        // Decode with downsampling
+                        BitmapFactory.Options options = new BitmapFactory.Options();
+                        options.inJustDecodeBounds = true;
+                        BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, options);
+                        
+                        // Calculate sample size
+                        int reqSize = 800;
+                        int inSampleSize = 1;
+                        int maxDim = Math.max(options.outWidth, options.outHeight);
+                        if (maxDim > reqSize) {
+                            inSampleSize = (int) Math.ceil((double) maxDim / reqSize);
+                            // Round to power of 2
+                            inSampleSize = (int) Math.pow(2, Math.ceil(Math.log(inSampleSize) / Math.log(2)));
+                        }
+                        if (maxDim > 2000) inSampleSize = Math.max(inSampleSize, 4);
+                        if (maxDim > 4000) inSampleSize = Math.max(inSampleSize, 8);
+                        
+                        // Decode with sample size
+                        options.inJustDecodeBounds = false;
+                        options.inSampleSize = inSampleSize;
+                        options.inPreferredConfig = Bitmap.Config.RGB_565;
+                        
+                        Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length, options);
                         if (bitmap != null) {
+                            // Scale down further if needed
+                            bitmap = scaleDownBitmap(bitmap, 800);
                             imageView.setImageBitmap(bitmap);
                         }
                     } catch (Exception e) {
+                        android.util.Log.e("EditProfileDialog", "Error loading profile image", e);
                         // Keep default image
                     }
                 }
@@ -582,9 +872,12 @@ public class EditProfileDialog {
                 return;
             }
             
+            // Scale down bitmap before uploading to prevent memory issues
+            Bitmap uploadBitmap = scaleDownBitmap(bitmap, 1024); // Max 1024px for upload
+            
             // Convert bitmap to byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            boolean compressed = bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+            boolean compressed = uploadBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
             if (!compressed) {
                 android.util.Log.e("EditProfileDialog", "Failed to compress bitmap");
                 if (progressBar != null) progressBar.setVisibility(View.GONE);
