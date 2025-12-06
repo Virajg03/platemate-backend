@@ -6,14 +6,27 @@ import com.platemate.enums.VehicleType;
 
 public class DeliveryPartnerDtos {
     public static class CreateRequest {
-        private Long userId;
+        // User account creation fields
+        private String username;
+        private String email;
+        private String password;
+        
         private Long providerId; // Optional - auto-set from auth context if provider creates
         private String fullName;
         private VehicleType vehicleType;
         private BigDecimal commissionRate;
         private String serviceArea;
-        public Long getUserId() { return userId; }
-        public void setUserId(Long userId) { this.userId = userId; }
+        
+        // User credentials getters and setters
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
+        
         public Long getProviderId() { return providerId; }
         public void setProviderId(Long providerId) { this.providerId = providerId; }
         public String getFullName() { return fullName; }

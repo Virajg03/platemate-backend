@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.platemate.dto.DeliveryPartnerDtos;
+import com.platemate.enums.Role;
+import com.platemate.exception.ResourceAlreadyExistsException;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.DeliveryPartner;
 import com.platemate.model.TiffinProvider;
@@ -24,6 +26,8 @@ import com.platemate.model.User;
 import com.platemate.repository.TiffinProviderRepository;
 import com.platemate.repository.UserRepository;
 import com.platemate.service.DeliveryPartnerService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 @RestController
 @RequestMapping("/api/providers/delivery-partners")
@@ -38,6 +42,9 @@ public class ProviderDeliveryPartnerController {
     
     @Autowired
     private TiffinProviderRepository tiffinProviderRepository;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     /**
      * List all delivery partners owned by the current provider.
@@ -67,27 +74,64 @@ public class ProviderDeliveryPartnerController {
 
     /**
      * Create a new delivery partner for the current provider.
+     * Now creates User account automatically with username/email/password.
      * A provider can create multiple delivery partners (no limit).
-     * Each delivery partner must have a unique user.
+     * Each delivery partner must have a unique user account.
      * 
-     * @param req The delivery partner creation request
+     * @param req The delivery partner creation request (includes user credentials)
      * @return The created delivery partner
      */
     @PostMapping
+    @Transactional
     public ResponseEntity<DeliveryPartnerDtos.Response> create(@RequestBody DeliveryPartnerDtos.CreateRequest req) {
         TiffinProvider provider = getCurrentProvider();
-        User user = service.requireUser(req.getUserId());
         
+        // Step 1: Validate user credentials (username and email uniqueness)
+        validateUserCredentials(req.getUsername(), req.getEmail());
+        
+        // Step 2: Create User account for delivery partner
+        User user = createDeliveryPartnerUser(req.getUsername(), req.getEmail(), req.getPassword());
+        
+        // Step 3: Create DeliveryPartner linked to the new User
         DeliveryPartner p = new DeliveryPartner();
         p.setUser(user);
         p.setFullName(req.getFullName());
         p.setVehicleType(req.getVehicleType());
         p.setCommissionRate(req.getCommissionRate());
         p.setServiceArea(req.getServiceArea());
+        p.setIsAvailable(false); // Default to unavailable
         
         // Provider can create multiple delivery partners - no limit
         DeliveryPartner saved = service.create(p, provider.getId());
         return ResponseEntity.ok(toResponse(saved));
+    }
+    
+    /**
+     * Validates username and email uniqueness
+     */
+    private void validateUserCredentials(String username, String email) {
+        // Check if username already exists
+        if (userRepository.findByUsername(username).isPresent()) {
+            throw new ResourceAlreadyExistsException("Username already exists");
+        }
+        
+        // Check if email already exists
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new ResourceAlreadyExistsException("Email already exists");
+        }
+    }
+    
+    /**
+     * Creates a User account for delivery partner with DELIVERY_PARTNER role
+     */
+    private User createDeliveryPartnerUser(String username, String email, String password) {
+        User user = new User();
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password)); // Encrypt password
+        user.setRole(Role.DELIVERY_PARTNER); // Set role to DELIVERY_PARTNER
+        
+        return userRepository.save(user);
     }
 
     @GetMapping("/{id}")
