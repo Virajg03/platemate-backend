@@ -1,11 +1,16 @@
 package com.platemate.controller;
 
+import java.util.DoubleSummaryStatistics;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,8 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.platemate.dto.MenuItemDtos;
 import com.platemate.enums.MealType;
+import com.platemate.exception.ResourceNotFoundException;
+import com.platemate.model.Customer;
 import com.platemate.model.MenuItem;
+import com.platemate.model.RatingReview;
+import com.platemate.model.User;
+import com.platemate.repository.CustomerRepository;
+import com.platemate.repository.UserRepository;
 import com.platemate.service.MenuItemService;
+import com.platemate.service.RatingReviewService;
 
 @RestController
 @RequestMapping("/api/customers/menu-items")
@@ -24,6 +36,15 @@ public class CustomerMenuItemController {
 
     @Autowired
     private MenuItemService menuItemService;
+
+    @Autowired
+    private RatingReviewService ratingReviewService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private CustomerRepository customerRepository;
 
     /**
      * Get all available menu items with pagination
@@ -204,6 +225,8 @@ public class CustomerMenuItemController {
         response.setPrice(item.getPrice());
         response.setIngredients(item.getIngredients());
         response.setMealType(item.getMealType());
+        response.setUnitsOfMeasurement(item.getUnitsOfMeasurement());
+        response.setMaxQuantity(item.getMaxQuantity());
         
         if (item.getCategory() != null) {
             response.setCategoryId(item.getCategory().getId());
@@ -234,6 +257,48 @@ public class CustomerMenuItemController {
             
             response.setImageBase64List(base64List);
             response.setImageFileTypeList(fileTypeList);
+        }
+        
+        // Calculate rating summary
+        if (item.getRatings() != null && !item.getRatings().isEmpty()) {
+            DoubleSummaryStatistics stats = item.getRatings().stream()
+                .mapToDouble(RatingReview::getRating)
+                .summaryStatistics();
+            
+            response.setAverageRating(Math.round(stats.getAverage() * 10.0) / 10.0);
+            response.setRatingCount(stats.getCount());
+        } else {
+            response.setAverageRating(0.0);
+            response.setRatingCount(0L);
+        }
+        
+        // Check if current user has rated (if authenticated)
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+                String username = auth.getName();
+                Optional<User> userOpt = userRepository.findByUsername(username);
+                if (userOpt.isPresent()) {
+                    User user = userOpt.get();
+                    // Get customer from user using repository (User doesn't have direct Customer reference)
+                    Optional<Customer> customerOpt = customerRepository.findByUser_IdAndIsDeletedFalse(user.getId());
+                    if (customerOpt.isPresent()) {
+                        Customer customer = customerOpt.get();
+                        Optional<RatingReview> userRating = ratingReviewService
+                            .getCustomerRatingForItem(customer.getId(), item.getId());
+                        response.setHasUserRated(userRating.isPresent());
+                    } else {
+                        response.setHasUserRated(false);
+                    }
+                } else {
+                    response.setHasUserRated(false);
+                }
+            } else {
+                response.setHasUserRated(false);
+            }
+        } catch (Exception e) {
+            // Not authenticated or error - set to false
+            response.setHasUserRated(false);
         }
         
         return response;

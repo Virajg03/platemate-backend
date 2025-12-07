@@ -45,6 +45,12 @@ public class MenuItem extends BaseEntity {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
+    @Column(name = "units_of_measurement", nullable = false)
+    private Double unitsOfMeasurement; // Weight in grams (always in grams)
+
+    @Column(name = "max_quantity", nullable = false)
+    private Integer maxQuantity; // Maximum quantity a customer can order
+
     @Transient
     private List<RatingReview> ratings;
 
@@ -154,5 +160,21 @@ public class MenuItem extends BaseEntity {
 
     public void setImages(List<Image> images) {
         this.images = images;
+    }
+
+    public Double getUnitsOfMeasurement() {
+        return unitsOfMeasurement;
+    }
+
+    public void setUnitsOfMeasurement(Double unitsOfMeasurement) {
+        this.unitsOfMeasurement = unitsOfMeasurement;
+    }
+
+    public Integer getMaxQuantity() {
+        return maxQuantity;
+    }
+
+    public void setMaxQuantity(Integer maxQuantity) {
+        this.maxQuantity = maxQuantity;
     }
 }

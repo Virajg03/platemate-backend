@@ -58,6 +58,26 @@ public class CartService {
         Optional<Cart> existingCartItem = cartRepository.findByCustomer_IdAndMenuItem_IdAndIsDeletedFalse(
                 customerId, req.getMenuItemId());
 
+        // Validate max quantity (now required, so always validate)
+        int requestedQuantity = req.getQuantity();
+        if (existingCartItem.isPresent()) {
+            // Check total quantity after adding
+            int currentQuantity = existingCartItem.get().getQuantity();
+            int totalQuantity = currentQuantity + requestedQuantity;
+            if (totalQuantity > menuItem.getMaxQuantity()) {
+                throw new BadRequestException(
+                    String.format("Maximum quantity allowed is %d. Current cart quantity: %d, requested: %d",
+                        menuItem.getMaxQuantity(), currentQuantity, requestedQuantity));
+            }
+        } else {
+            // New item, check requested quantity
+            if (requestedQuantity > menuItem.getMaxQuantity()) {
+                throw new BadRequestException(
+                    String.format("Maximum quantity allowed is %d",
+                        menuItem.getMaxQuantity()));
+            }
+        }
+
         if (existingCartItem.isPresent()) {
             // Update quantity
             Cart cart = existingCartItem.get();
@@ -138,6 +158,12 @@ public class CartService {
         if (req.getQuantity() != null) {
             if (req.getQuantity() <= 0) {
                 throw new BadRequestException("Quantity must be greater than 0");
+            }
+            // Validate max quantity (now required, so always validate)
+            if (req.getQuantity() > menuItem.getMaxQuantity()) {
+                throw new BadRequestException(
+                    String.format("Maximum quantity allowed is %d",
+                        menuItem.getMaxQuantity()));
             }
             cart.setQuantity(req.getQuantity());
             // Preserve original price snapshot - don't update price when updating quantity

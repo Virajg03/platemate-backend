@@ -384,10 +384,10 @@ public class OrderService {
             if (cartItemIds.isEmpty()) {
                 return List.of();
             }
-            // Note: Cart items may be soft deleted after order creation, but we still return them for order history
-            // This allows viewing order details even after cart items are cleared
-            List<Cart> cartItems = cartRepository.findAllByIdInAndIsDeletedFalse(cartItemIds);
-            // If some items are missing (soft deleted), we still return what we have for order history
+            // Note: Cart items are soft deleted after order creation, but we still return them for order history
+            // Use findAllById since cart items are soft-deleted after order creation
+            // but we still need to access them for order history
+            List<Cart> cartItems = cartRepository.findAllById(cartItemIds);
             return cartItems;
         } catch (JsonProcessingException e) {
             // Log error but return empty list to prevent breaking order view

@@ -99,6 +99,8 @@ public class MenuItemController {
         item.setIngredients(data.getIngredients());
         item.setMealType(data.getMealType());
         item.setIsAvailable(data.getIsAvailable() != null ? data.getIsAvailable() : Boolean.TRUE);
+        item.setUnitsOfMeasurement(data.getUnitsOfMeasurement());
+        item.setMaxQuantity(data.getMaxQuantity());
         item.setIsDeleted(false);
         MenuItem saved = menuItemRepository.save(item);
         if (image != null && !image.isEmpty()) {
@@ -167,7 +169,7 @@ public class MenuItemController {
     @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MenuItemDtos.Response> update(
             @PathVariable Long id,
-            @RequestPart("data") MenuItemDtos.UpdateRequest data,
+            @RequestPart("data") @Valid MenuItemDtos.UpdateRequest data,
             @RequestPart(value = "image", required = false) MultipartFile image) throws Exception {
         TiffinProvider provider = currentProviderOrThrow();
         MenuItem item = menuItemRepository.findById(id)
@@ -186,6 +188,9 @@ public class MenuItemController {
         if (data.getMealType() != null) item.setMealType(data.getMealType());
         if (data.getPrice() != null) item.setPrice(data.getPrice());
         if (data.getIsAvailable() != null) item.setIsAvailable(data.getIsAvailable());
+        // Update required fields if provided (for partial update)
+        if (data.getUnitsOfMeasurement() != null) item.setUnitsOfMeasurement(data.getUnitsOfMeasurement());
+        if (data.getMaxQuantity() != null) item.setMaxQuantity(data.getMaxQuantity());
         MenuItem saved = menuItemRepository.save(item);
         if (image != null && !image.isEmpty()) {
             try {
@@ -252,6 +257,8 @@ public class MenuItemController {
         res.setIngredients(item.getIngredients());
         res.setMealType(item.getMealType());
         res.setIsAvailable(item.getIsAvailable());
+        res.setUnitsOfMeasurement(item.getUnitsOfMeasurement());
+        res.setMaxQuantity(item.getMaxQuantity());
         
         // Map images to base64 lists
         if (item.getImages() != null && !item.getImages().isEmpty()) {

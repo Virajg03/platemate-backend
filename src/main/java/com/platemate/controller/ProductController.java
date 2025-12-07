@@ -102,6 +102,12 @@ public class ProductController {
             // Ensure quantity is never null - always set to 0
             product.put("quantity", 0);
             
+            // Add unitsOfMeasurement (weight in grams)
+            product.put("unitsOfMeasurement", item.getUnitsOfMeasurement() != null ? item.getUnitsOfMeasurement() : 0.0);
+            
+            // Add maxQuantity
+            product.put("maxQuantity", item.getMaxQuantity() != null ? item.getMaxQuantity() : 0);
+            
             // Ensure providerId is never null
             product.put("providerId", provider.getId() != null ? String.valueOf(provider.getId()) : "0");
             

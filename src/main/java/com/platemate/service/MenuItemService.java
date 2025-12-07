@@ -10,11 +10,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.platemate.enums.ImageType;
 import com.platemate.enums.MealType;
+import com.platemate.enums.RatingType;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.MenuItem;
 import com.platemate.repository.CategoryRepository;
 import com.platemate.repository.ImageRepository;
 import com.platemate.repository.MenuItemRepository;
+import com.platemate.repository.RatingReviewRepository;
 
 @Service
 public class MenuItemService {
@@ -27,6 +29,9 @@ public class MenuItemService {
 
     @Autowired
     ImageRepository imageRepository;
+
+    @Autowired
+    RatingReviewRepository ratingReviewRepository;
 
     public List<MenuItem> getAllMenuItems() {
         List<MenuItem> items = menuItemRepository.findAll();
@@ -99,9 +104,10 @@ public class MenuItemService {
         return item;
     }
 
-    // ---------------- Load product images ---------------- 
+    // ---------------- Load product images and ratings ---------------- 
     @Transactional(readOnly = true)
     private void loadExtras(MenuItem menuItem) {
+        // Load images
         List<com.platemate.model.Image> images = imageRepository.findAllByImageTypeAndOwnerId(
                 ImageType.PRODUCT, menuItem.getId());
         // Explicitly access base64Data to force loading within transaction
@@ -113,6 +119,15 @@ public class MenuItemService {
             }
         });
         menuItem.setImages(images);
+        
+        // Load ratings (only non-deleted)
+        List<com.platemate.model.RatingReview> ratings = ratingReviewRepository
+                .findByRatingTypeAndTargetId(RatingType.ITEM_RATING, menuItem.getId());
+        // Filter out deleted ratings
+        List<com.platemate.model.RatingReview> activeRatings = ratings.stream()
+                .filter(r -> !Boolean.TRUE.equals(r.getIsDeleted()))
+                .toList();
+        menuItem.setRatings(activeRatings);
     }
     
     // Method to find menu item by ID and load extras (for provider's own items)

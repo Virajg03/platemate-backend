@@ -30,6 +30,15 @@ public class MenuItemDtos {
         private MealType mealType;
         
         private Boolean isAvailable;
+        
+        @NotNull(message = "Units of measurement (in grams) is required")
+        @Min(value = 0, message = "Units of measurement must be positive or zero")
+        private Double unitsOfMeasurement; // Weight in grams
+        
+        @NotNull(message = "Max quantity is required")
+        @Min(value = 1, message = "Max quantity must be at least 1")
+        private Integer maxQuantity;
+        
         public Long getCategoryId() { return categoryId; }
         public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
         public String getItemName() { return itemName; }
@@ -44,6 +53,10 @@ public class MenuItemDtos {
         public void setMealType(MealType mealType) { this.mealType = mealType; }
         public Boolean getIsAvailable() { return isAvailable; }
         public void setIsAvailable(Boolean isAvailable) { this.isAvailable = isAvailable; }
+        public Double getUnitsOfMeasurement() { return unitsOfMeasurement; }
+        public void setUnitsOfMeasurement(Double unitsOfMeasurement) { this.unitsOfMeasurement = unitsOfMeasurement; }
+        public Integer getMaxQuantity() { return maxQuantity; }
+        public void setMaxQuantity(Integer maxQuantity) { this.maxQuantity = maxQuantity; }
     }
 
     public static class UpdateRequest {
@@ -54,6 +67,13 @@ public class MenuItemDtos {
         private String ingredients;
         private MealType mealType;
         private Boolean isAvailable;
+        
+        @Min(value = 0, message = "Units of measurement must be positive or zero")
+        private Double unitsOfMeasurement; // Weight in grams (optional for partial update)
+        
+        @Min(value = 1, message = "Max quantity must be at least 1")
+        private Integer maxQuantity; // Optional for partial update
+        
         public Long getCategoryId() { return categoryId; }
         public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
         public String getItemName() { return itemName; }
@@ -68,6 +88,10 @@ public class MenuItemDtos {
         public void setMealType(MealType mealType) { this.mealType = mealType; }
         public Boolean getIsAvailable() { return isAvailable; }
         public void setIsAvailable(Boolean isAvailable) { this.isAvailable = isAvailable; }
+        public Double getUnitsOfMeasurement() { return unitsOfMeasurement; }
+        public void setUnitsOfMeasurement(Double unitsOfMeasurement) { this.unitsOfMeasurement = unitsOfMeasurement; }
+        public Integer getMaxQuantity() { return maxQuantity; }
+        public void setMaxQuantity(Integer maxQuantity) { this.maxQuantity = maxQuantity; }
     }
 
     public static class Response {
@@ -80,6 +104,8 @@ public class MenuItemDtos {
         private String ingredients;
         private MealType mealType;
         private Boolean isAvailable;
+        private Double unitsOfMeasurement; // Weight in grams
+        private Integer maxQuantity;
         private java.util.List<String> imageBase64List;
         private java.util.List<String> imageFileTypeList;
         public Long getId() { return id; }
@@ -104,6 +130,10 @@ public class MenuItemDtos {
         public void setImageBase64List(java.util.List<String> imageBase64List) { this.imageBase64List = imageBase64List; }
         public java.util.List<String> getImageFileTypeList() { return imageFileTypeList; }
         public void setImageFileTypeList(java.util.List<String> imageFileTypeList) { this.imageFileTypeList = imageFileTypeList; }
+        public Double getUnitsOfMeasurement() { return unitsOfMeasurement; }
+        public void setUnitsOfMeasurement(Double unitsOfMeasurement) { this.unitsOfMeasurement = unitsOfMeasurement; }
+        public Integer getMaxQuantity() { return maxQuantity; }
+        public void setMaxQuantity(Integer maxQuantity) { this.maxQuantity = maxQuantity; }
     }
 
     // Customer-facing DTOs with provider information
@@ -116,11 +146,16 @@ public class MenuItemDtos {
         private Double price;
         private String ingredients;
         private MealType mealType;
+        private Double unitsOfMeasurement; // Weight in grams
+        private Integer maxQuantity;
         private Long providerId;
         private String providerName;
         private String providerBusinessName;
         private java.util.List<String> imageBase64List;
         private java.util.List<String> imageFileTypeList;
+        private Double averageRating;
+        private Long ratingCount;
+        private Boolean hasUserRated;
         
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
@@ -148,6 +183,16 @@ public class MenuItemDtos {
         public void setImageBase64List(java.util.List<String> imageBase64List) { this.imageBase64List = imageBase64List; }
         public java.util.List<String> getImageFileTypeList() { return imageFileTypeList; }
         public void setImageFileTypeList(java.util.List<String> imageFileTypeList) { this.imageFileTypeList = imageFileTypeList; }
+        public Double getUnitsOfMeasurement() { return unitsOfMeasurement; }
+        public void setUnitsOfMeasurement(Double unitsOfMeasurement) { this.unitsOfMeasurement = unitsOfMeasurement; }
+        public Integer getMaxQuantity() { return maxQuantity; }
+        public void setMaxQuantity(Integer maxQuantity) { this.maxQuantity = maxQuantity; }
+        public Double getAverageRating() { return averageRating; }
+        public void setAverageRating(Double averageRating) { this.averageRating = averageRating; }
+        public Long getRatingCount() { return ratingCount; }
+        public void setRatingCount(Long ratingCount) { this.ratingCount = ratingCount; }
+        public Boolean getHasUserRated() { return hasUserRated; }
+        public void setHasUserRated(Boolean hasUserRated) { this.hasUserRated = hasUserRated; }
     }
 
     public static class PaginatedResponse<T> {
