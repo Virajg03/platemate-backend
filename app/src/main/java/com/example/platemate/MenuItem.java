@@ -43,6 +43,21 @@ public class MenuItem {
     @SerializedName("imageFileTypeList")
     private List<String> imageFileTypeList;
     
+    @SerializedName("unitsOfMeasurement")
+    private Double unitsOfMeasurement; // Weight in grams
+    
+    @SerializedName("maxQuantity")
+    private Integer maxQuantity;
+    
+    @SerializedName("averageRating")
+    private Double averageRating;
+    
+    @SerializedName("ratingCount")
+    private Long ratingCount;
+    
+    @SerializedName("hasUserRated")
+    private Boolean hasUserRated;
+    
     // Pagination fields
     @SerializedName("page")
     private Integer page;
@@ -121,6 +136,55 @@ public class MenuItem {
             return imageFileTypeList.get(0);
         }
         return null;
+    }
+    
+    public Double getUnitsOfMeasurement() {
+        return unitsOfMeasurement;
+    }
+    
+    public void setUnitsOfMeasurement(Double unitsOfMeasurement) {
+        this.unitsOfMeasurement = unitsOfMeasurement;
+    }
+    
+    public Integer getMaxQuantity() {
+        return maxQuantity;
+    }
+    
+    public void setMaxQuantity(Integer maxQuantity) {
+        this.maxQuantity = maxQuantity;
+    }
+    
+    // Helper methods
+    public String getUnitsOfMeasurementDisplay() {
+        return unitsOfMeasurement != null ? String.format("%.2f gm", unitsOfMeasurement) : "0 gm";
+    }
+    
+    public boolean hasMaxQuantity() {
+        return maxQuantity != null && maxQuantity > 0;
+    }
+    
+    public Double getAverageRating() {
+        return averageRating;
+    }
+    
+    public void setAverageRating(Double averageRating) {
+        this.averageRating = averageRating;
+    }
+    
+    public Long getRatingCount() {
+        return ratingCount;
+    }
+    
+    public void setRatingCount(Long ratingCount) {
+        this.ratingCount = ratingCount;
+    }
+    
+    public Boolean getHasUserRated() {
+        return hasUserRated;
+    }
+    
+    public void setHasUserRated(Boolean hasUserRated) {
+        this.hasUserRated = hasUserRated;
     }
 }
 

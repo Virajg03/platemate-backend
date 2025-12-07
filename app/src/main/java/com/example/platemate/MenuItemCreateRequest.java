@@ -8,6 +8,8 @@ public class MenuItemCreateRequest {
     private String ingredients;
     private String mealType;  // "VEG", "NON_VEG", or "JAIN"
     private Boolean isAvailable;
+    private Double unitsOfMeasurement; // Weight in grams (required)
+    private Integer maxQuantity; // Required
     
     // Getters and setters
     public Long getCategoryId() { 
@@ -62,8 +64,24 @@ public class MenuItemCreateRequest {
         return isAvailable; 
     }
     
-    public void setIsAvailable(Boolean isAvailable) { 
-        this.isAvailable = isAvailable; 
+    public void setIsAvailable(Boolean isAvailable) {
+        this.isAvailable = isAvailable;
+    }
+    
+    public Double getUnitsOfMeasurement() {
+        return unitsOfMeasurement;
+    }
+    
+    public void setUnitsOfMeasurement(Double unitsOfMeasurement) {
+        this.unitsOfMeasurement = unitsOfMeasurement;
+    }
+    
+    public Integer getMaxQuantity() {
+        return maxQuantity;
+    }
+    
+    public void setMaxQuantity(Integer maxQuantity) {
+        this.maxQuantity = maxQuantity;
     }
 }
 

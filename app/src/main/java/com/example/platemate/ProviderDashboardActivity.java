@@ -896,6 +896,10 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         product.setIsAvailable(menuItem.getIsAvailable() != null ? menuItem.getIsAvailable() : true);
         product.setQuantity(0); // Menu items don't have quantity in the same way
         
+        // Copy unitsOfMeasurement and maxQuantity
+        product.setUnitsOfMeasurement(menuItem.getUnitsOfMeasurement() != null ? menuItem.getUnitsOfMeasurement() : 0.0);
+        product.setMaxQuantity(menuItem.getMaxQuantity() != null ? menuItem.getMaxQuantity() : 0);
+        
         // Handle images - get first image from base64 list
         if (menuItem.getImageBase64List() != null && !menuItem.getImageBase64List().isEmpty()) {
             product.setImageBase64(menuItem.getImageBase64List().get(0));

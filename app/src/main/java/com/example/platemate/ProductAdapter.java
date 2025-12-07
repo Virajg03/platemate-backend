@@ -39,7 +39,7 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
     }
 
     class ProductViewHolder extends RecyclerView.ViewHolder {
-        private TextView tvName, tvDescription, tvPrice, tvCategory, tvQuantity;
+        private TextView tvName, tvDescription, tvPrice, tvCategory, tvQuantity, tvWeight, tvMaxQty;
         private ImageView ivProduct;
         private View itemView;
 
@@ -51,6 +51,8 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
             tvPrice = itemView.findViewById(R.id.tvProductPrice);
             tvCategory = itemView.findViewById(R.id.tvProductCategory);
             tvQuantity = itemView.findViewById(R.id.tvProductQuantity);
+            tvWeight = itemView.findViewById(R.id.tvProductWeight);
+            tvMaxQty = itemView.findViewById(R.id.tvProductMaxQty);
             ivProduct = itemView.findViewById(R.id.ivProductImage);
         }
 
@@ -89,6 +91,20 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.ProductV
                 quantity = 0;
             }
             tvQuantity.setText("Qty: " + quantity);
+            
+            // Display weight in grams
+            Double weight = product.getUnitsOfMeasurement();
+            if (weight == null) {
+                weight = 0.0;
+            }
+            tvWeight.setText(String.format("UOM: %.0f gm", weight));
+            
+            // Display max quantity
+            Integer maxQty = product.getMaxQuantity();
+            if (maxQty == null) {
+                maxQty = 0;
+            }
+            tvMaxQty.setText("Max: " + maxQty);
             
             // Load image - prioritize base64, fallback to URL
             String imageBase64 = product.getImageBase64();

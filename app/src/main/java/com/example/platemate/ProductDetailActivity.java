@@ -8,19 +8,28 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.RatingBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProductDetailActivity extends AppCompatActivity {
     
     private ImageView ivProductImage, backButton;
     private TextView tvProductName, tvProductDescription, tvProductPrice, tvIngredients, 
                      tvMealType, tvProviderName, tvProviderBusinessName, tvCategoryName;
-    private Button btnAddToCart;
+    private Button btnAddToCart, btnRateItem;
     private ProgressBar progressBar;
+    private RatingBar ratingBar;
+    private TextView tvRatingAverage, tvRatingCount, tvNoReviews;
+    private RecyclerView rvReviews;
+    private ReviewAdapter reviewAdapter;
     
     private ApiInterface apiInterface;
     private Long menuItemId;
@@ -58,6 +67,19 @@ public class ProductDetailActivity extends AppCompatActivity {
         tvCategoryName = findViewById(R.id.tvCategoryName);
         btnAddToCart = findViewById(R.id.btnAddToCart);
         progressBar = findViewById(R.id.progressBar);
+        
+        // Rating views
+        ratingBar = findViewById(R.id.ratingBar);
+        tvRatingAverage = findViewById(R.id.tvRatingAverage);
+        tvRatingCount = findViewById(R.id.tvRatingCount);
+        btnRateItem = findViewById(R.id.btnRateItem);
+        rvReviews = findViewById(R.id.rvReviews);
+        tvNoReviews = findViewById(R.id.tvNoReviews);
+        
+        // Setup RecyclerView
+        rvReviews.setLayoutManager(new LinearLayoutManager(this));
+        reviewAdapter = new ReviewAdapter();
+        rvReviews.setAdapter(reviewAdapter);
     }
     
     private void setupClickListeners() {
@@ -68,6 +90,8 @@ public class ProductDetailActivity extends AppCompatActivity {
                 addToCart(menuItem);
             }
         });
+        
+        btnRateItem.setOnClickListener(v -> showRatingDialog());
     }
     
     private void loadProductDetails() {
@@ -159,6 +183,141 @@ public class ProductDetailActivity extends AppCompatActivity {
         } else {
             ivProductImage.setImageResource(android.R.drawable.ic_menu_gallery);
         }
+        
+        // Display ratings
+        if (item.getAverageRating() != null && item.getAverageRating() > 0) {
+            ratingBar.setRating(item.getAverageRating().floatValue());
+            tvRatingAverage.setText(String.format("%.1f", item.getAverageRating()));
+            long count = item.getRatingCount() != null ? item.getRatingCount() : 0;
+            tvRatingCount.setText(String.format("(%d %s)", count, count == 1 ? "review" : "reviews"));
+        } else {
+            ratingBar.setRating(0);
+            tvRatingAverage.setText("0.0");
+            tvRatingCount.setText("(No reviews yet)");
+        }
+        
+        // Show/hide rate button
+        if (item.getHasUserRated() != null && !item.getHasUserRated()) {
+            btnRateItem.setVisibility(View.VISIBLE);
+        } else {
+            btnRateItem.setVisibility(View.GONE);
+        }
+        
+        // Load reviews
+        loadReviews(item.getId());
+    }
+    
+    private void loadReviews(Long menuItemId) {
+        Call<List<RatingReview>> call = apiInterface.getMenuItemReviews(menuItemId);
+        call.enqueue(new Callback<List<RatingReview>>() {
+            @Override
+            public void onResponse(Call<List<RatingReview>> call, Response<List<RatingReview>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<RatingReview> reviews = response.body();
+                    if (reviews.isEmpty()) {
+                        tvNoReviews.setVisibility(View.VISIBLE);
+                        rvReviews.setVisibility(View.GONE);
+                    } else {
+                        tvNoReviews.setVisibility(View.GONE);
+                        rvReviews.setVisibility(View.VISIBLE);
+                        reviewAdapter.updateReviews(reviews);
+                    }
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<List<RatingReview>> call, Throwable t) {
+                // Silently fail - reviews are not critical
+            }
+        });
+    }
+    
+    private void showRatingDialog() {
+        if (menuItem == null) {
+            ToastUtils.showError(this, "Unable to rate item");
+            return;
+        }
+        
+        // Fetch user's recent delivered orders to get orderId
+        fetchRecentOrderForRating();
+    }
+    
+    private void fetchRecentOrderForRating() {
+        Call<List<Order>> call = apiInterface.getCustomerOrders();
+        call.enqueue(new Callback<List<Order>>() {
+            @Override
+            public void onResponse(Call<List<Order>> call, Response<List<Order>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Order> orders = response.body();
+                    // Find a delivered order containing this menu item
+                    for (Order order : orders) {
+                        if ("DELIVERED".equals(order.getOrderStatus())) {
+                            // For now, we'll use the first delivered order
+                            // In a more sophisticated implementation, you'd check if order contains this menu item
+                            showRatingDialogWithOrder(order.getId());
+                            return;
+                        }
+                    }
+                    ToastUtils.showInfo(ProductDetailActivity.this, 
+                        "Please order and receive this item before rating");
+                } else {
+                    ToastUtils.showError(ProductDetailActivity.this, "Unable to load orders");
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<List<Order>> call, Throwable t) {
+                ToastUtils.showError(ProductDetailActivity.this, "Error loading orders");
+            }
+        });
+    }
+    
+    private void showRatingDialogWithOrder(Long orderId) {
+        RatingDialog dialog = new RatingDialog(this, 
+            "Rate " + (menuItem != null ? menuItem.getItemName() : "this item"),
+            (rating, review) -> submitRating(orderId, rating, review));
+        dialog.show();
+    }
+    
+    private void submitRating(Long orderId, int rating, String review) {
+        if (orderId == null || menuItem == null) {
+            ToastUtils.showError(this, "Unable to submit rating");
+            return;
+        }
+        
+        ApiInterface.RateMenuItemRequest request = new ApiInterface.RateMenuItemRequest();
+        request.orderId = orderId;
+        request.menuItemId = menuItem.getId();
+        request.rating = rating;
+        request.review = review;
+        
+        Call<RatingReview> call = apiInterface.rateMenuItem(request);
+        call.enqueue(new Callback<RatingReview>() {
+            @Override
+            public void onResponse(Call<RatingReview> call, Response<RatingReview> response) {
+                if (response.isSuccessful()) {
+                    ToastUtils.showSuccess(ProductDetailActivity.this, "Thank you for your rating!");
+                    btnRateItem.setVisibility(View.GONE);
+                    // Reload product details to refresh ratings
+                    loadProductDetails();
+                } else {
+                    String errorMsg = "Failed to submit rating";
+                    if (response.errorBody() != null) {
+                        try {
+                            errorMsg = response.errorBody().string();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    ToastUtils.showError(ProductDetailActivity.this, errorMsg);
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<RatingReview> call, Throwable t) {
+                ToastUtils.showError(ProductDetailActivity.this, "Error: " + t.getMessage());
+            }
+        });
     }
     
     private void addToCart(MenuItem menuItem) {

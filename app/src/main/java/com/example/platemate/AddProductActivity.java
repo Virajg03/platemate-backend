@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 public class AddProductActivity extends AppCompatActivity {
-    private EditText etProductName, etDescription, etPrice, etIngredients;
+    private EditText etProductName, etDescription, etPrice, etIngredients, etUnitsOfMeasurement, etMaxQuantity;
     private AutoCompleteTextView etCategory;
     private Spinner spMealType;
     private Button btnSaveProduct, btnSelectImage;
@@ -90,6 +90,8 @@ public class AddProductActivity extends AppCompatActivity {
         btnSaveProduct = findViewById(R.id.btnSaveProduct);
         btnSelectImage = findViewById(R.id.btnSelectImage);
         ivProductImage = findViewById(R.id.ivProductImage);
+        etUnitsOfMeasurement = findViewById(R.id.etUnitsOfMeasurement);
+        etMaxQuantity = findViewById(R.id.etMaxQuantity);
         
         // Configure AutoCompleteTextView for dropdown
         etCategory.setFocusable(false);
@@ -291,10 +293,13 @@ public class AddProductActivity extends AppCompatActivity {
         String ingredients = etIngredients.getText().toString().trim();
         String categoryName = etCategory.getText().toString().trim();
         String mealType = (String) spMealType.getSelectedItem();
+        String unitsOfMeasurementStr = etUnitsOfMeasurement.getText().toString().trim();
+        String maxQuantityStr = etMaxQuantity.getText().toString().trim();
 
-        // Validate required fields
+        // Validate required fields (including new required fields)
         if (name.isEmpty() || description.isEmpty() || priceStr.isEmpty() || 
-            categoryName.isEmpty() || ingredients.isEmpty() || mealType == null) {
+            categoryName.isEmpty() || ingredients.isEmpty() || mealType == null ||
+            unitsOfMeasurementStr.isEmpty() || maxQuantityStr.isEmpty()) {
             ToastUtils.showInfo(this, "Please fill all required fields");
             return;
         }
@@ -303,6 +308,32 @@ public class AddProductActivity extends AppCompatActivity {
         Long categoryId = categoryNameToIdMap.get(categoryName);
         if (categoryId == null) {
             ToastUtils.showInfo(this, "Please select a valid category");
+            return;
+        }
+
+        // Validate and parse units of measurement (in grams)
+        Double unitsOfMeasurement;
+        try {
+            unitsOfMeasurement = Double.parseDouble(unitsOfMeasurementStr);
+            if (unitsOfMeasurement < 0) {
+                ToastUtils.showError(this, "Weight in grams must be positive or zero");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            ToastUtils.showError(this, "Invalid weight format. Please enter a number.");
+            return;
+        }
+
+        // Validate and parse max quantity
+        Integer maxQuantity;
+        try {
+            maxQuantity = Integer.parseInt(maxQuantityStr);
+            if (maxQuantity <= 0) {
+                ToastUtils.showError(this, "Max quantity must be greater than 0");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            ToastUtils.showError(this, "Invalid max quantity format");
             return;
         }
 
@@ -318,6 +349,8 @@ public class AddProductActivity extends AppCompatActivity {
             request.setIngredients(ingredients);
             request.setMealType(mealType);
             request.setIsAvailable(true);
+            request.setUnitsOfMeasurement(unitsOfMeasurement);
+            request.setMaxQuantity(maxQuantity);
 
             // Convert to JSON
             Gson gson = new Gson();

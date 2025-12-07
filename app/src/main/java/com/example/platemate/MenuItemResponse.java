@@ -68,6 +68,8 @@ public class MenuItemResponse {
     private Boolean isAvailable;
     private java.util.List<String> imageBase64List;
     private java.util.List<String> imageFileTypeList;
+    private Double unitsOfMeasurement;
+    private Integer maxQuantity;
     
     // Getters and setters
     public Long getId() { 
@@ -156,6 +158,22 @@ public class MenuItemResponse {
     
     public void setImageFileTypeList(java.util.List<String> imageFileTypeList) {
         this.imageFileTypeList = imageFileTypeList;
+    }
+
+    public Double getUnitsOfMeasurement() {
+        return unitsOfMeasurement;
+    }
+
+    public void setUnitsOfMeasurement(Double unitsOfMeasurement) {
+        this.unitsOfMeasurement = unitsOfMeasurement;
+    }
+
+    public Integer getMaxQuantity() {
+        return maxQuantity;
+    }
+
+    public void setMaxQuantity(Integer maxQuantity) {
+        this.maxQuantity = maxQuantity;
     }
 }
 

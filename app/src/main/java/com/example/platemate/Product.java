@@ -11,6 +11,8 @@ public class Product {
     private String category = "";
     private Boolean isAvailable = true;
     private Integer quantity = 0;
+    private Double unitsOfMeasurement = 0.0;
+    private Integer maxQuantity = 0;
     private String providerId = "";
 
     public Product() {}
@@ -110,6 +112,22 @@ public class Product {
 
     public void setImageFileType(String imageFileType) {
         this.imageFileType = imageFileType;
+    }
+
+    public Double getUnitsOfMeasurement() {
+        return unitsOfMeasurement;
+    }
+
+    public void setUnitsOfMeasurement(Double unitsOfMeasurement) {
+        this.unitsOfMeasurement = unitsOfMeasurement;
+    }
+
+    public Integer getMaxQuantity() {
+        return maxQuantity;
+    }
+
+    public void setMaxQuantity(Integer maxQuantity) {
+        this.maxQuantity = maxQuantity;
     }
 }
 

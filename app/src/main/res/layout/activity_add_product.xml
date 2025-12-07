@@ -152,6 +152,30 @@
                     android:minLines="3"
                     android:textSize="16sp" />
 
+                <EditText
+                    android:id="@+id/etUnitsOfMeasurement"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="16dp"
+                    android:hint="Weight in Grams (gm) *"
+                    android:background="@drawable/neubrutal_edittext"
+                    android:padding="16dp"
+                    android:inputType="numberDecimal"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/etMaxQuantity"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:layout_marginBottom="16dp"
+                    android:hint="Max Quantity *"
+                    android:background="@drawable/neubrutal_edittext"
+                    android:padding="16dp"
+                    android:inputType="number"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
                 <Button
                     android:id="@+id/btnSelectImage"
                     android:layout_width="match_parent"

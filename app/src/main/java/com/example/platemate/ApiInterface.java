@@ -234,4 +234,26 @@ public interface ApiInterface {
     
     @DELETE("/api/providers/delivery-partners/{id}")
     Call<Void> deleteProviderDeliveryPartner(@Path("id") Long id);
+    
+    // Rating & Review endpoints
+    public static class RateMenuItemRequest {
+        public Long orderId;
+        public Long menuItemId;
+        public Integer rating;
+        public String review;
+    }
+    
+    public static class RatingSummary {
+        public long count;
+        public double average;
+    }
+    
+    @POST("/api/customers/ratings/menu-item")
+    Call<RatingReview> rateMenuItem(@Body RateMenuItemRequest request);
+    
+    @GET("/api/ratings/menu-item/{menuItemId}")
+    Call<List<RatingReview>> getMenuItemReviews(@Path("menuItemId") Long menuItemId);
+    
+    @GET("/api/ratings/menu-item/{menuItemId}/summary")
+    Call<RatingSummary> getMenuItemRatingSummary(@Path("menuItemId") Long menuItemId);
 }

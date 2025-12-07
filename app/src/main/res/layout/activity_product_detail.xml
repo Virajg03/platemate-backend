@@ -241,6 +241,119 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- Ratings & Reviews Section -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardCornerRadius="0dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@android:color/transparent">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="@drawable/neubrutal_shadow"
+                    android:padding="24dp">
+
+                    <!-- Section Header -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="RATINGS &amp; REVIEWS"
+                        android:textColor="@color/login_orange"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.05"
+                        android:layout_marginBottom="16dp"
+                        android:background="@color/brutalMuted"
+                        android:padding="12dp"
+                        android:textAlignment="center" />
+
+                    <!-- Rating Summary -->
+                    <LinearLayout
+                        android:id="@+id/ratingSummaryLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="16dp">
+
+                        <!-- Star Rating Display -->
+                        <RatingBar
+                            android:id="@+id/ratingBar"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:numStars="5"
+                            android:rating="0"
+                            android:stepSize="0.1"
+                            android:isIndicator="true"
+                            style="?android:attr/ratingBarStyleSmall" />
+
+                        <TextView
+                            android:id="@+id/tvRatingAverage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0.0"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/black"
+                            android:layout_marginStart="8dp" />
+
+                        <TextView
+                            android:id="@+id/tvRatingCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="(0 reviews)"
+                            android:textSize="14sp"
+                            android:textColor="#666666"
+                            android:layout_marginStart="8dp" />
+                    </LinearLayout>
+
+                    <!-- Rate Button (if user hasn't rated) -->
+                    <Button
+                        android:id="@+id/btnRateItem"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="RATE THIS ITEM"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/black"
+                        android:background="@drawable/neubrutal_button_shadow"
+                        android:padding="12dp"
+                        android:layout_marginBottom="16dp"
+                        android:visibility="gone" />
+
+                    <!-- Reviews List -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Recent Reviews:"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvReviews"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                    <TextView
+                        android:id="@+id/tvNoReviews"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="No reviews yet. Be the first to rate!"
+                        android:textColor="#666666"
+                        android:textSize="14sp"
+                        android:textAlignment="center"
+                        android:padding="16dp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <!-- Add to Cart Button -->
             <Button
                 android:id="@+id/btnAddToCart"

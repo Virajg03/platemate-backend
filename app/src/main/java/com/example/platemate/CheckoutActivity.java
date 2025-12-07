@@ -143,26 +143,32 @@ public class CheckoutActivity extends AppCompatActivity implements PaymentResult
                     User user = response.body();
                     Address address = user.getAddress();
                     
-                    // Try both field names for backward compatibility
-                    String street = address.getStreet1() != null ? address.getStreet1() : address.getStreet();
-                    String city = address.getCity();
-                    String state = address.getState();
-                    String zipCode = address.getPincode() != null ? address.getPincode() : address.getZipCode();
-                    
-                    if (street != null && !street.isEmpty() && 
-                        city != null && !city.isEmpty() && 
-                        state != null && !state.isEmpty() && 
-                        zipCode != null && !zipCode.isEmpty()) {
+                    // Check if address exists before accessing its fields
+                    if (address != null) {
+                        // Try both field names for backward compatibility
+                        String street = address.getStreet1() != null ? address.getStreet1() : address.getStreet();
+                        String city = address.getCity();
+                        String state = address.getState();
+                        String zipCode = address.getPincode() != null ? address.getPincode() : address.getZipCode();
                         
-                        // Update SessionManager with latest address from backend
-                        sessionManager.saveDeliveryAddress(street, city, state, zipCode);
-                        
-                        // Display address
-                        String fullAddress = street + ", " + city + ", " + state + " - " + zipCode;
-                        tvFullAddress.setText(fullAddress);
-                        addressLayout.setVisibility(View.VISIBLE);
-                        noAddressLayout.setVisibility(View.GONE);
-                        btnAddEditAddress.setText("CHANGE ADDRESS");
+                        if (street != null && !street.isEmpty() && 
+                            city != null && !city.isEmpty() && 
+                            state != null && !state.isEmpty() && 
+                            zipCode != null && !zipCode.isEmpty()) {
+                            
+                            // Update SessionManager with latest address from backend
+                            sessionManager.saveDeliveryAddress(street, city, state, zipCode);
+                            
+                            // Display address
+                            String fullAddress = street + ", " + city + ", " + state + " - " + zipCode;
+                            tvFullAddress.setText(fullAddress);
+                            addressLayout.setVisibility(View.VISIBLE);
+                            noAddressLayout.setVisibility(View.GONE);
+                            btnAddEditAddress.setText("CHANGE ADDRESS");
+                        } else {
+                            // Address exists but has incomplete fields, check session manager
+                            displayAddressFromSession();
+                        }
                     } else {
                         // No address in backend, check session manager
                         displayAddressFromSession();
@@ -295,7 +301,9 @@ public class CheckoutActivity extends AppCompatActivity implements PaymentResult
         // Get cart item IDs
         List<Long> cartItemIds = new ArrayList<>();
         for (CartItem item : cartItems) {
-            cartItemIds.add(item.getId());
+            if (item != null && item.getId() != null) {
+                cartItemIds.add(item.getId());
+            }
         }
         
         if (cartItemIds.isEmpty()) {
@@ -480,10 +488,18 @@ public class CheckoutActivity extends AppCompatActivity implements PaymentResult
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             CartItem item = items.get(position);
-            holder.text1.setText(item.getItemName());
-            holder.text2.setText("Qty: " + item.getQuantity() + " × ₹" + 
-                String.format("%.2f", item.getItemPrice()) + " = ₹" + 
-                String.format("%.2f", item.getItemTotal()));
+            if (item != null) {
+                // Safe handling of potentially null values
+                String itemName = item.getItemName() != null ? item.getItemName() : "Unknown Item";
+                Integer quantity = item.getQuantity() != null ? item.getQuantity() : 0;
+                Double itemPrice = item.getItemPrice() != null ? item.getItemPrice() : 0.0;
+                Double itemTotal = item.getItemTotal() != null ? item.getItemTotal() : 0.0;
+                
+                holder.text1.setText(itemName);
+                holder.text2.setText("Qty: " + quantity + " × ₹" + 
+                    String.format("%.2f", itemPrice) + " = ₹" + 
+                    String.format("%.2f", itemTotal));
+            }
         }
         
         @Override
