@@ -86,4 +86,9 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
            "AND mi.provider.isVerified = true " +
            "AND mi.id = :itemId")
     java.util.Optional<MenuItem> findAvailableMenuItemById(@Param("itemId") Long itemId);
+    
+    // Count queries for dashboard stats (avoids loading entities and selecting max_quantity column)
+    long countByIsDeletedFalse();
+    
+    long countByIsDeletedFalseAndIsAvailableTrue();
 }

@@ -11,6 +11,8 @@ import com.platemate.enums.RatingType;
 import com.platemate.model.RatingReview;
 
 public interface RatingReviewRepository extends JpaRepository<RatingReview, Long> {
+    List<RatingReview> findAllByIsDeletedFalse();
+    
     List<RatingReview> findByRatingTypeAndTargetId(RatingType ratingType, Long targetId);
     
     // Check if customer already rated this item

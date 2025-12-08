@@ -95,7 +95,7 @@ export default function Orders() {
                   className="border-b hover:bg-slate-50 transition"
                 >
                   <td className="p-3 text-sm">{o.id}</td>
-                  <td className="p-3 text-sm">{o.customerName}</td>
+                  <td className="p-3 text-sm">Customer #{o.customerId}</td>
                   <td className="p-3 text-sm">{o.providerName}</td>
                   <td className="p-3 text-sm">₹{o.totalAmount}</td>
                   <td className="p-3 text-sm">{statusBadge(o.orderStatus)}</td>

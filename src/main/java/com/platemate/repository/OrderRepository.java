@@ -9,6 +9,8 @@ import com.platemate.enums.OrderStatus;
 import com.platemate.model.Order;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
+    List<Order> findAllByIsDeletedFalse();
+    
     List<Order> findAllByCustomer_IdAndIsDeletedFalseOrderByOrderTimeDesc(Long customerId);
     
     List<Order> findAllByProvider_IdAndIsDeletedFalseOrderByOrderTimeDesc(Long providerId);

@@ -154,8 +154,11 @@ export default function OrdersPage() {
 
   const getStatusBadge = (status) => {
     const styles = {
-      READY: "bg-blue-100 text-blue-700",
-      OUT_FOR_DELIVERY: "bg-yellow-100 text-yellow-700",
+      PENDING: "bg-yellow-100 text-yellow-700",
+      CONFIRMED: "bg-blue-100 text-blue-700",
+      PREPARING: "bg-teal-100 text-teal-700",
+      READY: "bg-purple-100 text-purple-700",
+      OUT_FOR_DELIVERY: "bg-orange-100 text-orange-700",
       DELIVERED: "bg-green-100 text-green-700",
       CANCELLED: "bg-red-100 text-red-700",
     };
@@ -215,7 +218,7 @@ export default function OrdersPage() {
                     style={{ animationDelay: `${index * 90}ms` }}
                   >
                     <td className="p-3 text-sm">{o.id}</td>
-                    <td className="p-3 text-sm">{o.customerName}</td>
+                    <td className="p-3 text-sm">Customer #{o.customerId}</td>
                     <td className="p-3 text-sm">{o.providerName}</td>
                     <td className="p-3 text-sm font-medium">₹{o.totalAmount}</td>
                     <td className="p-3 text-sm">{getStatusBadge(o.orderStatus)}</td>
@@ -265,7 +268,7 @@ export default function OrdersPage() {
 
                 <div className="mt-2 text-sm">
                   <p>
-                    <strong>Customer:</strong> {o.customerName}
+                    <strong>Customer:</strong> Customer #{o.customerId}
                   </p>
                   <p>
                     <strong>Provider:</strong> {o.providerName}

@@ -11,7 +11,7 @@ export default function OrderDetailsModal({ order, close }) {
 
         <div className="space-y-3 text-sm text-slate-700">
           <div>
-            <strong>Customer:</strong> {order.customerName}
+            <strong>Customer:</strong> Customer #{order.customerId}
           </div>
           <div>
             <strong>Provider:</strong> {order.providerName}
@@ -23,33 +23,35 @@ export default function OrderDetailsModal({ order, close }) {
             <strong>Status:</strong> {order.orderStatus}
           </div>
 
-          <div className="mt-4">
-            <h3 className="font-medium mb-2">Items</h3>
-            <ul className="space-y-1">
-              {order.cartItems.map((item) => (
-                <li
-                  key={item.cartItemId}
-                  className="flex justify-between bg-slate-50 p-2 rounded-lg border"
-                >
-                  <span>
-                    {item.itemName} × {item.quantity}
-                  </span>
-                  <span className="font-medium">
-                    ₹{item.itemTotal}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {order.cartItems && order.cartItems.length > 0 && (
+            <div className="mt-4">
+              <h3 className="font-medium mb-2">Items</h3>
+              <ul className="space-y-1">
+                {order.cartItems.map((item) => (
+                  <li
+                    key={item.cartItemId}
+                    className="flex justify-between bg-slate-50 p-2 rounded-lg border"
+                  >
+                    <span>
+                      {item.itemName} × {item.quantity}
+                    </span>
+                    <span className="font-medium">
+                      ₹{item.itemTotal}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          <div className="mt-4">
-            <h3 className="font-medium mb-1">Delivery Address</h3>
-            <p className="text-slate-600 text-sm">
-              {order.deliveryAddress?.street}, {order.deliveryAddress?.city},{" "}
-              {order.deliveryAddress?.state} -{" "}
-              {order.deliveryAddress?.pincode}
-            </p>
-          </div>
+          {order.deliveryAddress && (
+            <div className="mt-4">
+              <h3 className="font-medium mb-1">Delivery Address</h3>
+              <p className="text-slate-600 text-sm">
+                {order.deliveryAddress}
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end mt-6">
