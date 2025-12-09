@@ -45,10 +45,10 @@ public class MenuItem extends BaseEntity {
     @Column(name = "is_deleted", nullable = false)
     private Boolean isDeleted = false;
 
-    @Column(name = "units_of_measurement", nullable = false)
+    @Column(name = "units_of_measurement")
     private Double unitsOfMeasurement; // Weight in grams (always in grams)
 
-    @Column(name = "max_quantity", nullable = false)
+    @Column(name = "max_quantity")
     private Integer maxQuantity; // Maximum quantity a customer can order
 
     @Transient

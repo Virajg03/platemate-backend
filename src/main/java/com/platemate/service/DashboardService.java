@@ -176,7 +176,7 @@ public class DashboardService {
 
         // Total delivery partners (users with DELIVERY_PARTNER role)
         long deliveryPartnerUsers = allUsers.stream()
-                .filter(u -> u.getRole() == Role.DELIVERY_PARTNER)
+                .filter(u -> u.getRole() == Role.ROLE_DELIVERY_PARTNER)
                 .filter(u -> u.isActive())
                 .count();
         stats.setTotalDeliveryPartners(deliveryPartnerUsers);
