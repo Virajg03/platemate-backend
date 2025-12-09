@@ -122,14 +122,14 @@ public class ProviderDeliveryPartnerController {
     }
     
     /**
-     * Creates a User account for delivery partner with DELIVERY_PARTNER role
+     * Creates a User account for delivery partner with ROLE_DELIVERY_PARTNER role
      */
     private User createDeliveryPartnerUser(String username, String email, String password) {
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password)); // Encrypt password
-        user.setRole(Role.DELIVERY_PARTNER); // Set role to DELIVERY_PARTNER
+        user.setRole(Role.ROLE_DELIVERY_PARTNER); // Set role to ROLE_DELIVERY_PARTNER
         
         return userRepository.save(user);
     }

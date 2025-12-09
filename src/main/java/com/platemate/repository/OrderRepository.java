@@ -29,5 +29,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findAllByProvider_IdAndOrderStatusAndIsDeletedFalseOrderByOrderTimeDesc(Long providerId, OrderStatus status);
     
     List<Order> findAllByDeliveryPartner_IdAndOrderStatusAndIsDeletedFalseOrderByOrderTimeDesc(Long deliveryPartnerId, OrderStatus status);
+    
+    // Find orders by status (for available orders)
+    List<Order> findAllByOrderStatusAndIsDeletedFalse(OrderStatus status);
 }
 

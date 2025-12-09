@@ -83,7 +83,7 @@ public class DeliveryPartnerCrudController {
             providerId = req.getProviderId(); // Can be null for global
         }
         // If caller is DELIVERY_PARTNER: Set provider to null (global) or allow provider to be set if specified
-        else if (currentRole == Role.DELIVERY_PARTNER) {
+        else if (currentRole == Role.ROLE_DELIVERY_PARTNER) {
             providerId = req.getProviderId(); // Usually null for global
         }
         
@@ -107,14 +107,14 @@ public class DeliveryPartnerCrudController {
     }
     
     /**
-     * Creates a User account for delivery partner with DELIVERY_PARTNER role
+     * Creates a User account for delivery partner with ROLE_DELIVERY_PARTNER role
      */
     private User createDeliveryPartnerUser(String username, String email, String password) {
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password)); // Encrypt password
-        user.setRole(Role.DELIVERY_PARTNER); // Set role to DELIVERY_PARTNER
+        user.setRole(Role.ROLE_DELIVERY_PARTNER); // Set role to ROLE_DELIVERY_PARTNER
         
         return userRepository.save(user);
     }
@@ -144,7 +144,7 @@ public class DeliveryPartnerCrudController {
             providerId = null; // Admin can update any
         }
         // If caller is DELIVERY_PARTNER: Only allow if it's their own profile
-        else if (currentRole == Role.DELIVERY_PARTNER) {
+        else if (currentRole == Role.ROLE_DELIVERY_PARTNER) {
             DeliveryPartner existing = service.getById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Delivery partner not found with id " + id));
             // Validate that the delivery partner belongs to the current user
@@ -206,7 +206,7 @@ public class DeliveryPartnerCrudController {
         }
         // If caller is ADMIN: Return any delivery partner
         // If caller is DELIVERY_PARTNER: Return only their own profile
-        else if (currentRole == Role.DELIVERY_PARTNER) {
+        else if (currentRole == Role.ROLE_DELIVERY_PARTNER) {
             // Validate that the delivery partner belongs to the current user
             if (partner.getUser() == null || !partner.getUser().getId().equals(currentUser.getId())) {
                 throw new ForbiddenException("Delivery partner can only view their own profile");

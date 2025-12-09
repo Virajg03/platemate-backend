@@ -24,10 +24,12 @@ public class ImageService {
     public Image saveImage(MultipartFile file, ImageType imageType, Long ownerId) throws IOException {
         String base64 = ImageUtils.toBase64(file);
 
-        if (imageType == ImageType.CUSTOMER_PROFILE || imageType == ImageType.PROVIDER_PROFILE || imageType == ImageType.CATEGORY) {
-            Long existingImage = imageRepository.findIdByImageTypeAndOwnerId(imageType, ownerId);
-            if (existingImage != null) {
-                imageRepository.deleteById(existingImage);
+        if (imageType == ImageType.CUSTOMER_PROFILE || imageType == ImageType.PROVIDER_PROFILE || 
+            imageType == ImageType.DELIVERY_PARTNER_PROFILE || imageType == ImageType.CATEGORY) {
+            // Delete all existing images of this type for this owner (handles multiple images case)
+            List<Image> existingImages = imageRepository.findAllByImageTypeAndOwnerId(imageType, ownerId);
+            for (Image existingImage : existingImages) {
+                imageRepository.deleteById(existingImage.getId());
             }
         }
 

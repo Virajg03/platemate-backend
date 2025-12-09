@@ -1,5 +1,6 @@
 package com.platemate.service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -217,6 +218,20 @@ public class OrderService {
     public List<Order> getDeliveryPartnerOrders(Long deliveryPartnerId) {
         return orderRepository.findAllByDeliveryPartner_IdAndIsDeletedFalseOrderByOrderTimeDesc(deliveryPartnerId);
     }
+    
+    /**
+     * Get orders available for delivery partners (READY status, no delivery partner assigned)
+     * 
+     * @return List of available orders
+     */
+    public List<Order> getAvailableOrdersForDelivery() {
+        // Get orders that are READY and don't have a delivery partner assigned
+        List<Order> readyOrders = orderRepository.findAllByOrderStatusAndIsDeletedFalse(OrderStatus.READY);
+        // Filter out orders that already have a delivery partner
+        return readyOrders.stream()
+                .filter(order -> order.getDeliveryPartner() == null)
+                .collect(Collectors.toList());
+    }
 
     @Transactional
     public Order updateOrderStatus(Long orderId, Long providerId, OrderDtos.UpdateStatusRequest req) {
@@ -239,6 +254,11 @@ public class OrderService {
         // Set estimated delivery time if provided
         if (req.getEstimatedDeliveryTime() != null) {
             order.setEstimatedDeliveryTime(req.getEstimatedDeliveryTime());
+        }
+
+        // Generate OTP when order status changes to READY
+        if (newStatus == OrderStatus.READY && currentStatus != OrderStatus.READY) {
+            generateDeliveryOTP(order);
         }
 
         // Set delivery time when status is DELIVERED
@@ -265,8 +285,14 @@ public class OrderService {
         if (currentStatus == OrderStatus.READY && newStatus == OrderStatus.OUT_FOR_DELIVERY) {
             order.setOrderStatus(newStatus);
         } else if (currentStatus == OrderStatus.OUT_FOR_DELIVERY && newStatus == OrderStatus.DELIVERED) {
+            // OTP verification should be done separately before calling this
+            // This method will be called after OTP is verified in the controller
             order.setOrderStatus(newStatus);
             order.setDeliveryTime(LocalDateTime.now());
+            // Clear OTP after successful delivery
+            order.setOtp(null);
+            order.setOtpGeneratedAt(null);
+            order.setOtpExpiresAt(null);
         } else {
             throw new BadRequestException("Invalid status transition from " + currentStatus + " to " + newStatus);
         }
@@ -295,9 +321,17 @@ public class OrderService {
             }
         }
 
-        // Validate order is ready for delivery
-        if (order.getOrderStatus() != OrderStatus.READY) {
-            throw new BadRequestException("Order must be in READY status to assign delivery partner");
+        // Validate order is in a status that allows delivery partner assignment
+        OrderStatus currentStatus = order.getOrderStatus();
+        if (currentStatus != OrderStatus.CONFIRMED && 
+            currentStatus != OrderStatus.PREPARING && 
+            currentStatus != OrderStatus.READY) {
+            throw new BadRequestException("Order must be in CONFIRMED, PREPARING, or READY status to assign delivery partner");
+        }
+        
+        // Generate OTP if order is READY and doesn't have one yet
+        if (currentStatus == OrderStatus.READY && (order.getOtp() == null || order.getOtp().isEmpty())) {
+            generateDeliveryOTP(order);
         }
 
         // Validate delivery partner exists and is available
@@ -324,7 +358,8 @@ public class OrderService {
         // This can be implemented later based on business requirements
 
         order.setDeliveryPartner(deliveryPartner);
-        order.setOrderStatus(OrderStatus.OUT_FOR_DELIVERY);
+        // Don't change status here - delivery partner will mark as OUT_FOR_DELIVERY when they pickup
+        // Status should only change when delivery partner accepts and picks up the order
 
         return orderRepository.save(order);
     }
@@ -394,6 +429,197 @@ public class OrderService {
             // In production, you might want to log this error
             return List.of();
         }
+    }
+    
+    /**
+     * Generate 6-digit OTP for order delivery verification
+     * OTP is valid for 2 hours
+     * 
+     * @param order Order to generate OTP for
+     */
+    private void generateDeliveryOTP(Order order) {
+        SecureRandom random = new SecureRandom();
+        int otpValue = 100000 + random.nextInt(900000); // 6-digit OTP (100000-999999)
+        String otp = String.valueOf(otpValue);
+        
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiresAt = now.plusHours(2); // OTP valid for 2 hours
+        
+        order.setOtp(otp);
+        order.setOtpGeneratedAt(now);
+        order.setOtpExpiresAt(expiresAt);
+    }
+    
+    /**
+     * Verify delivery OTP before marking order as DELIVERED
+     * 
+     * @param order Order to verify OTP for
+     * @param providedOtp OTP provided by delivery partner
+     * @return true if OTP is valid, false otherwise
+     */
+    private boolean verifyDeliveryOTP(Order order, String providedOtp) {
+        if (order.getOtp() == null || order.getOtp().isEmpty()) {
+            throw new BadRequestException("OTP has not been generated for this order");
+        }
+        
+        if (order.getOtpExpiresAt() == null) {
+            throw new BadRequestException("OTP expiration time is not set");
+        }
+        
+        // Check if OTP has expired
+        if (LocalDateTime.now().isAfter(order.getOtpExpiresAt())) {
+            throw new BadRequestException("OTP has expired. Please regenerate OTP.");
+        }
+        
+        // Verify OTP matches
+        return order.getOtp().equals(providedOtp);
+    }
+    
+    /**
+     * Generate delivery OTP for an order (called when status changes to READY)
+     * 
+     * @param orderId Order ID
+     * @return Generated OTP
+     */
+    @Transactional
+    public String generateDeliveryOTP(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id " + orderId));
+        
+        if (order.getOrderStatus() != OrderStatus.READY) {
+            throw new BadRequestException("OTP can only be generated when order status is READY");
+        }
+        
+        generateDeliveryOTP(order);
+        orderRepository.save(order);
+        
+        return order.getOtp();
+    }
+    
+    /**
+     * Verify delivery OTP
+     * 
+     * @param orderId Order ID
+     * @param otp OTP to verify
+     * @return true if OTP is valid
+     */
+    public boolean verifyDeliveryOTP(Long orderId, String otp) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id " + orderId));
+        
+        return verifyDeliveryOTP(order, otp);
+    }
+    
+    /**
+     * Delivery partner accepts an available order
+     * 
+     * @param orderId Order ID
+     * @param deliveryPartnerId Delivery Partner ID
+     * @return Updated order
+     */
+    @Transactional
+    public Order acceptOrderByDeliveryPartner(Long orderId, Long deliveryPartnerId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id " + orderId));
+        
+        if (Boolean.TRUE.equals(order.getIsDeleted())) {
+            throw new ResourceNotFoundException("Order not found with id " + orderId);
+        }
+        
+        // Validate order is available (READY status, no delivery partner assigned)
+        if (order.getOrderStatus() != OrderStatus.READY) {
+            throw new BadRequestException("Order must be in READY status to be accepted");
+        }
+        
+        if (order.getDeliveryPartner() != null) {
+            throw new BadRequestException("Order is already assigned to another delivery partner");
+        }
+        
+        // Validate delivery partner exists and is available
+        DeliveryPartner deliveryPartner = deliveryPartnerRepository.findById(deliveryPartnerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Delivery partner not found with id " + deliveryPartnerId));
+        
+        if (Boolean.TRUE.equals(deliveryPartner.getIsDeleted())) {
+            throw new BadRequestException("Delivery partner has been deleted");
+        }
+        
+        if (!Boolean.TRUE.equals(deliveryPartner.getIsAvailable())) {
+            throw new BadRequestException("Delivery partner is not available");
+        }
+        
+        // Assign delivery partner (status remains READY until pickup)
+        order.setDeliveryPartner(deliveryPartner);
+        
+        return orderRepository.save(order);
+    }
+    
+    /**
+     * Delivery partner picks up the order (marks as OUT_FOR_DELIVERY)
+     * 
+     * @param orderId Order ID
+     * @param deliveryPartnerId Delivery Partner ID
+     * @return Updated order
+     */
+    @Transactional
+    public Order pickupOrderByDeliveryPartner(Long orderId, Long deliveryPartnerId) {
+        Order order = getDeliveryPartnerOrderById(orderId, deliveryPartnerId);
+        
+        if (order.getOrderStatus() != OrderStatus.READY) {
+            throw new BadRequestException("Order must be in READY status to be picked up");
+        }
+        
+        if (!order.getDeliveryPartner().getId().equals(deliveryPartnerId)) {
+            throw new BadRequestException("Order is not assigned to this delivery partner");
+        }
+        
+        order.setOrderStatus(OrderStatus.OUT_FOR_DELIVERY);
+        
+        return orderRepository.save(order);
+    }
+    
+    /**
+     * Delivery partner delivers the order with OTP verification
+     * 
+     * @param orderId Order ID
+     * @param deliveryPartnerId Delivery Partner ID
+     * @param otp OTP for verification
+     * @return Updated order
+     */
+    @Transactional
+    public Order deliverOrderByDeliveryPartner(Long orderId, Long deliveryPartnerId, String otp) {
+        Order order = getDeliveryPartnerOrderById(orderId, deliveryPartnerId);
+        
+        if (order.getOrderStatus() != OrderStatus.OUT_FOR_DELIVERY) {
+            throw new BadRequestException("Order must be in OUT_FOR_DELIVERY status to be delivered");
+        }
+        
+        if (!order.getDeliveryPartner().getId().equals(deliveryPartnerId)) {
+            throw new BadRequestException("Order is not assigned to this delivery partner");
+        }
+        
+        // Verify OTP
+        if (!verifyDeliveryOTP(order, otp)) {
+            throw new BadRequestException("Invalid OTP. Please check and try again.");
+        }
+        
+        // Mark as delivered
+        order.setOrderStatus(OrderStatus.DELIVERED);
+        order.setDeliveryTime(LocalDateTime.now());
+        
+        // Clear OTP after successful delivery
+        order.setOtp(null);
+        order.setOtpGeneratedAt(null);
+        order.setOtpExpiresAt(null);
+        
+        // If payment is COD, mark payment as successful
+        Payment payment = paymentRepository.findByOrder_IdAndIsDeletedFalse(orderId).orElse(null);
+        if (payment != null && payment.getPaymentType() == PaymentType.COD) {
+            payment.setPaymentStatus(PaymentStatus.SUCCESS);
+            payment.setPaymentTime(LocalDateTime.now());
+            paymentRepository.save(payment);
+        }
+        
+        return orderRepository.save(order);
     }
 }
 

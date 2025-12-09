@@ -159,7 +159,7 @@ public class AuthController {
                 return "Provider";
             case ROLE_CUSTOMER:
                 return "Customer";
-            case DELIVERY_PARTNER:
+            case ROLE_DELIVERY_PARTNER:
                 return "Delivery Partner";
             case ROLE_ADMIN:
                 return "Admin";

@@ -11,9 +11,11 @@ import org.springframework.stereotype.Service;
 import com.platemate.enums.ImageType;
 import com.platemate.exception.ResourceNotFoundException;
 import com.platemate.model.Customer;
+import com.platemate.model.DeliveryPartner;
 import com.platemate.model.TiffinProvider;
 import com.platemate.model.User;
 import com.platemate.repository.CustomerRepository;
+import com.platemate.repository.DeliveryPartnerRepository;
 import com.platemate.repository.ImageRepository;
 import com.platemate.repository.TiffinProviderRepository;
 import com.platemate.repository.UserRepository;
@@ -32,6 +34,9 @@ public class UserService {
     
     @Autowired
     private TiffinProviderRepository tiffinProviderRepository;
+    
+    @Autowired
+    private DeliveryPartnerRepository deliveryPartnerRepository;
     
     @Autowired
     private ImageRepository imageRepository;
@@ -69,6 +74,26 @@ public class UserService {
                     Long profileImageId = imageRepository.findIdByImageTypeAndOwnerId(ImageType.PROVIDER_PROFILE, provider.getId());
                     if (profileImageId != null) {
                         user.setProfileImageId(profileImageId);
+                    }
+                }
+            }
+            // Load delivery partner data if user is a delivery partner
+            else if (user.getRole() != null && user.getRole().name().equals("ROLE_DELIVERY_PARTNER")) {
+                // Get the first delivery partner profile (user can have multiple for different providers)
+                List<DeliveryPartner> deliveryPartners = deliveryPartnerRepository.findByUser_IdAndIsDeletedFalse(id);
+                if (deliveryPartners != null && !deliveryPartners.isEmpty()) {
+                    DeliveryPartner deliveryPartner = deliveryPartners.get(0);
+                    // Load profile image ID for delivery partner
+                    // Use deliveryPartnerId as ownerId (same pattern as provider and customer)
+                    // Handle case where there might be multiple images (get the first/latest one)
+                    // Use findAllIdsByImageTypeAndOwnerId to avoid loading LOB data
+                    List<Long> profileImageIds = imageRepository.findAllIdsByImageTypeAndOwnerId(ImageType.DELIVERY_PARTNER_PROFILE, deliveryPartner.getId());
+                    if (profileImageIds != null && !profileImageIds.isEmpty()) {
+                        // Get the most recent image ID (first one since we ORDER BY id DESC)
+                        Long latestImageId = profileImageIds.get(0);
+                        if (latestImageId != null) {
+                            user.setProfileImageId(latestImageId);
+                        }
                     }
                 }
             }

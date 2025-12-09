@@ -1,6 +1,8 @@
 package com.platemate.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -140,7 +142,6 @@ public class OrderController {
     // ==================== Delivery Partner Endpoints ====================
 
     @GetMapping("/delivery-partners/orders")
-    @PreAuthorize("hasRole('DELIVERY_PARTNER')")
     public ResponseEntity<List<OrderDtos.Response>> getDeliveryPartnerOrders() {
         DeliveryPartner deliveryPartner = getCurrentDeliveryPartner();
         List<Order> orders = orderService.getDeliveryPartnerOrders(deliveryPartner.getId());
@@ -151,7 +152,7 @@ public class OrderController {
     }
 
     @GetMapping("/delivery-partners/orders/{id}")
-    @PreAuthorize("hasRole('DELIVERY_PARTNER')")
+    // @PreAuthorize("hasRole('ROLE_DELIVERY')")
     public ResponseEntity<OrderDtos.Response> getDeliveryPartnerOrder(@PathVariable Long id) {
         DeliveryPartner deliveryPartner = getCurrentDeliveryPartner();
         Order order = orderService.getDeliveryPartnerOrderById(id, deliveryPartner.getId());
@@ -159,13 +160,75 @@ public class OrderController {
     }
 
     @PutMapping("/delivery-partners/orders/{id}/status")
-    @PreAuthorize("hasRole('DELIVERY_PARTNER')")
+    // @PreAuthorize("hasRole('DELIVERY')")
     public ResponseEntity<OrderDtos.Response> updateDeliveryStatus(
             @PathVariable Long id,
             @RequestBody OrderDtos.UpdateStatusRequest req) {
         DeliveryPartner deliveryPartner = getCurrentDeliveryPartner();
         Order order = orderService.updateDeliveryStatus(id, deliveryPartner.getId(), req);
         return ResponseEntity.ok(toResponse(order));
+    }
+    
+    @GetMapping("/delivery-partners/available-orders")
+    // @PreAuthorize("hasRole('DELIVERY')")
+    public ResponseEntity<List<OrderDtos.Response>> getAvailableOrders() {
+        List<Order> orders = orderService.getAvailableOrdersForDelivery();
+        List<OrderDtos.Response> responses = orders.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
+    }
+    
+    @PostMapping("/delivery-partners/orders/{id}/accept")
+    // @PreAuthorize("hasRole('DELIVERY')")
+    public ResponseEntity<OrderDtos.Response> acceptOrder(@PathVariable Long id) {
+        DeliveryPartner deliveryPartner = getCurrentDeliveryPartner();
+        Order order = orderService.acceptOrderByDeliveryPartner(id, deliveryPartner.getId());
+        return ResponseEntity.ok(toResponse(order));
+    }
+    
+    @PostMapping("/delivery-partners/orders/{id}/pickup")
+    // @PreAuthorize("hasRole('DELIVERY')")
+    public ResponseEntity<OrderDtos.Response> pickupOrder(@PathVariable Long id) {
+        DeliveryPartner deliveryPartner = getCurrentDeliveryPartner();
+        Order order = orderService.pickupOrderByDeliveryPartner(id, deliveryPartner.getId());
+        return ResponseEntity.ok(toResponse(order));
+    }
+    
+    @PostMapping("/delivery-partners/orders/{id}/deliver")
+    // @PreAuthorize("hasRole('DELIVERY')")
+    public ResponseEntity<OrderDtos.Response> deliverOrder(
+            @PathVariable Long id,
+            @RequestBody OrderDtos.DeliveryOTPRequest otpRequest) {
+        DeliveryPartner deliveryPartner = getCurrentDeliveryPartner();
+        
+        if (otpRequest.getOtp() == null || otpRequest.getOtp().trim().isEmpty()) {
+            throw new BadRequestException("OTP is required for delivery confirmation");
+        }
+        
+        Order order = orderService.deliverOrderByDeliveryPartner(id, deliveryPartner.getId(), otpRequest.getOtp());
+        return ResponseEntity.ok(toResponse(order));
+    }
+    
+    @PostMapping("/delivery-partners/orders/{id}/verify-otp")
+    // @PreAuthorize("hasRole('DELIVERY')")
+    public ResponseEntity<Map<String, Object>> verifyOTP(
+            @PathVariable Long id,
+            @RequestBody OrderDtos.DeliveryOTPRequest otpRequest) {
+        DeliveryPartner deliveryPartner = getCurrentDeliveryPartner();
+        Order order = orderService.getDeliveryPartnerOrderById(id, deliveryPartner.getId());
+        
+        boolean isValid = orderService.verifyDeliveryOTP(id, otpRequest.getOtp());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("valid", isValid);
+        if (isValid) {
+            response.put("message", "OTP verified successfully");
+        } else {
+            response.put("message", "Invalid OTP");
+        }
+        
+        return ResponseEntity.ok(response);
     }
 
     // ==================== Admin Endpoints ====================
@@ -253,6 +316,15 @@ public class OrderController {
         response.setOrderTime(order.getOrderTime());
         response.setEstimatedDeliveryTime(order.getEstimatedDeliveryTime());
         response.setDeliveryTime(order.getDeliveryTime());
+        
+        // Add OTP information (only if OTP exists and not expired)
+        if (order.getOtp() != null && !order.getOtp().isEmpty()) {
+            response.setHasOTP(true);
+            response.setOtpExpiresAt(order.getOtpExpiresAt());
+        } else {
+            response.setHasOTP(false);
+            response.setOtpExpiresAt(null);
+        }
 
         // Get cart items (may be empty if items were deleted, but order history should still show)
         List<Cart> cartItems = orderService.getOrderCartItems(order);

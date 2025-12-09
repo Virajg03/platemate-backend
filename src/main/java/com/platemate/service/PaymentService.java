@@ -114,6 +114,22 @@ public class PaymentService {
     public Payment markSuccess(String razorpayPaymentId, String razorpayOrderId) {
         Payment payment = paymentRepository.findByTransactionId(razorpayOrderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found for order " + razorpayOrderId));
+        
+        // Fetch payment details from Razorpay to get actual payment method
+        try {
+            Map<String, Object> paymentDetails = fetchPaymentDetailsFromRazorpay(razorpayPaymentId);
+            
+            // Extract payment method from Razorpay response
+            if (paymentDetails != null && paymentDetails.containsKey("method")) {
+                String razorpayMethod = String.valueOf(paymentDetails.get("method"));
+                PaymentMethod actualMethod = mapRazorpayMethodToPaymentMethod(razorpayMethod);
+                payment.setPaymentMethod(actualMethod);
+            }
+        } catch (Exception e) {
+            // If we can't fetch payment details, log but continue with default
+            System.err.println("Warning: Could not fetch payment method from Razorpay: " + e.getMessage());
+        }
+        
         payment.setPaymentStatus(PaymentStatus.SUCCESS);
         payment.setTransactionId(razorpayPaymentId);
         payment.setPaymentTime(LocalDateTime.now());
@@ -134,6 +150,56 @@ public class PaymentService {
         payment.setPaymentStatus(PaymentStatus.FAILED);
         payment.setPaymentTime(LocalDateTime.now());
         return paymentRepository.save(payment);
+    }
+    
+    /**
+     * Fetch payment details from Razorpay API
+     * RestTemplate already has authentication configured via interceptor in RazorpayConfig
+     * 
+     * @param razorpayPaymentId Payment ID from Razorpay
+     * @return Payment details map from Razorpay
+     */
+    private Map<String, Object> fetchPaymentDetailsFromRazorpay(String razorpayPaymentId) {
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> paymentDetails = razorpayRestTemplate.getForObject(
+                RAZORPAY_API_BASE + "/payments/" + razorpayPaymentId, 
+                Map.class
+            );
+            return paymentDetails;
+        } catch (Exception e) {
+            throw new BadRequestException("Failed to fetch payment details from Razorpay: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Map Razorpay payment method to our PaymentMethod enum
+     * 
+     * @param razorpayMethod Method from Razorpay (e.g., "upi", "card", "wallet", "netbanking")
+     * @return PaymentMethod enum value
+     */
+    private PaymentMethod mapRazorpayMethodToPaymentMethod(String razorpayMethod) {
+        if (razorpayMethod == null) {
+            return PaymentMethod.UPI; // Default fallback
+        }
+        
+        String method = razorpayMethod.toLowerCase();
+        switch (method) {
+            case "upi":
+                return PaymentMethod.UPI;
+            case "card":
+            case "credit_card":
+            case "debit_card":
+                // Razorpay returns "card" for both, we can't distinguish, default to CREDIT_CARD
+                return PaymentMethod.CREDIT_CARD;
+            case "netbanking":
+            case "net_banking":
+                return PaymentMethod.NET_BANKING;
+            case "wallet":
+                return PaymentMethod.WALLET;
+            default:
+                return PaymentMethod.UPI; // Default fallback
+        }
     }
     
     /**
@@ -163,6 +229,22 @@ public class PaymentService {
         }
         // If signature is not provided or webhook secret is not set, we still proceed
         // The webhook will handle full verification when it arrives
+        
+        // Fetch payment details from Razorpay to get actual payment method
+        try {
+            Map<String, Object> paymentDetails = fetchPaymentDetailsFromRazorpay(razorpayPaymentId);
+            
+            // Extract payment method from Razorpay response
+            if (paymentDetails != null && paymentDetails.containsKey("method")) {
+                String razorpayMethod = String.valueOf(paymentDetails.get("method"));
+                PaymentMethod actualMethod = mapRazorpayMethodToPaymentMethod(razorpayMethod);
+                payment.setPaymentMethod(actualMethod);
+            }
+        } catch (Exception e) {
+            // If we can't fetch payment details, log but continue with default
+            // Payment method will remain as set initially (UPI default)
+            System.err.println("Warning: Could not fetch payment method from Razorpay: " + e.getMessage());
+        }
         
         // Update payment record
         payment.setPaymentStatus(PaymentStatus.SUCCESS);

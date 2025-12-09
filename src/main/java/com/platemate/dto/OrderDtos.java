@@ -132,6 +132,8 @@ public class OrderDtos {
         private LocalDateTime orderTime;
         private LocalDateTime estimatedDeliveryTime;
         private LocalDateTime deliveryTime;
+        private Boolean hasOTP;
+        private LocalDateTime otpExpiresAt;
         
         public Long getId() {
             return id;
@@ -259,6 +261,73 @@ public class OrderDtos {
         
         public void setDeliveryTime(LocalDateTime deliveryTime) {
             this.deliveryTime = deliveryTime;
+        }
+        
+        public Boolean getHasOTP() {
+            return hasOTP;
+        }
+        
+        public void setHasOTP(Boolean hasOTP) {
+            this.hasOTP = hasOTP;
+        }
+        
+        public LocalDateTime getOtpExpiresAt() {
+            return otpExpiresAt;
+        }
+        
+        public void setOtpExpiresAt(LocalDateTime otpExpiresAt) {
+            this.otpExpiresAt = otpExpiresAt;
+        }
+    }
+    
+    public static class DeliveryOTPRequest {
+        private String otp;
+        
+        public String getOtp() {
+            return otp;
+        }
+        
+        public void setOtp(String otp) {
+            this.otp = otp;
+        }
+    }
+    
+    public static class DeliveryOTPResponse {
+        private String otp;
+        private LocalDateTime otpGeneratedAt;
+        private LocalDateTime otpExpiresAt;
+        private boolean hasOTP;
+        
+        public String getOtp() {
+            return otp;
+        }
+        
+        public void setOtp(String otp) {
+            this.otp = otp;
+        }
+        
+        public LocalDateTime getOtpGeneratedAt() {
+            return otpGeneratedAt;
+        }
+        
+        public void setOtpGeneratedAt(LocalDateTime otpGeneratedAt) {
+            this.otpGeneratedAt = otpGeneratedAt;
+        }
+        
+        public LocalDateTime getOtpExpiresAt() {
+            return otpExpiresAt;
+        }
+        
+        public void setOtpExpiresAt(LocalDateTime otpExpiresAt) {
+            this.otpExpiresAt = otpExpiresAt;
+        }
+        
+        public boolean isHasOTP() {
+            return hasOTP;
+        }
+        
+        public void setHasOTP(boolean hasOTP) {
+            this.hasOTP = hasOTP;
         }
     }
 }
