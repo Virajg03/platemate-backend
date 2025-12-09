@@ -192,6 +192,14 @@ public interface ApiInterface {
         @Part MultipartBody.Part file
     );
     
+    // Delivery Partner profile image upload endpoint
+    @Multipart
+    @POST("/api/delivery-partners/{id}/profile-image")
+    Call<Image> uploadDeliveryPartnerProfileImage(
+        @Path("id") Long deliveryPartnerId,
+        @Part MultipartBody.Part file
+    );
+    
     // Get image by ID
     @GET("/images/view/{id}")
     Call<okhttp3.ResponseBody> getImage(@Path("id") Long id);
@@ -256,4 +264,42 @@ public interface ApiInterface {
     
     @GET("/api/ratings/menu-item/{menuItemId}/summary")
     Call<RatingSummary> getMenuItemRatingSummary(@Path("menuItemId") Long menuItemId);
+    // Delivery Partner Order endpoints
+    @GET("/api/delivery-partners/orders")
+    Call<List<Order>> getDeliveryPartnerOrders();
+    
+    @GET("/api/delivery-partners/available-orders")
+    Call<List<Order>> getAvailableOrdersForDelivery();
+    
+    @GET("/api/delivery-partners/orders/{id}")
+    Call<Order> getDeliveryPartnerOrder(@Path("id") Long id);
+    
+    // Delivery Partner Profile endpoints
+    @GET("/api/delivery-partners")
+    Call<List<DeliveryPartner>> getDeliveryPartners(); // For delivery partners, returns their own profile(s)
+    
+    @GET("/api/delivery-partners/{id}")
+    Call<DeliveryPartner> getDeliveryPartnerById(@Path("id") Long id);
+    
+    @GET("/api/delivery-partners/{id}/profile-image-id")
+    Call<Long> getDeliveryPartnerProfileImageId(@Path("id") Long id);
+    
+    @PUT("/api/delivery-partners/{id}")
+    Call<DeliveryPartner> updateDeliveryPartner(@Path("id") Long id, @Body DeliveryPartnerUpdateRequest request);
+    
+    @POST("/api/delivery-partners/orders/{id}/accept")
+    Call<Order> acceptOrder(@Path("id") Long id);
+    
+    @POST("/api/delivery-partners/orders/{id}/pickup")
+    Call<Order> pickupOrder(@Path("id") Long id);
+    
+    @POST("/api/delivery-partners/orders/{id}/deliver")
+    Call<Order> deliverOrder(@Path("id") Long id, @Body java.util.Map<String, String> otpRequest);
+    
+    @POST("/api/delivery-partners/orders/{id}/verify-otp")
+    Call<java.util.Map<String, Object>> verifyDeliveryOTP(@Path("id") Long id, @Body java.util.Map<String, String> otpRequest);
+    
+    // Provider assign delivery partner
+    @POST("/api/providers/orders/{orderId}/assign-delivery/{deliveryPartnerId}")
+    Call<Order> assignDeliveryPartner(@Path("orderId") Long orderId, @Path("deliveryPartnerId") Long deliveryPartnerId);
 }

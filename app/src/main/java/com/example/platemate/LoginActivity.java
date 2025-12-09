@@ -127,7 +127,7 @@ public class LoginActivity extends AppCompatActivity {
                     LoginUserDetails userDetails = response.body();
                     String token = userDetails.getToken();
                     String refreshToken = userDetails.getRefreshToken();
-                    String role = userDetails.getRole();
+                    String role = normalizeRole(userDetails.getRole()); // Normalize role
                     String username = userDetails.getUsername();
                     Long userId = userDetails.getUserId();
 
@@ -193,15 +193,17 @@ public class LoginActivity extends AppCompatActivity {
 
     private void fetchUserIdAndSaveSession(String token, String refreshToken, String role, 
             String username, SessionManager sessionManager) {
+        // Normalize role before saving
+        String normalizedRole = normalizeRole(role);
         // Save session without userId first (will be updated once we fetch it)
-        sessionManager.saveLoginSession(token, refreshToken, role, username, null);
+        sessionManager.saveLoginSession(token, refreshToken, normalizedRole, username, null);
         
         // Note: We can't easily fetch userId without knowing it first
         // The profile fragment will handle fetching userId when the profile is loaded
         // This is a fallback for cases where backend hasn't been updated yet
         // Once backend is updated, userId will be in login response
         
-        proceedAfterLogin(role);
+        proceedAfterLogin(normalizedRole);
     }
     
     private void proceedAfterLogin(String role) {
@@ -219,5 +221,18 @@ public class LoginActivity extends AppCompatActivity {
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
         finish();
+    }
+    
+    /**
+     * Normalizes role names to handle backend variations
+     * "Delivery Partner" -> "Delivery"
+     */
+    private String normalizeRole(String role) {
+        if (role == null) return null;
+        String normalized = role.trim();
+        if ("Delivery Partner".equals(normalized)) {
+            return "Delivery";
+        }
+        return normalized;
     }
 }

@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Log session values for debugging
-        String role = sessionManager.getRole();
+        String role = normalizeRole(sessionManager.getRole());
         String token = sessionManager.getToken();
         Long userId = sessionManager.getUserId();
         Log.d(TAG, "Session values -> role: " + role + " token: " + (token != null ? "[present]" : "null") + " userId: " + userId);
@@ -55,9 +55,8 @@ public class MainActivity extends AppCompatActivity {
                 // Always check onboarding status from API, not local flag
                 checkProviderOnboardingStatus();
                 return; // Don't navigate yet, wait for API response
-            case "Delivery Partner":
-                // TODO: create DeliveryPartnerActivity when needed
-                intent = new Intent(this, CustomerHomeActivity.class);
+            case "Delivery":
+                intent = new Intent(this, DeliveryPartnerDashboardActivity.class);
                 break;
 
             case "Customer":
@@ -103,5 +102,18 @@ public class MainActivity extends AppCompatActivity {
                 finish();
             }
         });
+    }
+    
+    /**
+     * Normalizes role names to handle backend variations
+     * "Delivery Partner" -> "Delivery"
+     */
+    private String normalizeRole(String role) {
+        if (role == null) return null;
+        String normalized = role.trim();
+        if ("Delivery Partner".equals(normalized)) {
+            return "Delivery";
+        }
+        return normalized;
     }
 }

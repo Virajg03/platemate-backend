@@ -75,6 +75,12 @@
         <activity
             android:name=".DeliveryPartnerFormActivity"
             android:exported="false" />
+        <activity
+            android:name=".DeliveryPartnerDashboardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".DeliveryPartnerOrderDetailActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

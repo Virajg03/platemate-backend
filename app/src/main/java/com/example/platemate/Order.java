@@ -52,6 +52,12 @@ public class Order {
     @SerializedName("deliveryTime")
     private String deliveryTime;
     
+    @SerializedName("hasOTP")
+    private Boolean hasOTP;
+    
+    @SerializedName("otpExpiresAt")
+    private String otpExpiresAt;
+    
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -100,6 +106,12 @@ public class Order {
     
     public String getDeliveryTime() { return deliveryTime; }
     public void setDeliveryTime(String deliveryTime) { this.deliveryTime = deliveryTime; }
+    
+    public Boolean getHasOTP() { return hasOTP; }
+    public void setHasOTP(Boolean hasOTP) { this.hasOTP = hasOTP; }
+    
+    public String getOtpExpiresAt() { return otpExpiresAt; }
+    public void setOtpExpiresAt(String otpExpiresAt) { this.otpExpiresAt = otpExpiresAt; }
     
     // Inner class for OrderItem
     public static class OrderItem {

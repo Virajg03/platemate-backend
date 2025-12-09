@@ -45,7 +45,7 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void navigateToHomeActivity(SessionManager sessionManager) {
-        String role = sessionManager.getRole();
+        String role = normalizeRole(sessionManager.getRole());
         Intent intent;
         
         // Navigate based on user role
@@ -62,9 +62,8 @@ public class SplashActivity extends AppCompatActivity {
                     }
                     break;
                     
-                case "Delivery Partner":
-                    // TODO: create DeliveryPartnerActivity when needed
-                    intent = new Intent(this, CustomerHomeActivity.class);
+                case "Delivery":
+                    intent = new Intent(this, DeliveryPartnerDashboardActivity.class);
                     break;
                     
                 case "Customer":
@@ -102,5 +101,18 @@ public class SplashActivity extends AppCompatActivity {
         binding.textView5.setText(spannableString);
         binding.textView5.setMovementMethod(LinkMovementMethod.getInstance());
         binding.textView5.setHighlightColor(Color.TRANSPARENT);
+    }
+    
+    /**
+     * Normalizes role names to handle backend variations
+     * "Delivery Partner" -> "Delivery"
+     */
+    private String normalizeRole(String role) {
+        if (role == null) return null;
+        String normalized = role.trim();
+        if ("Delivery Partner".equals(normalized)) {
+            return "Delivery";
+        }
+        return normalized;
     }
 }

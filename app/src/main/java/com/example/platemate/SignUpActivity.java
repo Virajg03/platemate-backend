@@ -32,7 +32,7 @@ import retrofit2.Response;
 
 public class SignUpActivity extends AppCompatActivity {
 
-    String[] userTypes = {"Customer", "Provider", "Delivery Partner"};
+    String[] userTypes = {"Customer", "Provider", "Delivery"};
     AutoCompleteTextView autoCompleteTextView;
     ArrayAdapter<String> adapterItems;
     private EditText usernameEditText, emailEditText, passwordEditText, 
@@ -384,8 +384,8 @@ public class SignUpActivity extends AppCompatActivity {
     /**
      * Maps user-friendly dropdown values to backend Role enum format
      * 
-     * @param selectedRole The role selected from dropdown (e.g., "Customer", "Provider", "Delivery Partner")
-     * @return Backend enum format (e.g., "ROLE_CUSTOMER", "ROLE_PROVIDER", "DELIVERY_PARTNER") or null if invalid
+     * @param selectedRole The role selected from dropdown (e.g., "Customer", "Provider", "Delivery")
+     * @return Backend enum format (e.g., "ROLE_CUSTOMER", "ROLE_PROVIDER", "ROLE_DELIVERY") or null if invalid
      */
     private String mapRoleToBackendFormat(String selectedRole) {
         if (selectedRole == null || selectedRole.trim().isEmpty()) {
@@ -397,8 +397,8 @@ public class SignUpActivity extends AppCompatActivity {
                 return "ROLE_CUSTOMER";
             case "Provider":
                 return "ROLE_PROVIDER";
-            case "Delivery Partner":
-                return "DELIVERY_PARTNER";
+            case "Delivery":
+                return "ROLE_DELIVERY";
             default:
                 return null;
         }

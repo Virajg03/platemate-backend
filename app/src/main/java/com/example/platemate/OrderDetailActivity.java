@@ -277,10 +277,155 @@ public class OrderDetailActivity extends AppCompatActivity {
             }
         }
         
-        // Show status update buttons for providers
+        // Show status update buttons and assignment button for providers
         if (isProvider) {
             setupProviderStatusButtons(order);
+            setupDeliveryPartnerAssignment(order);
         }
+    }
+    
+    private void setupDeliveryPartnerAssignment(Order order) {
+        // Remove existing assignment button if any
+        ViewGroup deliveryInfoCard = findDeliveryInfoCard();
+        if (deliveryInfoCard == null) {
+            android.util.Log.w("OrderDetail", "Could not find delivery info card for assignment button");
+            return;
+        }
+        
+        View existingButton = deliveryInfoCard.findViewWithTag("assignButton");
+        if (existingButton != null) {
+            deliveryInfoCard.removeView(existingButton);
+        }
+        
+        // Check if order can have delivery partner assigned
+        String status = order.getOrderStatus();
+        boolean canAssign = (status != null && 
+            (status.equalsIgnoreCase("CONFIRMED") || status.equalsIgnoreCase("PREPARING") || status.equalsIgnoreCase("READY"))) &&
+            order.getDeliveryPartnerId() == null;
+        
+        android.util.Log.d("OrderDetail", "Setup delivery partner assignment - status: " + status + 
+                          ", deliveryPartnerId: " + order.getDeliveryPartnerId() + ", canAssign: " + canAssign);
+        
+        if (canAssign) {
+            // Create assign button
+            LinearLayout assignButtonLayout = new LinearLayout(this);
+            assignButtonLayout.setTag("assignButton");
+            assignButtonLayout.setOrientation(LinearLayout.VERTICAL);
+            assignButtonLayout.setPadding(0, 16, 0, 0);
+            
+            Button btnAssignPartner = new Button(this);
+            btnAssignPartner.setText("ASSIGN DELIVERY PARTNER");
+            btnAssignPartner.setTextColor(getColor(android.R.color.white));
+            btnAssignPartner.setBackgroundResource(R.drawable.neubrutal_button);
+            btnAssignPartner.setPadding(16, 16, 16, 16);
+            btnAssignPartner.setTextSize(14);
+            btnAssignPartner.setTypeface(btnAssignPartner.getTypeface(), android.graphics.Typeface.BOLD);
+            
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            btnAssignPartner.setLayoutParams(params);
+            
+            btnAssignPartner.setOnClickListener(v -> {
+                android.util.Log.d("OrderDetail", "Assign delivery partner button clicked");
+                showAssignDeliveryPartnerDialog();
+            });
+            
+            assignButtonLayout.addView(btnAssignPartner);
+            deliveryInfoCard.addView(assignButtonLayout);
+            android.util.Log.d("OrderDetail", "Assign delivery partner button added to UI");
+        }
+    }
+    
+    private ViewGroup findDeliveryInfoCard() {
+        // Find the card containing tvDeliveryAddress
+        android.view.ViewParent parent = tvDeliveryAddress.getParent();
+        while (parent != null && !(parent instanceof androidx.cardview.widget.CardView)) {
+            parent = parent.getParent();
+        }
+        if (parent != null && parent instanceof ViewGroup) {
+            ViewGroup cardView = (ViewGroup) parent;
+            for (int i = 0; i < cardView.getChildCount(); i++) {
+                View child = cardView.getChildAt(i);
+                if (child instanceof LinearLayout) {
+                    return (LinearLayout) child;
+                }
+            }
+        }
+        return null;
+    }
+    
+    private void showAssignDeliveryPartnerDialog() {
+        android.util.Log.d("OrderDetail", "Showing assign delivery partner dialog");
+        AssignDeliveryPartnerDialog.show(this, new AssignDeliveryPartnerDialog.OnPartnerSelectedListener() {
+            @Override
+            public void onPartnerSelected(DeliveryPartner partner) {
+                android.util.Log.d("OrderDetail", "onPartnerSelected called with partner: " + partner.getFullName() + " (ID: " + partner.getId() + ")");
+                if (partner != null && partner.getId() != null) {
+                    assignDeliveryPartner(partner.getId());
+                } else {
+                    android.util.Log.e("OrderDetail", "Partner or partner ID is null!");
+                    ToastUtils.showError(OrderDetailActivity.this, "Invalid delivery partner selected");
+                }
+            }
+            
+            @Override
+            public void onCancel() {
+                android.util.Log.d("OrderDetail", "User cancelled delivery partner selection");
+                // User cancelled
+            }
+        });
+    }
+    
+    private void assignDeliveryPartner(Long deliveryPartnerId) {
+        if (orderId == null || deliveryPartnerId == null) {
+            android.util.Log.e("OrderDetail", "Cannot assign: orderId=" + orderId + ", deliveryPartnerId=" + deliveryPartnerId);
+            return;
+        }
+        
+        android.util.Log.d("OrderDetail", "Assigning delivery partner " + deliveryPartnerId + " to order " + orderId);
+        showLoading(true);
+        
+        Call<Order> call = apiInterface.assignDeliveryPartner(orderId, deliveryPartnerId);
+        call.enqueue(new Callback<Order>() {
+            @Override
+            public void onResponse(Call<Order> call, Response<Order> response) {
+                showLoading(false);
+                
+                if (response.isSuccessful() && response.body() != null) {
+                    currentOrder = response.body();
+                    android.util.Log.d("OrderDetail", "Delivery partner assigned successfully. Order deliveryPartnerId: " + 
+                                      currentOrder.getDeliveryPartnerId());
+                    ToastUtils.showSuccess(OrderDetailActivity.this, "Delivery partner assigned successfully");
+                    // Refresh display
+                    SessionManager sessionManager = new SessionManager(OrderDetailActivity.this);
+                    String role = sessionManager.getRole();
+                    boolean isProvider = "Provider".equals(role);
+                    displayOrderDetails(currentOrder, isProvider);
+                    setResult(RESULT_OK); // Notify parent to refresh
+                } else {
+                    String errorMsg = "Failed to assign delivery partner";
+                    if (response.errorBody() != null) {
+                        try {
+                            errorMsg = response.errorBody().string();
+                            android.util.Log.e("OrderDetail", "Assignment failed: " + errorMsg);
+                        } catch (Exception e) {
+                            android.util.Log.e("OrderDetail", "Error reading error body", e);
+                        }
+                    }
+                    android.util.Log.e("OrderDetail", "Assignment failed with code: " + response.code());
+                    ToastUtils.showError(OrderDetailActivity.this, errorMsg);
+                }
+            }
+            
+            @Override
+            public void onFailure(Call<Order> call, Throwable t) {
+                showLoading(false);
+                android.util.Log.e("OrderDetail", "Network error assigning delivery partner", t);
+                ToastUtils.showError(OrderDetailActivity.this, "Error: " + t.getMessage());
+            }
+        });
     }
     
     private void setupProviderStatusButtons(Order order) {

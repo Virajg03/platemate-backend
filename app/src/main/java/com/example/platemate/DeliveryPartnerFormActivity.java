@@ -263,7 +263,18 @@ public class DeliveryPartnerFormActivity extends AppCompatActivity {
         request.setServiceArea(serviceArea);
         request.setIsAvailable(partner.getIsAvailable()); // Preserve availability
 
-        Call<DeliveryPartner> call = apiInterface.updateProviderDeliveryPartner(partner.getId(), request);
+        // Use correct endpoint based on user role
+        SessionManager sessionManager = new SessionManager(this);
+        String role = normalizeRole(sessionManager.getRole());
+        Call<DeliveryPartner> call;
+        
+        if ("Delivery".equals(role)) {
+            // Delivery partner editing their own profile - use delivery partner endpoint
+            call = apiInterface.updateDeliveryPartner(partner.getId(), request);
+        } else {
+            // Provider/Admin editing delivery partner - use provider endpoint
+            call = apiInterface.updateProviderDeliveryPartner(partner.getId(), request);
+        }
         call.enqueue(new Callback<DeliveryPartner>() {
             @Override
             public void onResponse(Call<DeliveryPartner> call, Response<DeliveryPartner> response) {
@@ -300,6 +311,19 @@ public class DeliveryPartnerFormActivity extends AppCompatActivity {
     public boolean onSupportNavigateUp() {
         finish();
         return true;
+    }
+    
+    /**
+     * Normalizes role names to handle backend variations
+     * "Delivery Partner" -> "Delivery"
+     */
+    private String normalizeRole(String role) {
+        if (role == null) return null;
+        String normalized = role.trim();
+        if ("Delivery Partner".equals(normalized)) {
+            return "Delivery";
+        }
+        return normalized;
     }
 }
 
