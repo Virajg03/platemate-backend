@@ -310,9 +310,6 @@ function PayoutHistoryList({
               <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                 Processed At
               </th>
-              <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                RazorpayX ID
-              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-slate-200">
@@ -359,9 +356,6 @@ function PayoutHistoryList({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                   {formatDate(transaction.processedAt)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">
-                  {transaction.razorpayxPayoutId || "N/A"}
                 </td>
               </tr>
             ))}
@@ -421,11 +415,6 @@ function PayoutHistoryList({
                   {formatDate(transaction.processedAt)}
                 </span>
               </div>
-              {transaction.razorpayxPayoutId && (
-                <div className="text-xs text-slate-500 font-mono">
-                  ID: {transaction.razorpayxPayoutId}
-                </div>
-              )}
             </div>
           </div>
         ))}
