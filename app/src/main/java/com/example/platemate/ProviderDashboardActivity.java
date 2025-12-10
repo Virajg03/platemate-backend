@@ -60,6 +60,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     private TextView tvProviderEmail;
     private TextView tvTotalProducts;
     private TextView tvActiveOrders;
+    private TextView tvPendingAmount;
     private TextView tvProductCount;
     private CardView cardEditProfile;
     private CardView cardLogout;
@@ -114,10 +115,11 @@ public class ProviderDashboardActivity extends AppCompatActivity {
             }, 500);
         }
         
-        // Load provider details, profile image, and products
+        // Load provider details, profile image, products, and pending amount
         loadProviderDetails();
         loadUserProfileImage();
         loadProducts();
+        loadPendingAmount();
     }
 
     private void initializeViews() {
@@ -130,6 +132,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         tvProviderEmail = findViewById(R.id.tvProviderEmail);
         tvTotalProducts = findViewById(R.id.tvTotalProducts);
         tvActiveOrders = findViewById(R.id.tvActiveOrders);
+        tvPendingAmount = findViewById(R.id.tvPendingAmount);
         tvProductCount = findViewById(R.id.tvProductCount);
         cardEditProfile = findViewById(R.id.cardEditProfile);
         cardLogout = findViewById(R.id.cardLogout);
@@ -697,7 +700,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
     }
     
     private int refreshCounter = 0;
-    private static final int TOTAL_REFRESH_CALLS = 3; // provider details, profile image, products
+    private static final int TOTAL_REFRESH_CALLS = 4; // provider details, profile image, products, pending amount
     
     /**
      * Refresh dashboard data
@@ -712,6 +715,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         loadProviderDetails();
         loadUserProfileImage();
         loadProducts();
+        loadPendingAmount();
     }
     
     /**
@@ -753,6 +757,7 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         loadProviderDetails(); // Refresh provider details
         loadUserProfileImage(); // Refresh profile image (in case it was updated)
         loadProducts(); // Refresh when returning from Add/Edit screen
+        loadPendingAmount(); // Refresh pending amount
     }
 
     @Override
@@ -916,6 +921,46 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         }
         
         return product;
+    }
+
+    /**
+     * Load and display pending payout amount
+     */
+    private void loadPendingAmount() {
+        Call<Map<String, Double>> call = apiInterface.getPendingAmount();
+        call.enqueue(new Callback<Map<String, Double>>() {
+            @Override
+            public void onResponse(Call<Map<String, Double>> call, Response<Map<String, Double>> response) {
+                onRefreshComplete();
+                if (response.isSuccessful() && response.body() != null) {
+                    Map<String, Double> data = response.body();
+                    Double pendingAmount = data.get("pendingAmount");
+                    
+                    if (tvPendingAmount != null) {
+                        if (pendingAmount != null && pendingAmount > 0) {
+                            tvPendingAmount.setText("₹" + String.format("%.2f", pendingAmount));
+                        } else {
+                            tvPendingAmount.setText("₹0.00");
+                        }
+                    }
+                } else {
+                    // On error, show 0
+                    if (tvPendingAmount != null) {
+                        tvPendingAmount.setText("₹0.00");
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Map<String, Double>> call, Throwable t) {
+                onRefreshComplete();
+                Log.e("ProviderDashboard", "Failed to load pending amount", t);
+                // On failure, show 0
+                if (tvPendingAmount != null) {
+                    tvPendingAmount.setText("₹0.00");
+                }
+            }
+        });
     }
 
     private void updateProductCount() {

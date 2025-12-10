@@ -302,4 +302,8 @@ public interface ApiInterface {
     // Provider assign delivery partner
     @POST("/api/providers/orders/{orderId}/assign-delivery/{deliveryPartnerId}")
     Call<Order> assignDeliveryPartner(@Path("orderId") Long orderId, @Path("deliveryPartnerId") Long deliveryPartnerId);
+    
+    // Payout endpoints
+    @GET("/api/providers/payouts/pending")
+    Call<java.util.Map<String, Double>> getPendingAmount();
 }

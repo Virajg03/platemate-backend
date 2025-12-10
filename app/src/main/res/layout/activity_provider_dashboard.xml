@@ -162,7 +162,8 @@
                             app:cardCornerRadius="0dp"
                             app:cardElevation="0dp"
                             app:cardBackgroundColor="@color/white"
-                            android:layout_marginStart="8dp">
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp">
 
                             <View
                                 android:layout_width="match_parent"
@@ -189,6 +190,47 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="Orders"
+                                    android:textColor="@color/black"
+                                    android:textSize="12sp"
+                                    android:layout_marginTop="4dp" />
+                            </LinearLayout>
+                        </androidx.cardview.widget.CardView>
+
+                        <!-- Pending Amount Card -->
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            app:cardCornerRadius="0dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="@color/white"
+                            android:layout_marginStart="8dp">
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="3dp"
+                                android:background="@color/black" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="12dp"
+                                android:gravity="center">
+
+                                <TextView
+                                    android:id="@+id/tvPendingAmount"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="₹0"
+                                    android:textColor="@color/login_orange"
+                                    android:textSize="20sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Pending"
                                     android:textColor="@color/black"
                                     android:textSize="12sp"
                                     android:layout_marginTop="4dp" />
