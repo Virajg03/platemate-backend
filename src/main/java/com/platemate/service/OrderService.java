@@ -58,6 +58,9 @@ public class OrderService {
     @Autowired
     private PaymentRepository paymentRepository;
 
+    @Autowired
+    private PayoutService payoutService;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Transactional
@@ -168,6 +171,17 @@ public class OrderService {
 
         // Save order
         Order savedOrder = orderRepository.save(order);
+
+        // Initialize payout entry for provider (if doesn't exist)
+        // This ensures payout record exists immediately after order creation
+        // Amount will be added only when payment succeeds (business logic unchanged)
+        try {
+            payoutService.initializePayoutIfNotExists(providerId);
+        } catch (Exception e) {
+            // Log but don't fail order creation if payout initialization fails
+            System.err.println("WARNING: Failed to initialize payout entry for provider " + providerId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
 
         // Create Payment record only for COD orders
         // For Razorpay/prepaid orders, payment will be created in PaymentService.createRazorpayOrder()
@@ -614,9 +628,38 @@ public class OrderService {
         // If payment is COD, mark payment as successful
         Payment payment = paymentRepository.findByOrder_IdAndIsDeletedFalse(orderId).orElse(null);
         if (payment != null && payment.getPaymentType() == PaymentType.COD) {
-            payment.setPaymentStatus(PaymentStatus.SUCCESS);
-            payment.setPaymentTime(LocalDateTime.now());
-            paymentRepository.save(payment);
+            // ✅ FIX: Prevent duplicate processing - check if already SUCCESS
+            if (payment.getPaymentStatus() == PaymentStatus.SUCCESS) {
+                System.out.println("DEBUG: COD payment already marked as SUCCESS for order " + orderId + 
+                    ", skipping payout update to prevent duplicates");
+            } else {
+                payment.setPaymentStatus(PaymentStatus.SUCCESS);
+                payment.setPaymentTime(LocalDateTime.now());
+                paymentRepository.save(payment);
+
+                // Reload order with provider eagerly loaded to avoid LazyInitializationException
+                Order orderWithProvider = orderRepository.findByIdWithProvider(orderId)
+                        .orElse(order); // Fallback to original order if query fails
+                
+                // Add to pending payout amount (wrap in try-catch to prevent order failure if payout update fails)
+                if (orderWithProvider.getProvider() != null) {
+                    try {
+                        Double orderAmount = orderWithProvider.getTotalAmount();
+                        Double commission = orderWithProvider.getPlatformCommission() != null ? orderWithProvider.getPlatformCommission() : 0.0;
+                        Long providerId = orderWithProvider.getProvider().getId();
+                        System.out.println("DEBUG: Adding to pending payout (COD) - Order ID: " + orderId + 
+                            ", Provider ID: " + providerId + ", Amount: " + orderAmount + ", Commission: " + commission);
+                        payoutService.addToPendingAmount(providerId, orderAmount, commission);
+                        System.out.println("DEBUG: Successfully added to pending payout for provider: " + providerId);
+                    } catch (Exception e) {
+                        // Log error but don't fail order delivery
+                        System.err.println("ERROR: Failed to update pending payout amount for order " + orderId + ": " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                } else {
+                    System.err.println("WARNING: Order " + orderId + " has no provider associated");
+                }
+            }
         }
         
         return orderRepository.save(order);

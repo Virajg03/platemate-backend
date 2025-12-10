@@ -25,6 +25,7 @@ import com.platemate.model.DeliveryPartner;
 import com.platemate.model.Order;
 import com.platemate.model.Payment;
 import com.platemate.model.Payout;
+import com.platemate.model.PayoutTransaction;
 import com.platemate.model.RatingReview;
 import com.platemate.model.TiffinProvider;
 import com.platemate.model.User;
@@ -36,6 +37,7 @@ import com.platemate.repository.MenuItemRepository;
 import com.platemate.repository.OrderRepository;
 import com.platemate.repository.PaymentRepository;
 import com.platemate.repository.PayoutRepository;
+import com.platemate.repository.PayoutTransactionRepository;
 import com.platemate.repository.RatingReviewRepository;
 import com.platemate.repository.TiffinProviderRepository;
 import com.platemate.repository.UserRepository;
@@ -69,6 +71,9 @@ public class DashboardService {
 
     @Autowired
     private PayoutRepository payoutRepository;
+
+    @Autowired
+    private PayoutTransactionRepository payoutTransactionRepository;
 
     @Autowired
     private RatingReviewRepository ratingReviewRepository;
@@ -335,42 +340,44 @@ public class DashboardService {
     }
 
     private void calculatePayoutStats(DashboardStatsDto stats) {
-        // Get all non-deleted payouts
-        List<Payout> allPayouts = payoutRepository.findAllByIsDeletedFalse();
-        if (allPayouts == null) {
-            allPayouts = new ArrayList<>();
+        // Get all payout transactions (for history stats)
+        List<PayoutTransaction> allTransactions = payoutTransactionRepository.findAllByIsDeletedFalseOrderByProcessedAtDesc();
+        if (allTransactions == null) {
+            allTransactions = new ArrayList<>();
         }
 
-        stats.setTotalPayouts((long) allPayouts.size());
+        stats.setTotalPayouts((long) allTransactions.size());
 
         // Payouts by status
         Map<String, Long> payoutsByStatus = new HashMap<>();
         for (PayoutStatus status : PayoutStatus.values()) {
-            long count = allPayouts.stream()
-                    .filter(p -> p.getStatus() != null && p.getStatus() == status)
+            long count = allTransactions.stream()
+                    .filter(t -> t.getStatus() != null && t.getStatus() == status)
                     .count();
             payoutsByStatus.put(status.name(), count);
         }
         stats.setPayoutsByStatus(payoutsByStatus);
 
-        // Total payout amount
-        double totalPayoutAmount = allPayouts.stream()
-                .filter(p -> p.getAmount() != null)
-                .mapToDouble(Payout::getAmount)
+        // Total payout amount (sum of all completed transactions)
+        double totalPayoutAmount = allTransactions.stream()
+                .filter(t -> t.getStatus() == PayoutStatus.COMPLETED && t.getAmount() != null)
+                .mapToDouble(PayoutTransaction::getAmount)
                 .sum();
-        stats.setTotalPayoutAmount(totalPayoutAmount);
+        stats.setTotalPayoutAmount(Math.round(totalPayoutAmount * 100.0) / 100.0);
 
-        // Total commission deducted
-        double totalCommissionDeducted = allPayouts.stream()
-                .filter(p -> p.getCommissionDeducted() != null)
-                .mapToDouble(Payout::getCommissionDeducted)
+        // Total commission deducted (calculate from orders - sum of platformCommission from delivered orders)
+        double totalCommissionDeducted = orderRepository.findAll().stream()
+                .filter(o -> o.getOrderStatus() == OrderStatus.DELIVERED && 
+                            !Boolean.TRUE.equals(o.getIsDeleted()) &&
+                            o.getPlatformCommission() != null)
+                .mapToDouble(Order::getPlatformCommission)
                 .sum();
-        stats.setTotalCommissionDeducted(totalCommissionDeducted);
+        stats.setTotalCommissionDeducted(Math.round(totalCommissionDeducted * 100.0) / 100.0);
 
-        // Today's payouts
+        // Today's payouts (transactions processed today)
         LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-        long todayPayouts = allPayouts.stream()
-                .filter(p -> p.getPayoutTime() != null && p.getPayoutTime().isAfter(startOfToday))
+        long todayPayouts = allTransactions.stream()
+                .filter(t -> t.getProcessedAt() != null && t.getProcessedAt().isAfter(startOfToday))
                 .count();
         stats.setTodayPayouts(todayPayouts);
     }

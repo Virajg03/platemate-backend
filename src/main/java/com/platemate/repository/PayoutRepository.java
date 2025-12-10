@@ -1,20 +1,28 @@
 package com.platemate.repository;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-import com.platemate.enums.RecipientType;
 import com.platemate.model.Payout;
 
+import jakarta.persistence.LockModeType;
+
 public interface PayoutRepository extends JpaRepository<Payout, Long> {
-    List<Payout> findAllByIsDeletedFalse();
     
-    List<Payout> findAllByRecipientTypeAndRecipientIdAndIsDeletedFalse(RecipientType type, Long recipientId);
-    List<Payout> findAllByPayoutTimeBetween(LocalDateTime from, LocalDateTime to);
-    Optional<Payout> findByTransactionId(String transactionId);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Payout p WHERE p.providerId = :providerId AND p.isDeleted = false")
+    Optional<Payout> findByProviderId(@Param("providerId") Long providerId);
+    
+    // Query without lock for initialization check
+    @Query("SELECT p FROM Payout p WHERE p.providerId = :providerId AND p.isDeleted = false")
+    Optional<Payout> findByProviderIdWithoutLock(@Param("providerId") Long providerId);
+    
+    List<Payout> findAllByPendingAmountGreaterThanAndIsDeletedFalse(Double amount);
+    
+    List<Payout> findAllByIsDeletedFalse();
 }
-
-

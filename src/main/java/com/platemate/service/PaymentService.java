@@ -23,6 +23,7 @@ import com.platemate.model.Order;
 import com.platemate.model.Payment;
 import com.platemate.repository.OrderRepository;
 import com.platemate.repository.PaymentRepository;
+import com.platemate.service.PayoutService;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -42,6 +43,9 @@ public class PaymentService {
 
     @Autowired
     private RazorpayProperties props;
+
+    @Autowired
+    private PayoutService payoutService;
 
     private static final String RAZORPAY_API_BASE = "https://api.razorpay.com/v1";
 
@@ -115,6 +119,13 @@ public class PaymentService {
         Payment payment = paymentRepository.findByTransactionId(razorpayOrderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found for order " + razorpayOrderId));
         
+        // ✅ FIX: Prevent duplicate processing - check if already SUCCESS
+        if (payment.getPaymentStatus() == PaymentStatus.SUCCESS) {
+            System.out.println("DEBUG: Payment already marked as SUCCESS for order " + razorpayOrderId + 
+                ", skipping payout update to prevent duplicates");
+            return payment; // Already processed, return early
+        }
+        
         // Fetch payment details from Razorpay to get actual payment method
         try {
             Map<String, Object> paymentDetails = fetchPaymentDetailsFromRazorpay(razorpayPaymentId);
@@ -135,12 +146,35 @@ public class PaymentService {
         payment.setPaymentTime(LocalDateTime.now());
         Payment saved = paymentRepository.save(payment);
 
+        // Reload order with provider eagerly loaded to avoid LazyInitializationException
+        Order order = orderRepository.findByIdWithProvider(saved.getOrder().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        
         // Update order status to CONFIRMED if currently PENDING
-        Order order = saved.getOrder();
-        if (order != null && order.getOrderStatus() == OrderStatus.PENDING) {
+        if (order.getOrderStatus() == OrderStatus.PENDING) {
             order.setOrderStatus(OrderStatus.CONFIRMED);
             orderRepository.save(order);
         }
+
+        // Add to pending payout amount (wrap in try-catch to prevent payment failure if payout update fails)
+        if (order.getProvider() != null) {
+            try {
+                Double orderAmount = order.getTotalAmount();
+                Double commission = order.getPlatformCommission() != null ? order.getPlatformCommission() : 0.0;
+                Long providerId = order.getProvider().getId();
+                System.out.println("DEBUG: Adding to pending payout - Order ID: " + order.getId() + 
+                    ", Provider ID: " + providerId + ", Amount: " + orderAmount + ", Commission: " + commission);
+                payoutService.addToPendingAmount(providerId, orderAmount, commission);
+                System.out.println("DEBUG: Successfully added to pending payout for provider: " + providerId);
+            } catch (Exception e) {
+                // Log error but don't fail payment
+                System.err.println("ERROR: Failed to update pending payout amount for order " + order.getId() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.err.println("WARNING: Order " + order.getId() + " has no provider associated");
+        }
+
         return saved;
     }
 
@@ -207,12 +241,20 @@ public class PaymentService {
      * This method verifies the payment and updates order status
      */
     public Order verifyPayment(Long orderId, String razorpayPaymentId, String razorpayOrderId, String razorpaySignature) {
-        Order order = orderRepository.findById(orderId)
+        // Load order with provider eagerly to avoid LazyInitializationException
+        Order order = orderRepository.findByIdWithProvider(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id " + orderId));
         
         // Find payment record by order
         Payment payment = paymentRepository.findByOrder_IdAndIsDeletedFalse(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment not found for order " + orderId));
+        
+        // ✅ FIX: Prevent duplicate processing - check if already SUCCESS
+        if (payment.getPaymentStatus() == PaymentStatus.SUCCESS) {
+            System.out.println("DEBUG: Payment already marked as SUCCESS for order " + orderId + 
+                ", skipping payout update to prevent duplicates");
+            return order; // Already processed, return early
+        }
         
         // Verify signature if provided (optional for app verification, webhook will also verify)
         // Note: Android SDK doesn't provide signature directly, so this is mainly for webhook verification
@@ -256,6 +298,25 @@ public class PaymentService {
         if (order.getOrderStatus() == OrderStatus.PENDING) {
             order.setOrderStatus(OrderStatus.CONFIRMED);
             orderRepository.save(order);
+        }
+
+        // Add to pending payout amount (wrap in try-catch to prevent payment failure if payout update fails)
+        if (order.getProvider() != null) {
+            try {
+                Double orderAmount = order.getTotalAmount();
+                Double commission = order.getPlatformCommission() != null ? order.getPlatformCommission() : 0.0;
+                Long providerId = order.getProvider().getId();
+                System.out.println("DEBUG: Adding to pending payout - Order ID: " + order.getId() + 
+                    ", Provider ID: " + providerId + ", Amount: " + orderAmount + ", Commission: " + commission);
+                payoutService.addToPendingAmount(providerId, orderAmount, commission);
+                System.out.println("DEBUG: Successfully added to pending payout for provider: " + providerId);
+            } catch (Exception e) {
+                // Log error but don't fail payment
+                System.err.println("ERROR: Failed to update pending payout amount for order " + order.getId() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.err.println("WARNING: Order " + order.getId() + " has no provider associated");
         }
         
         return order;

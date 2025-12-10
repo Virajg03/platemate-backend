@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.platemate.enums.OrderStatus;
 import com.platemate.model.Order;
@@ -32,5 +34,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     
     // Find orders by status (for available orders)
     List<Order> findAllByOrderStatusAndIsDeletedFalse(OrderStatus status);
+    
+    // Eagerly load order with provider for payout processing
+    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.provider WHERE o.id = :orderId")
+    Optional<Order> findByIdWithProvider(@Param("orderId") Long orderId);
 }
 

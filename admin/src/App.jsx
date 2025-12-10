@@ -16,8 +16,7 @@ import CategoriesPage from "./pages/categories/CategoriesPage";
 import OrdersPage from "./pages/orders/OrdersPage";
 import DeliveryPartnersPage from "./pages/delivery-partners/DeliveryPartnersPage";
 import DeliveryZonesPage from "./pages/delivery-zones/DeliveryZonesPage";
-
-const PayoutsPage = () => <div className="p-6">Payouts coming...</div>;
+import PayoutsPage from "./pages/payouts/PayoutsPage";
 
 export default function App() {
   const { isAuthenticated } = useAuthStore();

@@ -1,6 +1,7 @@
 package com.platemate.controller;
 
-import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -8,15 +9,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.platemate.dto.PayoutDtos;
 import com.platemate.exception.ResourceNotFoundException;
-import com.platemate.model.Payout;
 import com.platemate.model.TiffinProvider;
 import com.platemate.model.User;
 import com.platemate.repository.TiffinProviderRepository;
@@ -36,25 +32,29 @@ public class PayoutController {
     @Autowired
     private TiffinProviderRepository tiffinProviderRepository;
 
-    @GetMapping("/providers/payouts/statements")
+    @GetMapping("/providers/payouts/pending")
     @PreAuthorize("hasRole('PROVIDER')")
-    public ResponseEntity<PayoutDtos.StatementResponse> getProviderStatement() {
-        TiffinProvider provider = getCurrentProvider();
-        LocalDateTime from = null;
-        LocalDateTime to = null;
-        PayoutDtos.StatementResponse res = payoutService.computeEarningsForProvider(provider.getId(), from, to);
-        return ResponseEntity.ok(res);
-    }
-
-    @PostMapping("/admin/payouts/run/{providerId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Payout> runPayout(@PathVariable Long providerId, @RequestBody PayoutDtos.StatementRequest req) {
-        double amount = req.getFrom() != null || req.getTo() != null
-                ? payoutService.computeEarningsForProvider(providerId, req.getFrom(), req.getTo()).getNetPayable()
-                : payoutService.computeEarningsForProvider(providerId, null, null).getNetPayable();
-        String reference = "prov-" + providerId + "-" + System.currentTimeMillis();
-        Payout p = payoutService.createPayoutForProvider(providerId, amount, reference);
-        return ResponseEntity.ok(p);
+    public ResponseEntity<Map<String, Double>> getPendingAmount() {
+        try {
+            TiffinProvider provider = getCurrentProvider();
+            Long providerId = provider.getId();
+            
+            System.out.println("DEBUG: Fetching pending amount for provider ID: " + providerId);
+            Double pendingAmount = payoutService.getPendingAmount(providerId);
+            
+            System.out.println("DEBUG: Returning pending amount for provider " + providerId + ": ₹" + pendingAmount);
+            
+            Map<String, Double> response = new HashMap<>();
+            response.put("pendingAmount", pendingAmount);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to get pending amount: " + e.getMessage());
+            e.printStackTrace();
+            // Return 0.0 on error instead of failing the request
+            Map<String, Double> response = new HashMap<>();
+            response.put("pendingAmount", 0.0);
+            return ResponseEntity.ok(response);
+        }
     }
 
     private User getCurrentUser() {
@@ -73,5 +73,3 @@ public class PayoutController {
         return provider;
     }
 }
-
-
