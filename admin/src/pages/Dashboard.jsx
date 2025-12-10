@@ -165,7 +165,7 @@ export default function Dashboard() {
         </div>
 
         {/* Total Revenue */}
-        <div className="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
+        {/* <div className="bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
               Total Revenue
@@ -190,7 +190,7 @@ export default function Dashboard() {
           <p className="text-xs text-amber-600 mt-1">
             {formatCurrency(stats.todayRevenue)} today
           </p>
-        </div>
+        </div> */}
       </div>
 
       {/* Secondary Stats Grid */}
@@ -260,14 +260,14 @@ export default function Dashboard() {
           <p className="text-2xl font-bold text-slate-900">
             {stats.activeCarts || 0}
           </p>
-          <p className="text-xs text-slate-500 mt-2">
+          {/* <p className="text-xs text-slate-500 mt-2">
             {formatCurrency(stats.totalCartValue || 0)} total value
-          </p>
+          </p> */}
         </div>
       </div>
 
       {/* Revenue Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
             Today's Revenue
@@ -303,7 +303,7 @@ export default function Dashboard() {
             {stats.monthOrders || 0} orders
           </p>
         </div>
-      </div>
+      </div> */}
 
       {/* Orders by Status */}
       {stats.ordersByStatus && (
@@ -457,7 +457,7 @@ export default function Dashboard() {
 
       {/* Payment Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+        {/* <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">
             Payment Statistics
           </h2>
@@ -481,7 +481,7 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
-        </div>
+        </div> */}
 
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">
