@@ -18,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
+import java.time.LocalDateTime;
 
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -52,6 +53,16 @@ public class User extends BaseEntity implements UserDetails {
     // Transient field to hold customer's profileImageId (for customer users)
     @Transient
     private Long profileImageId;
+    
+    // Password Reset OTP fields
+    @Column(name = "password_reset_otp", length = 6)
+    private String passwordResetOtp;
+
+    @Column(name = "password_reset_otp_expiry")
+    private LocalDateTime passwordResetOtpExpiry;
+
+    @Column(name = "password_reset_otp_generated_at")
+    private LocalDateTime passwordResetOtpGeneratedAt;
     
     // Constructors
     public User() {}
@@ -152,6 +163,31 @@ public class User extends BaseEntity implements UserDetails {
     
     public void setProfileImageId(Long profileImageId) {
         this.profileImageId = profileImageId;
+    }
+    
+    // Password Reset OTP Getters and Setters
+    public String getPasswordResetOtp() {
+        return passwordResetOtp;
+    }
+
+    public void setPasswordResetOtp(String passwordResetOtp) {
+        this.passwordResetOtp = passwordResetOtp;
+    }
+
+    public LocalDateTime getPasswordResetOtpExpiry() {
+        return passwordResetOtpExpiry;
+    }
+
+    public void setPasswordResetOtpExpiry(LocalDateTime passwordResetOtpExpiry) {
+        this.passwordResetOtpExpiry = passwordResetOtpExpiry;
+    }
+
+    public LocalDateTime getPasswordResetOtpGeneratedAt() {
+        return passwordResetOtpGeneratedAt;
+    }
+
+    public void setPasswordResetOtpGeneratedAt(LocalDateTime passwordResetOtpGeneratedAt) {
+        this.passwordResetOtpGeneratedAt = passwordResetOtpGeneratedAt;
     }
     
 }

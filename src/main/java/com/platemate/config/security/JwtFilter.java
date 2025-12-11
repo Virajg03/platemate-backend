@@ -80,21 +80,39 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private boolean isPublicUrl(String requestURI) {
-        String[] publicUrls = {
-                "/api/auth/login",
-                "/api/auth/signup",
-                "/v3/api-docs/**",
-                "/swagger-ui/**",
-                "/swagger-ui.html",
-                "/swagger-resources/**",
-                "/webjars/**"
-        };
-
-        for (String publicUrl : publicUrls) {
-            if (requestURI.startsWith(publicUrl.replace("/**", ""))) {
-                return true;
-            }
+        // Remove query parameters and normalize the path
+        String path = requestURI;
+        if (requestURI.contains("?")) {
+            path = requestURI.substring(0, requestURI.indexOf("?"));
         }
+        // Remove trailing slash for consistent matching
+        if (path.endsWith("/") && path.length() > 1) {
+            path = path.substring(0, path.length() - 1);
+        }
+        
+        // Exact match public URLs (auth endpoints)
+        if (path.equals("/api/auth/login") ||
+            path.equals("/api/auth/signup") ||
+            path.equals("/api/auth/forgot-password") ||
+            path.equals("/api/auth/resend-otp") ||
+            path.equals("/api/auth/verify-otp") ||
+            path.equals("/api/auth/reset-password")) {
+            return true;
+        }
+        
+        // Wildcard patterns (Swagger/docs)
+        if (path.startsWith("/v3/api-docs/") ||
+            path.equals("/v3/api-docs") ||
+            path.startsWith("/swagger-ui/") ||
+            path.equals("/swagger-ui") ||
+            path.equals("/swagger-ui.html") ||
+            path.startsWith("/swagger-resources/") ||
+            path.equals("/swagger-resources") ||
+            path.startsWith("/webjars/") ||
+            path.equals("/webjars")) {
+            return true;
+        }
+        
         return false;
     }
 }

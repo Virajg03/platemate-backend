@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { loginApi } from "../api/authApi";
 import { useAuthStore } from "../store/authStore";
+import ForgotPasswordForm from "../components/ForgotPasswordForm";
 import logoImage from "../assets/images/1.png";
 
 export default function Login() {
@@ -14,6 +15,7 @@ export default function Login() {
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -60,45 +62,59 @@ export default function Login() {
           </p>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="text-xs font-medium text-slate-600">
-              Username
-            </label>
-            <input
-              type="text"
-              name="username"
-              value={form.username}
-              onChange={handleChange}
-              required
-              className="mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-          </div>
+        {!showForgotPassword ? (
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div>
+              <label className="text-xs font-medium text-slate-600">
+                Username
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                required
+                className="mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
 
-          <div>
-            <label className="text-xs font-medium text-slate-600">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              className="mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-          </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600">
+                Password
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                required
+                className="mt-1 w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
 
-          {errorMsg && <p className="text-xs text-red-600 mt-1">{errorMsg}</p>}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-xs text-sky-600 hover:text-sky-700"
+              >
+                Forgot Password?
+              </button>
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-medium mt-2"
-          >
-            {loading ? "Signing in..." : "Login"}
-          </button>
-        </form>
+            {errorMsg && <p className="text-xs text-red-600 mt-1">{errorMsg}</p>}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-medium mt-2"
+            >
+              {loading ? "Signing in..." : "Login"}
+            </button>
+          </form>
+        ) : (
+          <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />
+        )}
       </div>
     </div>
   );
