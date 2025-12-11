@@ -2,7 +2,6 @@ package com.platemate.model;
 
 import jakarta.persistence.*;
 import com.platemate.enums.VehicleType;
-import java.math.BigDecimal;
 import java.util.List;
 
 @Entity
@@ -23,9 +22,6 @@ public class DeliveryPartner extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "vehicle_type", nullable = false)
     private VehicleType vehicleType;
-
-    @Column(name = "commission_rate", nullable = false, precision = 5, scale = 2)
-    private BigDecimal commissionRate = BigDecimal.ZERO;
 
     @Column(name = "service_area", nullable = false, columnDefinition = "TEXT")
     private String serviceArea;
@@ -53,9 +49,6 @@ public class DeliveryPartner extends BaseEntity {
 
     public VehicleType getVehicleType() { return vehicleType; }
     public void setVehicleType(VehicleType vehicleType) { this.vehicleType = vehicleType; }
-
-    public BigDecimal getCommissionRate() { return commissionRate; }
-    public void setCommissionRate(BigDecimal commissionRate) { this.commissionRate = commissionRate; }
 
     public String getServiceArea() { return serviceArea; }
     public void setServiceArea(String serviceArea) { this.serviceArea = serviceArea; }

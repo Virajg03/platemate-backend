@@ -11,7 +11,6 @@ export default function PartnerModal({ close, refresh, editData }) {
   const [form, setForm] = useState({
     fullName: editData?.fullName || "",
     vehicleType: editData?.vehicleType || "BIKE",
-    commissionRate: editData?.commissionRate || "",
     serviceArea: editData?.serviceArea || "",
     isAvailable: editData?.isAvailable || false,
     userId: editData?.userId || "",
@@ -90,18 +89,6 @@ export default function PartnerModal({ close, refresh, editData }) {
               <option value="BICYCLE">Bicycle</option>
               <option value="CAR">Car</option>
             </select>
-          </div>
-
-          {/* Commission */}
-          <div>
-            <label className="text-sm">Commission Rate (%)</label>
-            <input
-              type="number"
-              name="commissionRate"
-              value={form.commissionRate}
-              onChange={handleChange}
-              className="mt-1 w-full px-3 py-2 border rounded"
-            />
           </div>
 
           {/* Service Area */}

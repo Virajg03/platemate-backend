@@ -94,6 +94,7 @@ public class AuthController {
         String username = signupRequest.get("username");
         String email = signupRequest.get("email");
         String password = signupRequest.get("password");
+        String phone = signupRequest.get("phone"); // Extract phone number from request
         String roleStr = signupRequest.getOrDefault("role", "ROLE_CUSTOMER");
         Role role;
         try {
@@ -117,6 +118,10 @@ public class AuthController {
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
         user.setRole(role);
+        // Set phone number if provided
+        if (phone != null && !phone.trim().isEmpty()) {
+            user.setPhoneNumber(phone.trim());
+        }
 
         User savedUser = userService.createUser(user);
 

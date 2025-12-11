@@ -67,7 +67,6 @@ public class DeliveryPartnerCrudController {
         p.setUser(user);
         p.setFullName(req.getFullName());
         p.setVehicleType(req.getVehicleType());
-        p.setCommissionRate(req.getCommissionRate());
         p.setServiceArea(req.getServiceArea());
         p.setIsAvailable(false); // Default to unavailable
         
@@ -128,7 +127,6 @@ public class DeliveryPartnerCrudController {
         DeliveryPartner u = new DeliveryPartner();
         u.setFullName(req.getFullName());
         u.setVehicleType(req.getVehicleType());
-        u.setCommissionRate(req.getCommissionRate());
         u.setServiceArea(req.getServiceArea());
         u.setIsAvailable(req.getIsAvailable());
         
@@ -243,7 +241,6 @@ public class DeliveryPartnerCrudController {
         res.setProviderId(p.getProviderId());
         res.setFullName(p.getFullName());
         res.setVehicleType(p.getVehicleType());
-        res.setCommissionRate(p.getCommissionRate());
         res.setServiceArea(p.getServiceArea());
         res.setIsAvailable(p.getIsAvailable());
         return res;

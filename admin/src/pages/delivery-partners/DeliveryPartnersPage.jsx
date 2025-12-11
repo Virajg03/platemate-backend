@@ -85,7 +85,6 @@ export default function DeliveryPartnersPage() {
               <th className="p-3 text-sm text-left">ID</th>
               <th className="p-3 text-sm text-left">Name</th>
               <th className="p-3 text-sm text-left">Vehicle</th>
-              <th className="p-3 text-sm text-left">Commission</th>
               <th className="p-3 text-sm text-left">Available</th>
               <th className="p-3 text-sm text-right">Actions</th>
             </tr>
@@ -94,13 +93,13 @@ export default function DeliveryPartnersPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="p-5 text-center text-slate-500">
+                <td colSpan={5} className="p-5 text-center text-slate-500">
                   Loading...
                 </td>
               </tr>
             ) : partners.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-5 text-center text-slate-500">
+                <td colSpan={5} className="p-5 text-center text-slate-500">
                   No partners found.
                 </td>
               </tr>
@@ -110,7 +109,6 @@ export default function DeliveryPartnersPage() {
                   <td className="p-3 text-sm">{p.id}</td>
                   <td className="p-3 text-sm">{p.fullName}</td>
                   <td className="p-3 text-sm">{p.vehicleType}</td>
-                  <td className="p-3 text-sm">{p.commissionRate}%</td>
                   <td className="p-3 text-sm">
                     <span
                       className={`px-2 py-1 rounded text-xs ${

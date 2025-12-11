@@ -1,7 +1,5 @@
 package com.platemate.dto;
 
-import java.math.BigDecimal;
-
 import com.platemate.enums.VehicleType;
 
 public class DeliveryPartnerDtos {
@@ -14,7 +12,6 @@ public class DeliveryPartnerDtos {
         private Long providerId; // Optional - auto-set from auth context if provider creates
         private String fullName;
         private VehicleType vehicleType;
-        private BigDecimal commissionRate;
         private String serviceArea;
         
         // User credentials getters and setters
@@ -33,8 +30,6 @@ public class DeliveryPartnerDtos {
         public void setFullName(String fullName) { this.fullName = fullName; }
         public VehicleType getVehicleType() { return vehicleType; }
         public void setVehicleType(VehicleType vehicleType) { this.vehicleType = vehicleType; }
-        public BigDecimal getCommissionRate() { return commissionRate; }
-        public void setCommissionRate(BigDecimal commissionRate) { this.commissionRate = commissionRate; }
         public String getServiceArea() { return serviceArea; }
         public void setServiceArea(String serviceArea) { this.serviceArea = serviceArea; }
     }
@@ -42,15 +37,12 @@ public class DeliveryPartnerDtos {
     public static class UpdateRequest {
         private String fullName;
         private VehicleType vehicleType;
-        private BigDecimal commissionRate;
         private String serviceArea;
         private Boolean isAvailable;
         public String getFullName() { return fullName; }
         public void setFullName(String fullName) { this.fullName = fullName; }
         public VehicleType getVehicleType() { return vehicleType; }
         public void setVehicleType(VehicleType vehicleType) { this.vehicleType = vehicleType; }
-        public BigDecimal getCommissionRate() { return commissionRate; }
-        public void setCommissionRate(BigDecimal commissionRate) { this.commissionRate = commissionRate; }
         public String getServiceArea() { return serviceArea; }
         public void setServiceArea(String serviceArea) { this.serviceArea = serviceArea; }
         public Boolean getIsAvailable() { return isAvailable; }
@@ -63,7 +55,6 @@ public class DeliveryPartnerDtos {
         private Long providerId; // null for global delivery partners
         private String fullName;
         private VehicleType vehicleType;
-        private BigDecimal commissionRate;
         private String serviceArea;
         private Boolean isAvailable;
         public Long getId() { return id; }
@@ -76,8 +67,6 @@ public class DeliveryPartnerDtos {
         public void setFullName(String fullName) { this.fullName = fullName; }
         public VehicleType getVehicleType() { return vehicleType; }
         public void setVehicleType(VehicleType vehicleType) { this.vehicleType = vehicleType; }
-        public BigDecimal getCommissionRate() { return commissionRate; }
-        public void setCommissionRate(BigDecimal commissionRate) { this.commissionRate = commissionRate; }
         public String getServiceArea() { return serviceArea; }
         public void setServiceArea(String serviceArea) { this.serviceArea = serviceArea; }
         public Boolean getIsAvailable() { return isAvailable; }

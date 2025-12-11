@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +38,8 @@ import com.platemate.repository.TiffinProviderRepository;
 
 @Service
 public class OrderService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     @Autowired
     private OrderRepository orderRepository;
@@ -57,6 +61,9 @@ public class OrderService {
     
     @Autowired
     private PaymentRepository paymentRepository;
+    
+    @Autowired
+    private EmailService emailService;
 
     @Autowired
     private PayoutService payoutService;
@@ -586,9 +593,73 @@ public class OrderService {
             throw new BadRequestException("Order is not assigned to this delivery partner");
         }
         
-        order.setOrderStatus(OrderStatus.OUT_FOR_DELIVERY);
+        // Generate OTP if not already generated
+        if (order.getOtp() == null || order.getOtp().isEmpty()) {
+            generateDeliveryOTP(order);
+        }
         
-        return orderRepository.save(order);
+        order.setOrderStatus(OrderStatus.OUT_FOR_DELIVERY);
+        Order savedOrder = orderRepository.save(order);
+        
+        // Send OTP email to customer
+        sendOTPEmailToCustomer(savedOrder);
+        
+        return savedOrder;
+    }
+    
+    /**
+     * Send OTP email to customer when delivery partner picks up the order
+     * 
+     * @param order Order with OTP
+     */
+    private void sendOTPEmailToCustomer(Order order) {
+        try {
+            // Get customer email from order
+            Customer customer = order.getCustomer();
+            if (customer == null || customer.getUser() == null) {
+                logger.warn("Cannot send OTP email: Customer or User not found for order {}", order.getId());
+                return;
+            }
+            
+            String customerEmail = customer.getUser().getEmail();
+            if (customerEmail == null || customerEmail.trim().isEmpty()) {
+                logger.warn("Cannot send OTP email: Customer email is empty for order {}", order.getId());
+                return;
+            }
+            
+            String otp = order.getOtp();
+            if (otp == null || otp.isEmpty()) {
+                logger.warn("Cannot send OTP email: OTP is not generated for order {}", order.getId());
+                return;
+            }
+            
+            // Create email content
+            String subject = "Your Order Delivery OTP - PlateMate";
+            String body = String.format(
+                "<h2>Order Delivery OTP</h2>" +
+                "<p>Hello %s,</p>" +
+                "<p>Your order #%d has been picked up by the delivery partner and is on its way!</p>" +
+                "<p><strong>Your OTP for delivery verification is: <span style='font-size: 24px; color: #FF775C; font-weight: bold;'>%s</span></strong></p>" +
+                "<p>Please share this OTP with the delivery partner when they arrive at your location.</p>" +
+                "<p><strong>Note:</strong> This OTP is valid for 2 hours and expires at %s.</p>" +
+                "<p>Thank you for choosing PlateMate!</p>",
+                customer.getFullName() != null ? customer.getFullName() : "Customer",
+                order.getId(),
+                otp,
+                order.getOtpExpiresAt() != null ? order.getOtpExpiresAt().toString() : "N/A"
+            );
+            
+            // Send email
+            boolean emailSent = emailService.sendEmail(customerEmail, subject, body);
+            if (emailSent) {
+                logger.info("OTP email sent successfully to customer {} for order {}", customerEmail, order.getId());
+            } else {
+                logger.error("Failed to send OTP email to customer {} for order {}", customerEmail, order.getId());
+            }
+        } catch (Exception e) {
+            logger.error("Error sending OTP email to customer for order {}: {}", order.getId(), e.getMessage(), e);
+            // Don't throw exception - email failure shouldn't block order pickup
+        }
     }
     
     /**

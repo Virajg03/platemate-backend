@@ -89,7 +89,6 @@ public class DeliveryPartnerService {
         return repository.findById(id).map(p -> {
             if (update.getFullName() != null) p.setFullName(update.getFullName());
             if (update.getVehicleType() != null) p.setVehicleType(update.getVehicleType());
-            if (update.getCommissionRate() != null) p.setCommissionRate(update.getCommissionRate());
             if (update.getServiceArea() != null) p.setServiceArea(update.getServiceArea());
             if (update.getIsAvailable() != null) p.setIsAvailable(update.getIsAvailable());
             return repository.save(p);
@@ -113,7 +112,6 @@ public class DeliveryPartnerService {
 
         if (update.getFullName() != null) p.setFullName(update.getFullName());
         if (update.getVehicleType() != null) p.setVehicleType(update.getVehicleType());
-        if (update.getCommissionRate() != null) p.setCommissionRate(update.getCommissionRate());
         if (update.getServiceArea() != null) p.setServiceArea(update.getServiceArea());
         if (update.getIsAvailable() != null) p.setIsAvailable(update.getIsAvailable());
         

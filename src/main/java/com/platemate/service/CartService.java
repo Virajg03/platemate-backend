@@ -58,23 +58,26 @@ public class CartService {
         Optional<Cart> existingCartItem = cartRepository.findByCustomer_IdAndMenuItem_IdAndIsDeletedFalse(
                 customerId, req.getMenuItemId());
 
-        // Validate max quantity (now required, so always validate)
+        // Validate max quantity (if set)
         int requestedQuantity = req.getQuantity();
-        if (existingCartItem.isPresent()) {
-            // Check total quantity after adding
-            int currentQuantity = existingCartItem.get().getQuantity();
-            int totalQuantity = currentQuantity + requestedQuantity;
-            if (totalQuantity > menuItem.getMaxQuantity()) {
-                throw new BadRequestException(
-                    String.format("Maximum quantity allowed is %d. Current cart quantity: %d, requested: %d",
-                        menuItem.getMaxQuantity(), currentQuantity, requestedQuantity));
-            }
-        } else {
-            // New item, check requested quantity
-            if (requestedQuantity > menuItem.getMaxQuantity()) {
-                throw new BadRequestException(
-                    String.format("Maximum quantity allowed is %d",
-                        menuItem.getMaxQuantity()));
+        Integer maxQuantity = menuItem.getMaxQuantity();
+        if (maxQuantity != null && maxQuantity > 0) {
+            if (existingCartItem.isPresent()) {
+                // Check total quantity after adding
+                int currentQuantity = existingCartItem.get().getQuantity();
+                int totalQuantity = currentQuantity + requestedQuantity;
+                if (totalQuantity > maxQuantity) {
+                    throw new BadRequestException(
+                        String.format("Maximum quantity allowed is %d. Current cart quantity: %d, requested: %d",
+                            maxQuantity, currentQuantity, requestedQuantity));
+                }
+            } else {
+                // New item, check requested quantity
+                if (requestedQuantity > maxQuantity) {
+                    throw new BadRequestException(
+                        String.format("Maximum quantity allowed is %d",
+                            maxQuantity));
+                }
             }
         }
 
@@ -159,11 +162,12 @@ public class CartService {
             if (req.getQuantity() <= 0) {
                 throw new BadRequestException("Quantity must be greater than 0");
             }
-            // Validate max quantity (now required, so always validate)
-            if (req.getQuantity() > menuItem.getMaxQuantity()) {
+            // Validate max quantity (if set)
+            Integer maxQuantity = menuItem.getMaxQuantity();
+            if (maxQuantity != null && maxQuantity > 0 && req.getQuantity() > maxQuantity) {
                 throw new BadRequestException(
                     String.format("Maximum quantity allowed is %d",
-                        menuItem.getMaxQuantity()));
+                        maxQuantity));
             }
             cart.setQuantity(req.getQuantity());
             // Preserve original price snapshot - don't update price when updating quantity
