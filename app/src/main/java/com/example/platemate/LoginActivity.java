@@ -88,6 +88,15 @@ public class LoginActivity extends AppCompatActivity {
         
         // Setup password visibility toggle
         setupPasswordToggle();
+        
+        // Setup forgot password link
+        TextView forgotPasswordText = findViewById(R.id.forgotPasswordText);
+        if (forgotPasswordText != null) {
+            forgotPasswordText.setOnClickListener(v -> {
+                Intent intent = new Intent(LoginActivity.this, ForgotPasswordActivity.class);
+                startActivity(intent);
+            });
+        }
     }
     
     private void setupPasswordToggle() {

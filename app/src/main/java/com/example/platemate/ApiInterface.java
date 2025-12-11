@@ -306,4 +306,17 @@ public interface ApiInterface {
     // Payout endpoints
     @GET("/api/providers/payouts/pending")
     Call<java.util.Map<String, Double>> getPendingAmount();
+    
+    // Password Reset endpoints
+    @POST("/api/auth/forgot-password")
+    Call<PasswordResetResponse> forgotPassword(@Body ForgotPasswordRequest request);
+
+    @POST("/api/auth/resend-otp")
+    Call<PasswordResetResponse> resendOtp(@Body ResendOtpRequest request);
+
+    @POST("/api/auth/verify-otp")
+    Call<VerifyOtpResponse> verifyOtp(@Body VerifyOtpRequest request);
+
+    @POST("/api/auth/reset-password")
+    Call<PasswordResetResponse> resetPassword(@Body ResetPasswordRequest request);
 }

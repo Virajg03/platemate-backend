@@ -82,13 +82,26 @@
                     android:tint="@color/login_orange" />
             </RelativeLayout>
 
+            <TextView
+                android:id="@+id/forgotPasswordText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:text="Forgot Password?"
+                android:textColor="@color/login_orange"
+                android:textSize="14sp"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="4dp" />
+
             <Button
                 android:id="@+id/loginButton"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
                 android:text="Login"
                 android:textSize="18sp"
-                android:layout_marginTop="30dp"
+                android:layout_marginTop="20dp"
                 android:backgroundTint="@color/login_orange"
                 />
 
