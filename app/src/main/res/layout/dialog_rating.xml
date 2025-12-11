@@ -47,7 +47,7 @@
         android:layout_width="match_parent"
         android:layout_height="120dp"
         android:hint="Share your experience..."
-        android:inputType="textMultiLine"
+        android:inputType="textMultiLine|textNoSuggestions"
         android:gravity="top|start"
         android:padding="12dp"
         android:background="@drawable/neubrutal_shadow"

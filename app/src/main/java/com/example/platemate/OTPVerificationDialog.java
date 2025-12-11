@@ -25,6 +25,16 @@ public class OTPVerificationDialog {
         dialog.setContentView(R.layout.dialog_otp_verification);
         dialog.setCancelable(true);
         
+        // Set dialog window width to 85% of screen width for better visibility
+        Window window = dialog.getWindow();
+        if (window != null) {
+            android.view.WindowManager.LayoutParams layoutParams = new android.view.WindowManager.LayoutParams();
+            layoutParams.copyFrom(window.getAttributes());
+            layoutParams.width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.85);
+            layoutParams.height = android.view.WindowManager.LayoutParams.WRAP_CONTENT;
+            window.setAttributes(layoutParams);
+        }
+        
         EditText etOTP = dialog.findViewById(R.id.etOTP);
         Button btnVerify = dialog.findViewById(R.id.btnVerify);
         Button btnCancel = dialog.findViewById(R.id.btnCancel);
@@ -90,6 +100,8 @@ public class OTPVerificationDialog {
         dialog.show();
     }
 }
+
+
 
 
 

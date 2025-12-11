@@ -57,15 +57,6 @@
             android:layout_marginBottom="4dp" />
 
         <TextView
-            android:id="@+id/tvCommissionRate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Commission: 10%"
-            android:textSize="14sp"
-            android:textColor="#666"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
             android:id="@+id/tvServiceArea"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

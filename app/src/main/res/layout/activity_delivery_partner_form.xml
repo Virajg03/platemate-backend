@@ -42,7 +42,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter username"
-            android:inputType="text"
+            android:inputType="textNoSuggestions"
             android:background="@drawable/neubrutal_card"
             android:padding="16dp"
             android:textSize="16sp"
@@ -64,7 +64,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter email"
-            android:inputType="textEmailAddress"
+            android:inputType="textEmailAddress|textNoSuggestions"
             android:background="@drawable/neubrutal_card"
             android:padding="16dp"
             android:textSize="16sp"
@@ -107,7 +107,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter full name"
-            android:inputType="textPersonName"
+            android:inputType="textPersonName|textNoSuggestions"
             android:background="@drawable/neubrutal_card"
             android:padding="16dp"
             android:textSize="16sp"
@@ -132,27 +132,6 @@
             android:textSize="16sp"
             android:layout_marginBottom="16dp" />
 
-        <!-- Commission Rate -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Commission Rate (%) *"
-            android:textColor="@color/black"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
-
-        <EditText
-            android:id="@+id/etCommissionRate"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Enter commission rate (e.g., 10.0)"
-            android:inputType="numberDecimal"
-            android:background="@drawable/neubrutal_card"
-            android:padding="16dp"
-            android:textSize="16sp"
-            android:layout_marginBottom="16dp" />
-
         <!-- Service Area -->
         <TextView
             android:layout_width="wrap_content"
@@ -168,7 +147,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Enter service areas (comma-separated)"
-            android:inputType="textMultiLine"
+            android:inputType="textMultiLine|textNoSuggestions"
             android:minLines="2"
             android:background="@drawable/neubrutal_card"
             android:padding="16dp"

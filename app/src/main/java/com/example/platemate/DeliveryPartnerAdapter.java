@@ -39,7 +39,7 @@ public class DeliveryPartnerAdapter extends RecyclerView.Adapter<DeliveryPartner
     }
 
     class DeliveryPartnerViewHolder extends RecyclerView.ViewHolder {
-        private TextView tvName, tvVehicleType, tvCommissionRate, tvServiceArea;
+        private TextView tvName, tvVehicleType, tvServiceArea;
         private Switch switchAvailable;
         private ImageView btnEdit, btnDelete;
         private View itemView;
@@ -49,7 +49,6 @@ public class DeliveryPartnerAdapter extends RecyclerView.Adapter<DeliveryPartner
             this.itemView = itemView;
             tvName = itemView.findViewById(R.id.tvName);
             tvVehicleType = itemView.findViewById(R.id.tvVehicleType);
-            tvCommissionRate = itemView.findViewById(R.id.tvCommissionRate);
             tvServiceArea = itemView.findViewById(R.id.tvServiceArea);
             switchAvailable = itemView.findViewById(R.id.switchAvailable);
             btnEdit = itemView.findViewById(R.id.btnEdit);
@@ -59,14 +58,6 @@ public class DeliveryPartnerAdapter extends RecyclerView.Adapter<DeliveryPartner
         public void bind(DeliveryPartner partner) {
             tvName.setText(partner.getFullName() != null ? partner.getFullName() : "N/A");
             tvVehicleType.setText("Vehicle: " + (partner.getVehicleType() != null ? partner.getVehicleType() : "N/A"));
-            
-            Double commissionRate = partner.getCommissionRate();
-            if (commissionRate != null) {
-                tvCommissionRate.setText("Commission: " + commissionRate + "%");
-            } else {
-                tvCommissionRate.setText("Commission: 0%");
-            }
-            
             tvServiceArea.setText("Area: " + (partner.getServiceArea() != null ? partner.getServiceArea() : "N/A"));
             
             Boolean isAvailable = partner.getIsAvailable();
@@ -81,7 +72,6 @@ public class DeliveryPartnerAdapter extends RecyclerView.Adapter<DeliveryPartner
                 DeliveryPartnerUpdateRequest request = new DeliveryPartnerUpdateRequest();
                 request.setFullName(partner.getFullName());
                 request.setVehicleType(partner.getVehicleType());
-                request.setCommissionRate(partner.getCommissionRate());
                 request.setServiceArea(partner.getServiceArea());
                 request.setIsAvailable(isChecked);
                 

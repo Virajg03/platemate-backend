@@ -131,7 +131,8 @@ public class ProviderDashboardActivity extends AppCompatActivity {
         tvBusinessName = findViewById(R.id.tvBusinessName);
         tvProviderEmail = findViewById(R.id.tvProviderEmail);
         tvTotalProducts = findViewById(R.id.tvTotalProducts);
-        tvActiveOrders = findViewById(R.id.tvActiveOrders);
+        // Active Orders view removed from layout - keeping variable for potential future use
+        tvActiveOrders = null; // View no longer exists in layout
         tvPendingAmount = findViewById(R.id.tvPendingAmount);
         tvProductCount = findViewById(R.id.tvProductCount);
         cardEditProfile = findViewById(R.id.cardEditProfile);

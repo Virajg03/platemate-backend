@@ -24,7 +24,7 @@ public class DeliveryPartnerDialog extends Dialog {
     private android.widget.TextView tvUsernameLabel, tvEmailLabel, tvPasswordLabel;
     
     // Delivery partner fields
-    private EditText etFullName, etCommissionRate, etServiceArea;
+    private EditText etFullName, etServiceArea;
     private Spinner spVehicleType;
     private Button btnSave, btnCancel;
     private String[] vehicleTypes = {"BIKE", "SCOOTER", "BICYCLE", "CAR"};
@@ -60,7 +60,6 @@ public class DeliveryPartnerDialog extends Dialog {
             
             // Populate existing fields
             etFullName.setText(partner.getFullName() != null ? partner.getFullName() : "");
-            etCommissionRate.setText(partner.getCommissionRate() != null ? partner.getCommissionRate().toString() : "");
             etServiceArea.setText(partner.getServiceArea() != null ? partner.getServiceArea() : "");
             
             // Set vehicle type
@@ -95,7 +94,6 @@ public class DeliveryPartnerDialog extends Dialog {
         
         // Delivery partner fields
         etFullName = findViewById(R.id.etFullName);
-        etCommissionRate = findViewById(R.id.etCommissionRate);
         etServiceArea = findViewById(R.id.etServiceArea);
         spVehicleType = findViewById(R.id.spVehicleType);
         btnSave = findViewById(R.id.btnSave);
@@ -115,7 +113,6 @@ public class DeliveryPartnerDialog extends Dialog {
 
     private void saveDeliveryPartner() {
         String fullName = etFullName.getText().toString().trim();
-        String commissionRateStr = etCommissionRate.getText().toString().trim();
         String serviceArea = etServiceArea.getText().toString().trim();
         String vehicleType = spVehicleType.getSelectedItem().toString();
 
@@ -163,48 +160,35 @@ public class DeliveryPartnerDialog extends Dialog {
             return;
         }
 
-        if (commissionRateStr.isEmpty()) {
-            Toast.makeText(getContext(), "Commission rate is required", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         if (serviceArea.isEmpty()) {
             Toast.makeText(getContext(), "Service area is required", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        try {
-            Double commissionRate = Double.parseDouble(commissionRateStr);
-
-            DeliveryPartner deliveryPartner;
-            if (partner != null) {
-                // EDIT MODE: Update existing partner (user credentials unchanged)
-                deliveryPartner = partner;
-                deliveryPartner.setFullName(fullName);
-                deliveryPartner.setVehicleType(vehicleType);
-                deliveryPartner.setCommissionRate(commissionRate);
-                deliveryPartner.setServiceArea(serviceArea);
-            } else {
-                // CREATE MODE: Create new partner with user credentials
-                deliveryPartner = new DeliveryPartner();
-                
-                // Set user credentials (will be used to create User account on backend)
-                deliveryPartner.setUsername(username);
-                deliveryPartner.setEmail(email);
-                deliveryPartner.setPassword(password);
-                
-                deliveryPartner.setFullName(fullName);
-                deliveryPartner.setVehicleType(vehicleType);
-                deliveryPartner.setCommissionRate(commissionRate);
-                deliveryPartner.setServiceArea(serviceArea);
-                deliveryPartner.setIsAvailable(false); // Default to unavailable
-            }
-
-            listener.onSave(deliveryPartner, partner != null);
-            dismiss();
-        } catch (NumberFormatException e) {
-            Toast.makeText(getContext(), "Invalid number format", Toast.LENGTH_SHORT).show();
+        DeliveryPartner deliveryPartner;
+        if (partner != null) {
+            // EDIT MODE: Update existing partner (user credentials unchanged)
+            deliveryPartner = partner;
+            deliveryPartner.setFullName(fullName);
+            deliveryPartner.setVehicleType(vehicleType);
+            deliveryPartner.setServiceArea(serviceArea);
+        } else {
+            // CREATE MODE: Create new partner with user credentials
+            deliveryPartner = new DeliveryPartner();
+            
+            // Set user credentials (will be used to create User account on backend)
+            deliveryPartner.setUsername(username);
+            deliveryPartner.setEmail(email);
+            deliveryPartner.setPassword(password);
+            
+            deliveryPartner.setFullName(fullName);
+            deliveryPartner.setVehicleType(vehicleType);
+            deliveryPartner.setServiceArea(serviceArea);
+            deliveryPartner.setIsAvailable(false); // Default to unavailable
         }
+
+        listener.onSave(deliveryPartner, partner != null);
+        dismiss();
     }
 }
 

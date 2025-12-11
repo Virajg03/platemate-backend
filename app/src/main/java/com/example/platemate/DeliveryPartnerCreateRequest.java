@@ -18,21 +18,17 @@ public class DeliveryPartnerCreateRequest {
     @SerializedName("vehicleType")
     private String vehicleType;
 
-    @SerializedName("commissionRate")
-    private Double commissionRate;
-
     @SerializedName("serviceArea")
     private String serviceArea;
 
     public DeliveryPartnerCreateRequest() {}
 
-    public DeliveryPartnerCreateRequest(String username, String email, String password, String fullName, String vehicleType, Double commissionRate, String serviceArea) {
+    public DeliveryPartnerCreateRequest(String username, String email, String password, String fullName, String vehicleType, String serviceArea) {
         this.username = username;
         this.email = email;
         this.password = password;
         this.fullName = fullName;
         this.vehicleType = vehicleType;
-        this.commissionRate = commissionRate;
         this.serviceArea = serviceArea;
     }
 
@@ -74,14 +70,6 @@ public class DeliveryPartnerCreateRequest {
 
     public void setVehicleType(String vehicleType) {
         this.vehicleType = vehicleType;
-    }
-
-    public Double getCommissionRate() {
-        return commissionRate;
-    }
-
-    public void setCommissionRate(Double commissionRate) {
-        this.commissionRate = commissionRate;
     }
 
     public String getServiceArea() {

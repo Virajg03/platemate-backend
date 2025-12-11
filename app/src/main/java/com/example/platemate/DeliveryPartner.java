@@ -20,9 +20,6 @@ public class DeliveryPartner implements Serializable {
     @SerializedName("vehicleType")
     private String vehicleType; // BIKE, SCOOTER, BICYCLE, CAR
 
-    @SerializedName("commissionRate")
-    private Double commissionRate;
-
     @SerializedName("serviceArea")
     private String serviceArea;
 
@@ -73,14 +70,6 @@ public class DeliveryPartner implements Serializable {
 
     public void setVehicleType(String vehicleType) {
         this.vehicleType = vehicleType;
-    }
-
-    public Double getCommissionRate() {
-        return commissionRate;
-    }
-
-    public void setCommissionRate(Double commissionRate) {
-        this.commissionRate = commissionRate;
     }
 
     public String getServiceArea() {

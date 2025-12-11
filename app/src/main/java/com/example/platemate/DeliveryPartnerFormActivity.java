@@ -29,7 +29,7 @@ public class DeliveryPartnerFormActivity extends AppCompatActivity {
     private android.widget.TextView tvUsernameLabel, tvEmailLabel, tvPasswordLabel;
     
     // Delivery partner fields
-    private EditText etFullName, etCommissionRate, etServiceArea;
+    private EditText etFullName, etServiceArea;
     private Spinner spVehicleType;
     private Button btnSave, btnCancel;
     private ProgressBar progressBar; // Optional - can be null if not in layout
@@ -77,7 +77,6 @@ public class DeliveryPartnerFormActivity extends AppCompatActivity {
             
             // Populate existing fields
             etFullName.setText(partner.getFullName() != null ? partner.getFullName() : "");
-            etCommissionRate.setText(partner.getCommissionRate() != null ? partner.getCommissionRate().toString() : "");
             etServiceArea.setText(partner.getServiceArea() != null ? partner.getServiceArea() : "");
             
             // Set vehicle type
@@ -109,7 +108,6 @@ public class DeliveryPartnerFormActivity extends AppCompatActivity {
         
         // Delivery partner fields
         etFullName = findViewById(R.id.etFullName);
-        etCommissionRate = findViewById(R.id.etCommissionRate);
         etServiceArea = findViewById(R.id.etServiceArea);
         spVehicleType = findViewById(R.id.spVehicleType);
         btnSave = findViewById(R.id.btnSave);
@@ -131,7 +129,6 @@ public class DeliveryPartnerFormActivity extends AppCompatActivity {
 
     private void saveDeliveryPartner() {
         String fullName = etFullName.getText().toString().trim();
-        String commissionRateStr = etCommissionRate.getText().toString().trim();
         String serviceArea = etServiceArea.getText().toString().trim();
         String vehicleType = spVehicleType.getSelectedItem().toString();
 
@@ -179,33 +176,22 @@ public class DeliveryPartnerFormActivity extends AppCompatActivity {
             return;
         }
 
-        if (commissionRateStr.isEmpty()) {
-            Toast.makeText(this, "Commission rate is required", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         if (serviceArea.isEmpty()) {
             Toast.makeText(this, "Service area is required", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        try {
-            Double commissionRate = Double.parseDouble(commissionRateStr);
-
-            if (isEditMode && partner != null) {
-                // EDIT MODE: Update existing partner (user credentials unchanged)
-                updateDeliveryPartner(fullName, vehicleType, commissionRate, serviceArea);
-            } else {
-                // CREATE MODE: Create new partner with user credentials
-                createDeliveryPartner(username, email, password, fullName, vehicleType, commissionRate, serviceArea);
-            }
-        } catch (NumberFormatException e) {
-            Toast.makeText(this, "Invalid number format", Toast.LENGTH_SHORT).show();
+        if (isEditMode && partner != null) {
+            // EDIT MODE: Update existing partner (user credentials unchanged)
+            updateDeliveryPartner(fullName, vehicleType, serviceArea);
+        } else {
+            // CREATE MODE: Create new partner with user credentials
+            createDeliveryPartner(username, email, password, fullName, vehicleType, serviceArea);
         }
     }
     
     private void createDeliveryPartner(String username, String email, String password, 
-                                      String fullName, String vehicleType, Double commissionRate, String serviceArea) {
+                                      String fullName, String vehicleType, String serviceArea) {
         if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
         btnSave.setEnabled(false);
         
@@ -215,7 +201,6 @@ public class DeliveryPartnerFormActivity extends AppCompatActivity {
             password,
             fullName,
             vehicleType,
-            commissionRate,
             serviceArea
         );
 
@@ -252,14 +237,13 @@ public class DeliveryPartnerFormActivity extends AppCompatActivity {
         });
     }
     
-    private void updateDeliveryPartner(String fullName, String vehicleType, Double commissionRate, String serviceArea) {
+    private void updateDeliveryPartner(String fullName, String vehicleType, String serviceArea) {
         if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
         btnSave.setEnabled(false);
         
         DeliveryPartnerUpdateRequest request = new DeliveryPartnerUpdateRequest();
         request.setFullName(fullName);
         request.setVehicleType(vehicleType);
-        request.setCommissionRate(commissionRate);
         request.setServiceArea(serviceArea);
         request.setIsAvailable(partner.getIsAvailable()); // Preserve availability
 

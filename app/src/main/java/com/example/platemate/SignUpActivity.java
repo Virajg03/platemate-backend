@@ -32,7 +32,7 @@ import retrofit2.Response;
 
 public class SignUpActivity extends AppCompatActivity {
 
-    String[] userTypes = {"Customer", "Provider", "Delivery"};
+    String[] userTypes = {"Customer", "Provider"};
     AutoCompleteTextView autoCompleteTextView;
     ArrayAdapter<String> adapterItems;
     private EditText usernameEditText, emailEditText, passwordEditText, 
@@ -384,8 +384,9 @@ public class SignUpActivity extends AppCompatActivity {
     /**
      * Maps user-friendly dropdown values to backend Role enum format
      * 
-     * @param selectedRole The role selected from dropdown (e.g., "Customer", "Provider", "Delivery")
-     * @return Backend enum format (e.g., "ROLE_CUSTOMER", "ROLE_PROVIDER", "ROLE_DELIVERY") or null if invalid
+     * @param selectedRole The role selected from dropdown (e.g., "Customer", "Provider")
+     * @return Backend enum format (e.g., "ROLE_CUSTOMER", "ROLE_PROVIDER") or null if invalid
+     * Note: Delivery Partner signup is not available - they are created by tiffin providers
      */
     private String mapRoleToBackendFormat(String selectedRole) {
         if (selectedRole == null || selectedRole.trim().isEmpty()) {

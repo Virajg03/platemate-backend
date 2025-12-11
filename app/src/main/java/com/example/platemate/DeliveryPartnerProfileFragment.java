@@ -17,6 +17,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.bumptech.glide.Glide;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -34,9 +35,10 @@ public class DeliveryPartnerProfileFragment extends Fragment {
     private ImageView ivProfilePicture, btnEditProfilePicture, backButton;
     private android.widget.RelativeLayout btnEditProfile;
     private TextView tvFullName, tvUsername, tvEmail, tvVehicleType, 
-                     tvCommissionRate, tvServiceArea, tvAvailability;
+                     tvServiceArea, tvAvailability;
     private LinearLayout logoutButton;
     private ProgressBar progressBar;
+    private SwipeRefreshLayout swipeRefreshLayout;
     
     private ApiInterface apiInterface;
     private SessionManager sessionManager;
@@ -44,6 +46,7 @@ public class DeliveryPartnerProfileFragment extends Fragment {
     private User currentUser;
     private Long currentUserId;
     private Long currentDeliveryPartnerId;
+    private boolean isProfileLoaded = false;
     
     private static final int REQUEST_CODE_PICK_IMAGE = 3001;
     private static final int REQUEST_CODE_CAMERA = 3002;
@@ -64,6 +67,7 @@ public class DeliveryPartnerProfileFragment extends Fragment {
         
         initializeViews(view);
         setupClickListeners(view);
+        setupSwipeRefresh(view);
         loadDeliveryPartnerProfile();
     }
     
@@ -75,12 +79,12 @@ public class DeliveryPartnerProfileFragment extends Fragment {
         tvUsername = view.findViewById(R.id.tvUsername);
         tvEmail = view.findViewById(R.id.tvEmail);
         tvVehicleType = view.findViewById(R.id.tvVehicleType);
-        tvCommissionRate = view.findViewById(R.id.tvCommissionRate);
         tvServiceArea = view.findViewById(R.id.tvServiceArea);
         tvAvailability = view.findViewById(R.id.tvAvailability);
         logoutButton = view.findViewById(R.id.btnLogout);
         progressBar = view.findViewById(R.id.progressBar);
         btnEditProfile = view.findViewById(R.id.btnEditProfile);
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
     }
     
     private void setupClickListeners(View view) {
@@ -109,17 +113,50 @@ public class DeliveryPartnerProfileFragment extends Fragment {
         }
     }
     
-    private void loadDeliveryPartnerProfile() {
+    private void setupSwipeRefresh(View view) {
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshProfile();
+            });
+            
+            swipeRefreshLayout.setColorSchemeResources(
+                R.color.login_orange,
+                android.R.color.holo_orange_dark,
+                android.R.color.holo_orange_light
+            );
+        }
+    }
+    
+    /**
+     * Public method to refresh profile from outside (e.g., swipe-to-refresh)
+     */
+    public void refreshProfile() {
+        isProfileLoaded = false;
+        loadDeliveryPartnerProfile();
+    }
+    
+    /**
+     * Helper method to hide progress indicators
+     */
+    private void hideProgressIndicators() {
         if (progressBar != null) {
+            progressBar.setVisibility(View.GONE);
+        }
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setRefreshing(false);
+        }
+    }
+    
+    private void loadDeliveryPartnerProfile() {
+        // Don't show progress bar if refreshing (swipe-to-refresh shows its own indicator)
+        if (progressBar != null && (swipeRefreshLayout == null || !swipeRefreshLayout.isRefreshing())) {
             progressBar.setVisibility(View.VISIBLE);
         }
         
         // Get user ID from session
         Long userId = sessionManager.getUserId();
         if (userId == null) {
-            if (progressBar != null) {
-                progressBar.setVisibility(View.GONE);
-            }
+            hideProgressIndicators();
             loadFromSessionManager();
             return;
         }
@@ -140,9 +177,8 @@ public class DeliveryPartnerProfileFragment extends Fragment {
                     // Step 2: Load Delivery Partner details
                     loadDeliveryPartnerDetails();
                 } else {
-                    if (progressBar != null) {
-                        progressBar.setVisibility(View.GONE);
-                    }
+                    isProfileLoaded = false;
+                    hideProgressIndicators();
                     Log.e("DeliveryPartnerProfile", "Failed to load user data. Code: " + response.code());
                     if (response.errorBody() != null) {
                         try {
@@ -157,9 +193,7 @@ public class DeliveryPartnerProfileFragment extends Fragment {
             
             @Override
             public void onFailure(Call<User> call, Throwable t) {
-                if (progressBar != null) {
-                    progressBar.setVisibility(View.GONE);
-                }
+                hideProgressIndicators();
                 Log.e("DeliveryPartnerProfile", "Network error loading user data", t);
                 loadFromSessionManager();
             }
@@ -174,9 +208,7 @@ public class DeliveryPartnerProfileFragment extends Fragment {
         call.enqueue(new Callback<List<DeliveryPartner>>() {
             @Override
             public void onResponse(Call<List<DeliveryPartner>> call, Response<List<DeliveryPartner>> response) {
-                if (progressBar != null) {
-                    progressBar.setVisibility(View.GONE);
-                }
+                hideProgressIndicators();
                 
                 if (response.isSuccessful()) {
                     if (response.body() != null && !response.body().isEmpty()) {
@@ -185,6 +217,7 @@ public class DeliveryPartnerProfileFragment extends Fragment {
                         currentDeliveryPartnerId = deliveryPartner.getId(); // Store for image upload
                         Log.d("DeliveryPartnerProfile", "Loaded delivery partner: " + deliveryPartner.getFullName() + ", ID: " + deliveryPartner.getId());
                         displayDeliveryPartnerProfile(deliveryPartner);
+                        isProfileLoaded = true;
                     } else {
                         Log.w("DeliveryPartnerProfile", "Response body is null or empty. Response code: " + response.code());
                         // Try fallback: get delivery partner from orders
@@ -221,9 +254,7 @@ public class DeliveryPartnerProfileFragment extends Fragment {
             
             @Override
             public void onFailure(Call<List<DeliveryPartner>> call, Throwable t) {
-                if (progressBar != null) {
-                    progressBar.setVisibility(View.GONE);
-                }
+                hideProgressIndicators();
                 Log.e("DeliveryPartnerProfile", "Network error loading delivery partner profile", t);
                 // Try fallback method
                 tryGetDeliveryPartnerFromOrders();
@@ -276,9 +307,7 @@ public class DeliveryPartnerProfileFragment extends Fragment {
         call.enqueue(new Callback<DeliveryPartner>() {
             @Override
             public void onResponse(Call<DeliveryPartner> call, Response<DeliveryPartner> response) {
-                if (progressBar != null) {
-                    progressBar.setVisibility(View.GONE);
-                }
+                hideProgressIndicators();
                 
                 if (response.isSuccessful() && response.body() != null) {
                     deliveryPartner = response.body();
@@ -293,9 +322,7 @@ public class DeliveryPartnerProfileFragment extends Fragment {
             
             @Override
             public void onFailure(Call<DeliveryPartner> call, Throwable t) {
-                if (progressBar != null) {
-                    progressBar.setVisibility(View.GONE);
-                }
+                hideProgressIndicators();
                 ToastUtils.showError(getContext(), "Error: " + t.getMessage());
                 loadFromSessionManager();
                 Log.e("DeliveryPartnerProfile", "Failed to load delivery partner by ID", t);
@@ -352,15 +379,6 @@ public class DeliveryPartnerProfileFragment extends Fragment {
         if (tvVehicleType != null) {
             String vehicleType = partner.getVehicleType();
             tvVehicleType.setText(vehicleType != null && !vehicleType.isEmpty() ? vehicleType : "N/A");
-        }
-        
-        // Commission Rate
-        if (tvCommissionRate != null) {
-            if (partner.getCommissionRate() != null) {
-                tvCommissionRate.setText(String.format("%.2f%%", partner.getCommissionRate()));
-            } else {
-                tvCommissionRate.setText("N/A");
-            }
         }
         
         // Service Area
@@ -463,7 +481,7 @@ public class DeliveryPartnerProfileFragment extends Fragment {
         if (resultCode == Activity.RESULT_OK && requestCode == REQUEST_CODE_EDIT_PROFILE) {
             // Profile was updated, reload it
             Log.d("DeliveryPartnerProfile", "Profile updated, reloading...");
-            loadDeliveryPartnerProfile();
+            refreshProfile();
             return;
         }
         
@@ -527,16 +545,14 @@ public class DeliveryPartnerProfileFragment extends Fragment {
             call.enqueue(new Callback<Image>() {
                 @Override
                 public void onResponse(Call<Image> call, Response<Image> response) {
-                    if (progressBar != null) {
-                        progressBar.setVisibility(View.GONE);
-                    }
+                    hideProgressIndicators();
                     
                     if (response.isSuccessful() && response.body() != null) {
                         Image uploadedImage = response.body();
                         Log.d("DeliveryPartnerProfile", "Image uploaded successfully. ImageId: " + uploadedImage.getId());
                         ToastUtils.showSuccess(getContext(), "Profile picture updated successfully");
                         // Reload profile to show new image (backend will set profileImageId in user object)
-                        loadDeliveryPartnerProfile();
+                        refreshProfile();
                     } else {
                         ToastUtils.showError(getContext(), "Failed to upload profile picture");
                     }
@@ -544,17 +560,13 @@ public class DeliveryPartnerProfileFragment extends Fragment {
                 
                 @Override
                 public void onFailure(Call<Image> call, Throwable t) {
-                    if (progressBar != null) {
-                        progressBar.setVisibility(View.GONE);
-                    }
+                    hideProgressIndicators();
                     ToastUtils.showError(getContext(), "Error uploading image: " + t.getMessage());
                     Log.e("DeliveryPartnerProfile", "Error uploading image", t);
                 }
             });
         } catch (Exception e) {
-            if (progressBar != null) {
-                progressBar.setVisibility(View.GONE);
-            }
+            hideProgressIndicators();
             ToastUtils.showError(getContext(), "Error processing image");
             Log.e("DeliveryPartnerProfile", "Error processing image", e);
         }
@@ -611,8 +623,9 @@ public class DeliveryPartnerProfileFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Reload profile when fragment resumes (e.g., returning from edit screen)
-        if (currentUserId != null) {
+        // Only load profile once if not already loaded
+        // Users can refresh manually using swipe-to-refresh
+        if (!isProfileLoaded && currentUserId != null) {
             loadDeliveryPartnerProfile();
         }
     }

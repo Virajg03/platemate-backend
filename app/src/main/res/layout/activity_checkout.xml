@@ -449,7 +449,7 @@
                     android:layout_height="120dp"
                     android:background="@drawable/neubrutal_input_field"
                     android:hint="Add any special instructions for delivery"
-                    android:inputType="textMultiLine"
+                    android:inputType="textMultiLine|textNoSuggestions"
                     android:gravity="top"
                     android:minLines="3"
                     android:paddingStart="16dp"

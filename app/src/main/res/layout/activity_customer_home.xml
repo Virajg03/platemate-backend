@@ -133,7 +133,7 @@
                         android:textStyle="bold"
                         android:textColorHint="@color/darkGrey"
                         android:paddingStart="8dp"
-                        android:inputType="text"
+                        android:inputType="textNoSuggestions"
                         android:singleLine="true" />
                 </LinearLayout>
 

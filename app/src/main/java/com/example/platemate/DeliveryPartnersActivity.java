@@ -149,7 +149,6 @@ public class DeliveryPartnersActivity extends AppCompatActivity {
         DeliveryPartnerUpdateRequest request = new DeliveryPartnerUpdateRequest();
         request.setFullName(partner.getFullName());
         request.setVehicleType(partner.getVehicleType());
-        request.setCommissionRate(partner.getCommissionRate());
         request.setServiceArea(partner.getServiceArea());
         request.setIsAvailable(partner.getIsAvailable());
 

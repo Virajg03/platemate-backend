@@ -251,11 +251,7 @@ public class DeliveryPartnerOrdersFragment extends Fragment {
         rvOrders.setVisibility(View.VISIBLE);
     }
     
-    @Override
-    public void onResume() {
-        super.onResume();
-        // Reload orders when fragment resumes
-        loadOrders();
-    }
+    // Removed automatic refresh on resume - data loads once when fragment is created
+    // Users can refresh manually using swipe-to-refresh
 }
 

@@ -4,21 +4,24 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp"
+    android:padding="32dp"
+    android:minWidth="320dp"
     android:background="#FFF5EE">
 
     <!-- Header -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:minHeight="56dp"
         android:text="VERIFY OTP"
         android:textColor="@color/login_orange"
-        android:textSize="24sp"
+        android:textSize="26sp"
         android:textStyle="bold"
         android:letterSpacing="0.05"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="20dp"
         android:background="@color/brutalMuted"
-        android:padding="16dp"
+        android:padding="18dp"
+        android:gravity="center"
         android:textAlignment="center" />
 
     <!-- Instruction -->
@@ -27,8 +30,10 @@
         android:layout_height="wrap_content"
         android:text="Enter the 6-digit OTP to confirm delivery"
         android:textColor="@color/black"
-        android:textSize="16sp"
-        android:layout_marginBottom="24dp"
+        android:textSize="17sp"
+        android:layout_marginBottom="28dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
         android:textAlignment="center" />
 
     <!-- OTP Input -->
@@ -44,17 +49,17 @@
     <EditText
         android:id="@+id/etOTP"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="72dp"
+        android:minHeight="72dp"
         android:hint="Enter 6-digit OTP"
         android:inputType="number"
         android:maxLength="6"
-        android:minLines="1"
         android:gravity="center"
-        android:textSize="24sp"
+        android:textSize="28sp"
         android:textStyle="bold"
-        android:letterSpacing="0.1"
+        android:letterSpacing="0.15"
         android:background="@drawable/neubrutal_input_field"
-        android:padding="16dp"
+        android:padding="20dp"
         android:layout_marginBottom="8dp" />
 
     <!-- Error Message -->
@@ -82,39 +87,49 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="end">
+        android:gravity="center"
+        android:layout_marginTop="8dp">
 
         <Button
             android:id="@+id/btnCancel"
-            android:layout_width="wrap_content"
-            android:layout_height="56dp"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
             android:text="CANCEL"
             android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="@color/black"
             android:background="@drawable/neubrutal_card"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:layout_marginEnd="12dp"
-            android:minWidth="120dp" />
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:ellipsize="none"
+            android:singleLine="true"
+            android:gravity="center" />
 
         <Button
             android:id="@+id/btnVerify"
-            android:layout_width="wrap_content"
-            android:layout_height="56dp"
+            android:layout_width="0dp"
+            android:layout_height="64dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
             android:text="VERIFY"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="@android:color/black"
+            android:textColor="@android:color/white"
             android:background="@drawable/neubrutal_button_shadow"
             android:stateListAnimator="@null"
             android:backgroundTint="@null"
             app:backgroundTint="@null"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:minWidth="120dp" />
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:ellipsize="none"
+            android:singleLine="true"
+            android:gravity="center" />
     </LinearLayout>
 </LinearLayout>
+
+
 
 
 

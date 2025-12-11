@@ -9,9 +9,6 @@ public class DeliveryPartnerUpdateRequest {
     @SerializedName("vehicleType")
     private String vehicleType;
 
-    @SerializedName("commissionRate")
-    private Double commissionRate;
-
     @SerializedName("serviceArea")
     private String serviceArea;
 
@@ -34,14 +31,6 @@ public class DeliveryPartnerUpdateRequest {
 
     public void setVehicleType(String vehicleType) {
         this.vehicleType = vehicleType;
-    }
-
-    public Double getCommissionRate() {
-        return commissionRate;
-    }
-
-    public void setCommissionRate(Double commissionRate) {
-        this.commissionRate = commissionRate;
     }
 
     public String getServiceArea() {

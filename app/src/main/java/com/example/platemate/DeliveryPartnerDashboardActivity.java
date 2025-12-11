@@ -159,36 +159,8 @@ public class DeliveryPartnerDashboardActivity extends AppCompatActivity {
         }
     }
     
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Refresh current fragment when activity resumes
-        refreshCurrentFragment();
-    }
-    
-    private void refreshCurrentFragment() {
-        int selectedTab = tabLayout.getSelectedTabPosition();
-        switch (selectedTab) {
-            case 0:
-                if (assignedFragment != null && assignedFragment.isAdded()) {
-                    assignedFragment.loadOrders();
-                }
-                break;
-            case 1:
-                if (availableFragment != null && availableFragment.isAdded()) {
-                    availableFragment.loadOrders();
-                }
-                break;
-            case 2:
-                if (completedFragment != null && completedFragment.isAdded()) {
-                    completedFragment.loadOrders();
-                }
-                break;
-            case 3:
-                // Profile fragment doesn't need refresh on resume
-                break;
-        }
-    }
+    // Removed automatic refresh on resume - data loads once on app open
+    // Users can refresh manually using swipe-to-refresh in fragments
 }
 
 
