@@ -74,12 +74,7 @@ export default function DeliveryPartnersPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleAdd}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg shadow hover:bg-primary-700 text-sm"
-        >
-          + Add Partner
-        </button>
+        
       </div>
 
       {/* Table */}
